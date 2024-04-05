@@ -12,6 +12,7 @@ There are three commands introduced by this package:
 
 Run a command with `--help` to get a description of the command and all its configuration options.
 
+
 ## Configuration
 
 It is possible to load a configuration file specifying the complete or parital configuration and overwrite configurations using the command line options (using two leading dashes, e.g. `--device DEVICE_TO_USE`).
@@ -29,7 +30,8 @@ All commands share the same base arguments to specify the model and retrieval de
 | `model` | Specify a path to load these (the `model.`) configurations from (the `model.` prefix must then be omitted). |
 | `device` | Specify which device to use (default to using the CPU). |
 
-Each command has a set of additional commands to specify what to score/evaluate/rank.
+Each command has a set of additional options to specify what to score/evaluate/rank.
+
 
 ### Configuration Files
 
