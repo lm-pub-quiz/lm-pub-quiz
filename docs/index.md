@@ -4,7 +4,7 @@ This library implements a knoweledge probing approach which uses LM's inherent a
 For more information visit the [LM Pub Quiz website](https://lm-pub-quiz.github.io/).
 
 In this guide, we will first cover how to set up the packaged (as there are multiple options).
-For information on how to use the pacakge, see [an example workflow using the API](example) or the [CLI-guide](cli).
+For information on how to use the pacakge, see [an example workflow using the API](example.md) or the [CLI-guide](cli.md).
 
 ## Recommend Setup
 

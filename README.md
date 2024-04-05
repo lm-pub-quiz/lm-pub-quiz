@@ -23,7 +23,7 @@ For more information visit the [LM Pub Quiz website](https://lm-pub-quiz.github.
 
 ## Getting started
 
-This short guide should get you started. For more detailed information visit the [documentation](https://github.com/lm-pub-quiz/lm-pub-quiz). 
+This short guide should get you started. For more detailed information visit the [documentation](https://lm-pub-quiz.github.io/lm-pub-quiz). 
 
 ### Installing the Package
 
@@ -39,7 +39,7 @@ or clone the repository and install the package using the `-e` flag to make chan
 pip install -e lm-pub-quiz  # Modify the path to the repository if necessary
 ```
 
-For alternatives methods of installing the package, visit the [documentation](https://github.com/lm-pub-quiz/lm-pub-quiz).
+For alternatives methods of installing the package, visit the [documentation](https://lm-pub-quiz.github.com/lm-pub-quiz).
 
 ### Example
 
