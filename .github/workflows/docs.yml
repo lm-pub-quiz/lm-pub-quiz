@@ -24,4 +24,14 @@ jobs:
           path: .cache
           restore-keys: |
             mkdocs-material-
-      - run: hatch run mkdocs gh-deploy --force
+      - name: Set up pip cache
+        if: runner.os == 'Linux'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-pip-
+      - name: Install hatch
+        run: pipx install hatch
+      - name: Build and deploy
+        run: hatch run mkdocs gh-deploy --force
