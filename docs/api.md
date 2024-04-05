@@ -4,7 +4,8 @@ You can use the API to call the evaluation from a python script.
 For this, you need to load a dataset (see [Data Files](data_files.md) for how these should be structured)
 and then execute the evaluation function using your desired configuration.
 
-Example (compare with `src/lm_pub_quiz/cli/evaluate_model.py`):
+Example (compare with [`src/lm_pub_quiz/cli/evaluate_model.py`](https://github.com/lm-pub-quiz/lm-pub-quiz/tree/main/src/lm_pub_quiz/cli/evaluate_model.py)):
+
 
 ``` python
 from lm_pub_quiz import Dataset, Evaluator
