@@ -1,0 +1,28 @@
+{
+    "example_1": {
+        "templates": [
+            "[X] lost [Y]."
+        ],
+        "template_index": 0,
+        "model_name_or_path": "distilbert-base-cased",
+        "num_original_instances": 3,
+        "subsampled": null,
+        "timestamp": "2024-03-04 20:11:18",
+        "reduction": null,
+        "dataset_path": "tests/dummy_dataset",
+        "dataset_name": "dummy_dataset"
+    },
+    "example_2": {
+        "templates": [
+            "[Y] eats [X]."
+        ],
+        "template_index": 0,
+        "model_name_or_path": "distilbert-base-cased",
+        "num_original_instances": 6,
+        "subsampled": null,
+        "timestamp": "2024-03-04 20:11:19",
+        "reduction": null,
+        "dataset_path": "tests/dummy_dataset",
+        "dataset_name": "dummy_dataset"
+    }
+}

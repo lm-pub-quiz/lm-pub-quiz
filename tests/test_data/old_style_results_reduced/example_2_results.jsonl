@@ -1,0 +1,6 @@
+{"sub_label":"meat", "sub_id": "biq", "obj_id": "dtz", "obj_label":"the lion","predicted_tokens":["the lion","the caterpillar","the kid"],"pll_scores":[12.1812758446,15.8877744675,17.5053930283]}
+{"sub_label":"a bone","sub_id": "myn", "obj_id": "dtz", "obj_label":"the lion","predicted_tokens":["the lion","the caterpillar","the kid"],"pll_scores":[23.4390444756,27.5443906784,27.9115614891]}
+{"sub_label":"candy", "sub_id": "ejy", "obj_id": "irw","obj_label":"the kid","predicted_tokens":["the kid","the lion","the caterpillar"],"pll_scores":[15.7057299614,19.3051533699,24.0674858093]}
+{"sub_label":"a green apple", "sub_id": "sgq", "obj_id": "irw","obj_label":"the kid","predicted_tokens":["the kid","the lion","the caterpillar"],"pll_scores":[19.5001821518,19.5387759209,23.1424221992]}
+{"sub_label":"a leaf", "sub_id": "jpl", "obj_id": "zte","obj_label":"the caterpillar","predicted_tokens":["the caterpillar","the lion","the kid"],"pll_scores":[19.3651065826,25.6837468147,27.8830237389]}
+{"sub_label":"a plant", "sub_id": "pmz", "obj_id": "zte","obj_label":"the caterpillar","predicted_tokens":["the caterpillar","the lion","the kid"],"pll_scores":[17.3190736771,21.2618765831,26.721777916]}
