@@ -16,9 +16,8 @@ For more information visit the [LM Pub Quiz website](https://lm-pub-quiz.github.
 ### See also
 - [Website](https://lm-pub-quiz.github.io/)
 - [Documentation](https://lm-pub-quiz.github.io/lm-pub-quiz)
-- [BEAR Dataset]()
+- [BEAR Dataset](https://github.com/lm-pub-quiz/BEAR)
 - [Paper](https://arxiv.org/abs/2404.04113)
-- [Paper Results]()
 
 
 ## Getting started
