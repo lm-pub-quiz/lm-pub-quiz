@@ -130,7 +130,9 @@ class BaseEvaluator(ABC):
                 metrics.append(m_obj)
 
         for _, r in tqdm(
-            instances.iterrows(), total=len(instances), desc=f"Relation {relation.relation_code}",
+            instances.iterrows(),
+            total=len(instances),
+            desc=f"Relation {relation.relation_code}",
         ):
             row = r.to_dict()
             row["answer_idx"] = relation.answer_space.index.get_loc(row["obj_id"])
@@ -190,9 +192,7 @@ class BaseEvaluator(ABC):
 
         log.debug("Evaluating `%s` on `%s`", self.model_name, dataset.name)
 
-        for relation in tqdm(
-            dataset, total=len(dataset), unit="relations"
-        ):
+        for relation in tqdm(dataset, total=len(dataset), unit="relations"):
             try:
                 log.info("Evaluating `%s` on %s.", self.model_name, relation)
                 relation_result = self.evaluate_relation(
