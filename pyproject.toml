@@ -20,6 +20,16 @@ authors = [
   { name = "Max Ploner", email = "max.ploner@hu-berlin.de" },
   { name = "Alan Akbik", email = "alan.akbik@hu-berlin.de" },
 ]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
 
 [project.scripts]
 evaluate_model = "lm_pub_quiz.cli:evaluate_model_cli"
