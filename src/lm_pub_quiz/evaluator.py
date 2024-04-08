@@ -188,11 +188,15 @@ class BaseEvaluator(ABC):
         if reduction == "default":
             reduction = self.default_reduction
 
+        if not create_instance_table and metric is None:
+            msg = "Neither the instance table nor any metrics are computed: Specify the use of at least one."
+            raise ValueError(msg)
+
         dataset_results = DatasetResults()
 
         log.debug("Evaluating `%s` on `%s`", self.model_name, dataset.name)
 
-        for relation in tqdm(dataset, total=len(dataset), unit="relations"):
+        for relation in tqdm(dataset, total=len(dataset), unit="relations", desc=f"Dataset {dataset.name}"):
             try:
                 log.info("Evaluating `%s` on %s.", self.model_name, relation)
                 relation_result = self.evaluate_relation(

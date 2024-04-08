@@ -230,9 +230,9 @@ class RelationResult(RelationBase):
             return rel.metric_values[metric]
 
         else:
-            instance_table = rel.instance_table
+            try:
+                instance_table = rel.instance_table
 
-            if instance_table is not None:
                 metric_obj = RelationMetric.create_metric(metric)
                 metric_obj.reset()
                 metric_obj.add_instances_from_table(instance_table)
@@ -240,9 +240,10 @@ class RelationResult(RelationBase):
                 self.metric_values.update(metric_obj.compute())
 
                 return self.metric_values[metric]
-            else:
+
+            except NoInstanceTableError as e:
                 msg = f"Could not compute metric `{metric}`: Metric not precomputed and no instance table found."
-                raise RuntimeError(msg)
+                raise RuntimeError(msg) from e
 
     def __len__(self) -> int:
         if self.is_lazy and "num_instances" in self.metadata:
