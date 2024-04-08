@@ -17,7 +17,7 @@ For more information visit the [LM Pub Quiz website](https://lm-pub-quiz.github.
 - [Website](https://lm-pub-quiz.github.io/)
 - [Documentation](https://lm-pub-quiz.github.io/lm-pub-quiz)
 - [BEAR Dataset]()
-- [Paper]()
+- [Paper](https://arxiv.org/abs/2404.04113)
 - [Paper Results]()
 
 
@@ -41,7 +41,7 @@ pip install -e lm-pub-quiz  # Modify the path to the repository if necessary
 
 For alternatives methods of installing the package, visit the [documentation](https://lm-pub-quiz.github.com/lm-pub-quiz).
 
-### Example
+### Example Usage
 
 ```python
 from lm_pub_quiz import Dataset, Evaluator
