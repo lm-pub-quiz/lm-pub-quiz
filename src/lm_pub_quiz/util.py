@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Dict, List, Tuple, Union
 
 PathLike = Union[str, os.PathLike]
@@ -7,6 +8,8 @@ EachTokenReturnFormat = List[Tuple[List[Tuple[str, float]], Dict[str, List[int]]
 SegmentedResultFormat = Tuple[
     Tuple[List[str], ...], Tuple[List[float], ...], Tuple[List[int], ...], Tuple[List[int], ...], Tuple[List[int], ...]
 ]
+
+cache_base_path = Path(os.getenv("LM_PUB_QUIZ_CACHE_ROOT", Path(Path.home(), ".lm-pub-quiz")))
 
 
 def sort_scores(scores: List[float]) -> List[Tuple[int, float]]:

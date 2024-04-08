@@ -2,18 +2,31 @@
 
 import json
 import logging
+import os
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, Sequence
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
 from typing_extensions import Self
 
 from lm_pub_quiz.data.base import DatasetBase, RelationBase
-from lm_pub_quiz.data.util import natural_sort
-from lm_pub_quiz.util import PathLike
+from lm_pub_quiz.data.util import download_tmp_file, extract_archive_member, natural_sort
+from lm_pub_quiz.util import PathLike, cache_base_path
 
 log = logging.getLogger(__name__)
+
+
+KNOWN_DATASET_URLS: Dict[str, Tuple[str, Union[str, Callable]]] = {
+    "bear": (
+        "https://github.com/lm-pub-quiz/BEAR/archive/725b4e3139d0a5fdf914b0419ba744273dddc689.zip",
+        "BEAR-725b4e3139d0a5fdf914b0419ba744273dddc689/BEAR",
+    ),
+    "bear-big": (
+        "https://github.com/lm-pub-quiz/BEAR/archive/725b4e3139d0a5fdf914b0419ba744273dddc689.zip",
+        "BEAR-725b4e3139d0a5fdf914b0419ba744273dddc689/BEAR-big",
+    ),
+}
 
 
 class Relation(RelationBase):
@@ -215,7 +228,7 @@ class Dataset(DatasetBase[Relation]):
             lazy (bool): If False, the instance tables of all relations are directly loaded into memory.
 
         Returns:
-            Dataset: An instance of MultipleChoiceDataset loaded with the relations from the directory.
+            Dataset: An instance if Dataset loaded with the relations from the directory.
 
         Raises:
             Exception: If there is an error in loading the dataset.
@@ -224,7 +237,7 @@ class Dataset(DatasetBase[Relation]):
             Loading the BEAR-dataset.
             ``` python
             >>> from lm_pub_quiz import Dataset
-            >>> dataset = Dataset.load_from_path('/path/to/dataset/BEAR')
+            >>> dataset = Dataset.from_path("/path/to/dataset/BEAR")
             ```
         """
         kwargs["path"] = path
@@ -244,6 +257,69 @@ class Dataset(DatasetBase[Relation]):
         log.info("Loaded dataset `%s` (%d relations) from `%s`.", kwargs["name"], len(relation_files), dataset_path)
 
         return cls(relations, **kwargs)
+
+    @classmethod
+    def from_name(
+        cls, name: str, *, lazy: bool = True, base_path: Optional[Path] = None, chunk_size: int = 10 * 1024, **kwargs
+    ):
+        """
+        Loads a dataset from the cache (if available) or the url which is specified in the internal dataset table.
+
+        Parameters:
+            path (str): The directory path where the dataset is stored.
+            lazy (bool): If False, the instance tables of all relations are directly loaded into memory.
+
+        Returns:
+            Dataset: An instance if Dataset loaded with the relations from the directory.
+
+        Raises:
+            Exception: If there is an error in loading the dataset.
+
+        Usage:
+            Loading the BEAR-dataset.
+            ``` python
+            >>> from lm_pub_quiz import Dataset
+            >>> dataset = Dataset.from_name("BEAR")
+            ```
+        """
+        # Check if dataset exists in cache
+        dataset_path = (base_path if base_path is not None else cache_base_path / "datasets") / name.lower()
+
+        if not dataset_path.exists():
+            # Check wether the dataset is known (in internal dataset-url table)
+            try:
+                url, extraction_info = KNOWN_DATASET_URLS[name.lower()]
+            except KeyError as e:
+                msg = f"Could not find dataset '{name}' in cache (or a matching dataset in the url table)."
+                raise KeyError(msg) from e
+
+            log.info("%s not found in chache, downloading from provided url: %s", name, url)
+
+            _, path = download_tmp_file(url, desc=name, chunk_size=chunk_size)
+
+            dataset_path.mkdir(parents=True, exist_ok=True)
+
+            if isinstance(extraction_info, str):
+                # Assume we want to extract the member of a zip archive
+                extract_archive_member(
+                    source=path,
+                    target=dataset_path,
+                    member=extraction_info,
+                )
+
+            else:
+                # Assume a function for extraction is given
+                extraction_info(
+                    source=path,
+                    target=dataset_path,
+                )
+
+            # Clean up
+            os.remove(path)
+        else:
+            log.debug("Dataset %s found in cache at %s.", name, dataset_path)
+
+        return cls.from_path(dataset_path, lazy=lazy, name=name, **kwargs)
 
     def activated(self):
         if not self.is_lazy:
