@@ -24,7 +24,7 @@ import numpy as np
 import pandas as pd
 from typing_extensions import Self
 
-from lm_pub_quiz.data.base import DatasetBase, NoInstanceTableError, RelationBase
+from lm_pub_quiz.data.base import DatasetBase, InstanceTableFileFormat, NoInstanceTableError, RelationBase
 from lm_pub_quiz.metrics.base import RelationMetric
 from lm_pub_quiz.util import PathLike, parse_dumped_raw_results
 
@@ -32,7 +32,7 @@ log = logging.getLogger(__name__)
 
 
 class RelationResult(RelationBase):
-    _instance_table_file_name_suffix = "_results.jsonl"
+    _instance_table_file_name_suffix = "_results"
     _metadata_file_name: str = "metadata_results.json"
 
     _default_reductions: ClassVar[Dict[str, Callable[[List[float]], float]]] = {
@@ -48,15 +48,13 @@ class RelationResult(RelationBase):
         metric_values: Optional[Dict[str, Any]] = None,
         instance_table: Optional[pd.DataFrame] = None,
         answer_space: Optional[pd.Series] = None,
-        lazy_load_path: Optional[Path] = None,
-        lazy_include_answers: bool = True,
+        lazy_options: Optional[Dict[str, Any]] = None,
     ):
         super().__init__(
-            relation_code, instance_table=instance_table, answer_space=answer_space, lazy_load_path=lazy_load_path
+            relation_code, instance_table=instance_table, answer_space=answer_space, lazy_options=lazy_options
         )
         self.metadata = metadata
         self.metric_values: Dict[str, Any] = metric_values or {}
-        self._lazy_include_answers = lazy_include_answers
 
     def get_metadata(self) -> Dict[str, Any]:
         return {
@@ -67,7 +65,7 @@ class RelationResult(RelationBase):
 
     @property
     def has_instance_table(self):
-        return self._instance_table is not None or self._lazy_load_path is not None
+        return self._instance_table is not None or self._lazy_options is not None
 
     @property
     def used_template(self):
@@ -81,7 +79,7 @@ class RelationResult(RelationBase):
         relation_code: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
         lazy: bool = True,
-        include_answers: bool = True,
+        fmt: InstanceTableFileFormat = None,
     ) -> "RelationResult":
         """
         Loads the evaluated relation from a JSONL file and associated metadata.
@@ -97,72 +95,80 @@ class RelationResult(RelationBase):
         """
         path_to_load: Path = Path(path)
 
+        # Check if the path exists
         if not path_to_load.exists():
             msg = f"Could not load {cls.__name__} ({relation_code}): Path `{path_to_load}` not found."
             raise FileNotFoundError(msg)
 
-        if relation_code is None:
-            if path_to_load.is_file():
-                relation_code = cls.code_from_path(path_to_load)
-            else:
-                msg = (
-                    f"Could not load {cls.__name__} ({relation_code}): "
-                    f"Path `{path_to_load}` found, but unclear which relation to load."
-                )
-                raise RuntimeError(msg)
-        elif path_to_load.is_dir():
-            path_to_load = cls.path_for_code(path_to_load, relation_code)
+        # If a file is given, we can load straight from the file
+        elif path_to_load.is_file():
+            relation_code = cls.code_from_path(path_to_load)
 
-        try:
-            if metadata is None:
-                metadata_path = path_to_load.parent / "metadata_results.json"
-                if metadata_path.exists():
-                    with open(metadata_path) as meta_file:
+        # Otherwise we need a relation code to search for (may be None)
+        elif relation_code is not None:
+            path_to_load = cls.search_path(path_to_load, relation_code=relation_code, fmt=fmt)
+
+        else:
+            msg = (
+                f"Could not load {cls.__name__}: "
+                f"Path `{path_to_load}` found, but unclear which relation to load (no relation_code passed)."
+            )
+            raise ValueError(msg)
+
+        if metadata is None:
+            metadata_path = path_to_load.parent / "metadata_results.json"
+            if metadata_path.exists():
+                with open(metadata_path) as meta_file:
+                    try:
                         metadata = json.load(meta_file)[relation_code]
-                else:
-                    metadata = {}
+                    except KeyError:
+                        log.error(
+                            "Metadata file exists, but no metadata for given result with relation code %s found.",
+                            relation_code,
+                        )
+                    raise
+            else:
+                metadata = {}
 
-            assert metadata is not None
+        assert metadata is not None
 
-            answer_space = cls.answer_space_from_metadata(metadata, id_prefix=f"{relation_code}-")
+        answer_space = cls.answer_space_from_metadata(metadata, id_prefix=f"{relation_code}-")
 
-            obj = cls(
-                relation_code=relation_code,
-                metric_values=metadata.pop("metric_values", None),
-                metadata=metadata,
-                answer_space=answer_space,
-                lazy_load_path=path_to_load if path_to_load.exists() else None,
-                lazy_include_answers=include_answers,
-            )
+        if lazy and path_to_load is not None:
+            lazy_options = {
+                "path": path_to_load,
+                "fmt": fmt,
+            }
 
-            if not lazy and path_to_load is not None:
-                try:
-                    obj._instance_table = obj.load_instance_table(path_to_load, answer_space=answer_space)
-                except NoInstanceTableError as e:
-                    log.warning(str(e))
+        else:
+            lazy_options = None
 
-            return obj
+        obj = cls(
+            relation_code=relation_code,
+            metric_values=metadata.pop("metric_values", None),
+            metadata=metadata,
+            answer_space=answer_space,
+            lazy_options=lazy_options,
+        )
 
-        except KeyError:
-            log.error(
-                "There is no metadata for given result with relation code %s, even though the metadata file exists.",
-                relation_code,
-            )
-            raise
-        except Exception as e:
-            log.error("Failed to load relation result from file: %s.", path_to_load)
-            log.exception(e)
-            raise
+        if not lazy and path_to_load is not None:
+            try:
+                obj._instance_table = obj.load_instance_table(path_to_load, answer_space=answer_space, fmt=fmt)
+            except NoInstanceTableError as e:
+                log.warning(str(e))
+
+        return obj
 
     def copy(self, **kw):
-        kw = {"metadata": deepcopy(self.metadata), **kw}
+        if "metadata" not in kw:
+            kw["metadata"] = deepcopy(self.metadata)
+
         return super().copy(**kw)
 
     def reduced(
         self,
         reduction: Union[str, Callable] = "sum",
         *,
-        save_path: Optional[PathLike] = None,
         reduction_name: Optional[str] = None,
         pass_indices: bool = False,
     ) -> Self:
@@ -203,17 +209,10 @@ class RelationResult(RelationBase):
         metadata = self.metadata.copy()
         metadata["reduction"] = reduction_name
 
-        rel = self.__class__(
-            relation_code=self.relation_code,
+        return self.copy(
             metadata=metadata,
             instance_table=instance_table,
-            answer_space=self.answer_space,
         )
-
-        if save_path is not None:
-            rel._lazy_load_path = rel.save(save_path)
-
-        return rel
 
     def get_metric(self, metric: str):
         rel = self
@@ -255,7 +254,6 @@ class RelationResult(RelationBase):
         self,
         indices: Sequence[int],
         *,
-        save_path: Optional[PathLike] = None,
         keep_answer_space: bool = False,
         dataset_name: Optional[str] = None,
     ) -> Self:
@@ -294,22 +292,17 @@ class RelationResult(RelationBase):
 
             instance_table["answer_idx"] = instance_table["answer_idx"].map(answer_space_translation)
 
-        rel = self.__class__(
-            relation_code=self.relation_code,
+        return self.copy(
             instance_table=instance_table,
             metadata=metadata,
             answer_space=answer_space,
         )
 
-        if save_path is not None:
-            rel._lazy_load_path = rel.save(save_path)
-            rel._instance_table = None
-
-        return rel
-
     @classmethod
-    def load_instance_table(cls, path: Path, *, answer_space: Optional[pd.Series] = None) -> pd.DataFrame:
-        instance_table = super().load_instance_table(path)
+    def load_instance_table(
+        cls, path: Path, *, answer_space: Optional[pd.Series] = None, fmt: InstanceTableFileFormat = None
+    ) -> pd.DataFrame:
+        instance_table = super().load_instance_table(path, fmt=fmt)
 
         if "answer_idx" not in instance_table:
             # Legacy format -> convert to new
@@ -403,11 +396,11 @@ class RelationResult(RelationBase):
         return instance_table
 
     @classmethod
-    def save_instance_table(cls, instance_table: pd.DataFrame, path: Path):
+    def save_instance_table(cls, instance_table: pd.DataFrame, path: Path, fmt: InstanceTableFileFormat = None):
         instance_table = instance_table.drop(
             columns=["obj_id", "obj_label"], errors="ignore"
         )  # ignore non-existing columns
-        super().save_instance_table(instance_table, path)
+        super().save_instance_table(instance_table, path, fmt=fmt)
 
     @property
     def relation_type(self) -> str:
@@ -429,7 +422,9 @@ class DatasetResults(DatasetBase[RelationResult]):
         self.relation_data.append(result)
 
     @classmethod
-    def from_path(cls, path: PathLike, *, lazy: bool = True, **kwargs) -> "DatasetResults":
+    def from_path(
+        cls, path: PathLike, *, lazy: bool = True, fmt: InstanceTableFileFormat = None, **kwargs
+    ) -> "DatasetResults":
         """
         Loads a results from a specified directory path.
 
@@ -479,6 +474,7 @@ class DatasetResults(DatasetBase[RelationResult]):
                     metadata_path.parent,
                     metadata=relation_metadata,
                     relation_code=relation_code,
+                    fmt=fmt,
                     lazy=lazy,
                 )
             )
@@ -554,35 +550,39 @@ class DatasetResults(DatasetBase[RelationResult]):
         indices: Mapping[str, Sequence[int]],
         *,
         save_path: Optional[PathLike] = None,
+        fmt: Optional[InstanceTableFileFormat] = None,
         keep_answer_space: bool = False,
         dataset_name: Optional[str] = None,
     ):
-        return self.__class__(
-            [
-                self[key].filter_subset(
-                    value, save_path=save_path, keep_answer_space=keep_answer_space, dataset_name=dataset_name
-                )
-                for key, value in indices.items()
-            ]
-        )
+        relations: List[RelationResult] = []
+        for key, value in indices.items():
+            rel = self[key].filter_subset(value, keep_answer_space=keep_answer_space, dataset_name=dataset_name)
+            if save_path is not None:
+                rel = rel.saved(path=save_path, fmt=fmt)
+
+            relations.append(rel)
+
+        return self.__class__(relations)
 
     def reduced(
         self,
         reduction: Union[str, Callable],
         *,
         save_path: Optional[PathLike] = None,
+        fmt: Optional[InstanceTableFileFormat] = None,
         reduction_name: Optional[str] = None,
         pass_indices: bool = False,
     ) -> Self:
 
-        converted_results = [
-            rel.reduced(
-                reduction=reduction, save_path=save_path, reduction_name=reduction_name, pass_indices=pass_indices
-            )
-            for rel in self
-        ]
+        relations: List[RelationResult] = []
 
-        return self.__class__(results=converted_results)
+        for rel in self:
+            new_rel = rel.reduced(reduction=reduction, reduction_name=reduction_name, pass_indices=pass_indices)
+            if save_path is not None:
+                new_rel = rel.saved(save_path, fmt=fmt)
+            relations.append(new_rel)
+
+        return self.__class__(relations)
 
     @overload
     def get_metadata(self, key: None = None) -> Dict[str, Any]: ...

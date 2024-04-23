@@ -31,6 +31,7 @@ from transformers import (
 )
 
 from lm_pub_quiz.data import Dataset, DatasetResults, Relation, RelationResult
+from lm_pub_quiz.data.base import InstanceTableFileFormat
 from lm_pub_quiz.metrics import RelationMetric
 from lm_pub_quiz.metrics.base import MetricSpecification
 from lm_pub_quiz.templating import Templater
@@ -180,6 +181,7 @@ class BaseEvaluator(ABC):
         batch_size: int = 1,
         subsample: Optional[int] = None,
         save_path: Optional[Path] = None,
+        fmt: InstanceTableFileFormat = None,
         reduction: Optional[str] = "default",
         create_instance_table: bool = True,
         metric: Optional[MultiMetricSpecification] = None,
@@ -211,8 +213,7 @@ class BaseEvaluator(ABC):
                 self.update_result_metadata(relation_result, dataset=dataset)
 
                 if save_path is not None:
-                    relation_result._lazy_load_path = relation_result.save(save_path)
-                    relation_result._instance_table = None
+                    relation_result = relation_result.saved(save_path, fmt=fmt)
 
                 dataset_results.append(relation_result)
 

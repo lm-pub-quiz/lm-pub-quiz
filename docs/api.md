@@ -24,23 +24,6 @@ result.save("outputs/my_results")
 ```
 
 
-## Dataset Representation
-
-There are two classes which are used to represent a dataset: `Relation` and `Dataset` (which is essentially a container for a number of relations).
-
-::: lm_pub_quiz.Relation
-    options:
-        show_source: false
-        show_root_heading: True
-        heading_level: 3
-
-::: lm_pub_quiz.Dataset
-    options:
-        show_source: false
-        show_root_heading: True
-        heading_level: 3
-
-
 ## Evaluator
 
 ::: lm_pub_quiz.Evaluator
@@ -62,6 +45,23 @@ There are two classes which are used to represent a dataset: `Relation` and `Dat
         heading_level: 3
 
 
+## Dataset Representation
+
+There are two classes which are used to represent a dataset: `Relation` and `Dataset` (which is essentially a container for a number of relations).
+
+::: lm_pub_quiz.Relation
+    options:
+        show_source: false
+        show_root_heading: True
+        heading_level: 3
+
+::: lm_pub_quiz.Dataset
+    options:
+        show_source: false
+        show_root_heading: True
+        heading_level: 3
+
+
 ## Evaluation Result
 
 Similar to the [dataset representation](#dataset-representation), the results are also represented in two classes `RelationResult` and the container `DatasetResults`.
@@ -73,6 +73,25 @@ Similar to the [dataset representation](#dataset-representation), the results ar
         heading_level: 3
 
 ::: lm_pub_quiz.DatasetResults
+    options:
+        show_source: false
+        show_root_heading: True
+        heading_level: 3
+
+
+## Data Base Clasess
+
+The dataset representations as well as the evaluation results are based on common base classes.
+
+
+
+::: lm_pub_quiz.data.base.RelationBase
+    options:
+        show_source: fals
+        show_root_heading: True
+        heading_level: 3
+
+::: lm_pub_quiz.data.base.DatasetBase
     options:
         show_source: false
         show_root_heading: True

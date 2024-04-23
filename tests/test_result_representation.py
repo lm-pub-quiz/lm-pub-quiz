@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from lm_pub_quiz import DatasetResults, RelationResult
+from lm_pub_quiz.data.base import NoInstanceTableError
 
 log = logging.getLogger(__name__)
 
@@ -284,3 +285,43 @@ def test_result_subset_smaller_answer_space(request, tmp_path, lazy_result):
 
         df = results.get_metrics("accuracy")
         assert df.loc["example_1", "accuracy"] == 1.0
+
+
+def test_result_formats(request, tmp_path):
+    """Test the creation of a subset of the results."""
+
+    original_results = DatasetResults.from_path(
+        request.path.parent / "test_data" / "old_style_results_with_indices", lazy=True
+    )
+
+    original_results.save(tmp_path, fmt="parquet.snappy")
+
+    # Result should be loaded, but loading instance tables should be impossible
+    empty_result = DatasetResults.from_path(tmp_path, lazy=True, fmt="jsonl")
+    assert len(empty_result) == 2
+    with pytest.raises(NoInstanceTableError):
+        _ = empty_result[0].instance_table
+
+    # here, the files should be retrieved
+    result_copy = DatasetResults.from_path(tmp_path, lazy=True)
+
+    for a, b in zip(original_results, result_copy):
+        assert (a.answer_space == b.answer_space).all(), (a.answer_space, b.answer_space)
+
+        assert (
+            a.instance_table[["answer_idx", "obj_id", "sub_label"]]
+            == b.instance_table[["answer_idx", "obj_id", "sub_label"]]
+        ).all(axis=None)
+
+    # here, the files should be retrieved as well
+    result_copy = DatasetResults.from_path(tmp_path, lazy=True, fmt="parquet.snappy")
+
+    for a, b in zip(original_results, result_copy):
+        assert (a.answer_space == b.answer_space).all(), (a.answer_space, b.answer_space)
+
+        assert (
+            a.instance_table[["answer_idx", "obj_id", "sub_label"]]
+            == b.instance_table[["answer_idx", "obj_id", "sub_label"]]
+        ).all(axis=None)
+
+        assert tuple(a.instance_table.loc[0, "tokens"]) == tuple(a.instance_table.loc[0, "tokens"])
