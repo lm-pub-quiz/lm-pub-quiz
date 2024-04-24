@@ -238,6 +238,9 @@ def test_result_subset_smaller_answer_space(request, tmp_path, lazy_result):
 
     subset = results.filter_subset(indices, save_path=tmp_path if lazy_result else None)
 
+    assert tuple(subset[0].instance_table.index.values) == tuple(range(2))
+    assert tuple(subset[1].instance_table.index.values) == tuple(range(4))
+
     r: RelationResult
     for r in subset:
         assert isinstance(r, RelationResult)
