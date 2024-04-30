@@ -153,7 +153,7 @@ class Relation(RelationBase):
         self, indices: Sequence[int], *, save_path: Optional[PathLike], keep_answer_space: bool = False
     ) -> Self:
         original_instance_table = self.instance_table
-        instance_table = original_instance_table.iloc[indices].copy()
+        instance_table = original_instance_table.iloc[indices].copy().reset_index()
 
         if keep_answer_space and self._answer_space is not None:
             answer_space = self._answer_space

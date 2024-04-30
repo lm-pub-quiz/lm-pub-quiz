@@ -73,4 +73,7 @@ def test_dataset_subset_filtering(request):
     assert len(subset[0]) == 2
     assert len(subset[1]) == 4
 
+    assert tuple(subset[0].instance_table.index.values) == tuple(range(2))
+    assert tuple(subset[1].instance_table.index.values) == tuple(range(4))
+
     assert list(subset[1].answer_space) == ["the lion", "the kid", "the caterpillar"]

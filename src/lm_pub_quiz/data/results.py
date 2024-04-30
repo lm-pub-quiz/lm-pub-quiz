@@ -262,7 +262,7 @@ class RelationResult(RelationBase):
         original_instance_table = self.instance_table
         original_answer_space = self.answer_space
 
-        instance_table = original_instance_table.iloc[indices].copy()
+        instance_table = original_instance_table.iloc[indices].copy().reset_index()
 
         metadata = self.metadata.copy()
         if dataset_name is not None:
