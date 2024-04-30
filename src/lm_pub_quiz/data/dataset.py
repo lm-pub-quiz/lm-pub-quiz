@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from typing_extensions import Self
 
-from lm_pub_quiz.data.base import DatasetBase, RelationBase
+from lm_pub_quiz.data.base import DatasetBase, InstanceTableFileFormat, RelationBase
 from lm_pub_quiz.data.util import download_tmp_file, extract_archive_member, natural_sort
 from lm_pub_quiz.util import PathLike, cache_base_path
 
@@ -56,14 +56,14 @@ class Relation(RelationBase):
         templates: List[str],
         answer_space: Optional[pd.Series],
         instance_table: Optional[pd.DataFrame],
-        lazy_load_path: Optional[Path],
+        lazy_options: Optional[Dict[str, Any]],
     ):
-        if instance_table is None and lazy_load_path is None:
-            msg = "Either instance_table of lazy_load_path must be specified"
+        if instance_table is None and lazy_options is None:
+            msg = "Either instance_table of lazy_options must be specified"
             raise ValueError(msg)
 
         super().__init__(
-            relation_code, instance_table=instance_table, answer_space=answer_space, lazy_load_path=lazy_load_path
+            relation_code, instance_table=instance_table, answer_space=answer_space, lazy_options=lazy_options
         )
         self.templates = templates
 
@@ -90,12 +90,19 @@ class Relation(RelationBase):
         return self.instance_table.sample(n=n, random_state=23)
 
     @classmethod
-    def from_path(cls, path: PathLike, *, relation_code: Optional[str] = None, lazy: bool = True) -> "Relation":
+    def from_path(
+        cls,
+        path: PathLike,
+        *,
+        relation_code: Optional[str] = None,
+        lazy: bool = True,
+        fmt: InstanceTableFileFormat = None,
+    ) -> "Relation":
         """
         Loads a relation from a JSONL file and associated metadata.
 
         Parameters:
-            path (str): The path to the dataset directory.
+            path (PathLike): The path to the dataset directory.
             relation_code (str): The specific code of the relation to load.
             lazy (bool): If False, the instance table is loaded directly into memory.
 
@@ -105,15 +112,38 @@ class Relation(RelationBase):
         Raises:
             Exception: If there is an error in loading the file or processing the data.
         """
-        if relation_code is not None:
-            dataset_path = Path(path)
-            relation_path = cls.path_for_code(dataset_path, relation_code)
-        else:
-            relation_path = Path(path)
-            relation_code = cls.code_from_path(relation_path)
+
+        path = Path(path)
+
+        if not path.exists():
+            msg = f"The provided path {path} does not exist."
+            raise FileNotFoundError(msg)
+
+        elif path.is_file():
+            relation_path = path
             dataset_path = relation_path.parent
 
-        log.debug("Loading relation from: %s", relation_path)
+            if relation_code is None:
+                relation_code = cls.code_from_path(relation_path)
+
+        elif relation_code is not None:
+            dataset_path = path
+            relation_path = cls.search_path(dataset_path, relation_code=relation_code, fmt=fmt)
+
+            if relation_path is None:
+                if fmt is None:
+                    fmt_info = ""
+                else:
+                    fmt_info = f" and format {fmt}"
+                msg = f"No file with the relation code {relation_code}{fmt_info} could be found in path {dataset_path}."
+                raise FileNotFoundError(msg)
+
+        else:
+            # directory passed, but no relation code given
+            msg = "A path to a directory was passed but no relation was specified."
+            raise ValueError(msg)
+
+        log.debug("Loading %s (%s) from: %s", cls.__name__, relation_code, relation_path)
 
         with open(dataset_path / "metadata_relations.json") as meta_file:
             metadata = json.load(meta_file)[relation_code]
@@ -129,17 +159,20 @@ class Relation(RelationBase):
 
         if lazy:
             instance_table = None
-            lazy_load_path = relation_path
+            lazy_options = {
+                "path": relation_path,
+                "fmt": fmt,
+            }
         else:
             instance_table = cls.load_instance_table(relation_path, answer_space=answer_space)
-            lazy_load_path = None
+            lazy_options = None
 
         return cls(
             relation_code,
             answer_space=answer_space,
             templates=templates,
             instance_table=instance_table,
-            lazy_load_path=lazy_load_path,
+            lazy_options=lazy_options,
         )
 
     def copy(self, **kw):
@@ -150,7 +183,10 @@ class Relation(RelationBase):
         return super().copy(**kw)
 
     def filter_subset(
-        self, indices: Sequence[int], *, save_path: Optional[PathLike], keep_answer_space: bool = False
+        self,
+        indices: Sequence[int],
+        *,
+        keep_answer_space: bool = False,
     ) -> Self:
         original_instance_table = self.instance_table
         instance_table = original_instance_table.iloc[indices].copy().reset_index()
@@ -168,21 +204,16 @@ class Relation(RelationBase):
 
             instance_table.answer_idx = instance_table["answer_idx"].map(answer_space_translation)
 
-        relation = self.copy(
+        return self.copy(
             answer_space=answer_space,
             instance_table=instance_table,
-            lazy_load_path=self.path_for_code(Path(save_path), self.relation_code) if save_path is not None else None,
         )
 
-        if save_path is not None:
-            relation.save(save_path)
-            relation._instance_table = None
-
-        return relation
-
     @classmethod
-    def load_instance_table(cls, path: Path, *, answer_space: Optional[pd.Series] = None) -> pd.DataFrame:
-        instance_table = super().load_instance_table(path, answer_space=answer_space)
+    def load_instance_table(
+        cls, path: Path, *, answer_space: Optional[pd.Series] = None, fmt: InstanceTableFileFormat = None
+    ) -> pd.DataFrame:
+        instance_table = super().load_instance_table(path, answer_space=answer_space, fmt=fmt)
 
         if "obj_id" in instance_table and "answer_idx" not in instance_table:
             if answer_space is None:
@@ -217,7 +248,9 @@ class Dataset(DatasetBase[Relation]):
             return super().__str__()
 
     @classmethod
-    def from_path(cls, path: PathLike, *, lazy: bool = True, **kwargs) -> "Dataset":
+    def from_path(
+        cls, path: PathLike, *, lazy: bool = True, fmt: InstanceTableFileFormat = None, **kwargs
+    ) -> "Dataset":
         """
         Loads a multiple choice dataset from a specified directory path.
 
@@ -247,7 +280,7 @@ class Dataset(DatasetBase[Relation]):
             msg = f"Dataset at `{dataset_path}` could not be opened: Path does not exist."
             raise RuntimeError(msg)
 
-        relation_files = natural_sort(dataset_path.glob("*.jsonl"))
+        relation_files = natural_sort(Relation.search_path(dataset_path, fmt=fmt))
         relations = [Relation.from_path(p, lazy=lazy) for p in relation_files]
 
         # if no name was passed, default to using the name of the dataset directory
@@ -261,12 +294,12 @@ class Dataset(DatasetBase[Relation]):
     @classmethod
     def from_name(
         cls, name: str, *, lazy: bool = True, base_path: Optional[Path] = None, chunk_size: int = 10 * 1024, **kwargs
-    ):
+    ) -> "Dataset":
         """
         Loads a dataset from the cache (if available) or the url which is specified in the internal dataset table.
 
         Parameters:
-            path (str): The directory path where the dataset is stored.
+            name (str): The name of the dataset.
             lazy (bool): If False, the instance tables of all relations are directly loaded into memory.
 
         Returns:
@@ -332,18 +365,24 @@ class Dataset(DatasetBase[Relation]):
         indices: Mapping[str, Sequence[int]],
         *,
         save_path: Optional[PathLike] = None,
+        fmt: InstanceTableFileFormat = None,
         dataset_name: Optional[str] = None,
         keep_answer_space: bool = False,
     ):
+        relations: List[Relation] = []
+
+        for key, value in indices.items():
+            # filter the relation
+            rel = self[key].filter_subset(value, keep_answer_space=keep_answer_space)
+
+            # if save_path is fiven, save and replace with lazy-loading relation
+            if save_path is not None:
+                rel = rel.saved(path=save_path, fmt=fmt)
+
+            relations.append(rel)
+
         return self.__class__(
-            [
-                self[key].filter_subset(
-                    value,
-                    save_path=save_path,
-                    keep_answer_space=keep_answer_space,
-                )
-                for key, value in indices.items()
-            ],
+            relations,
             name=dataset_name if dataset_name is not None else f"{self.name} (subset)",
             path=save_path if save_path is not None else Path("."),
         )

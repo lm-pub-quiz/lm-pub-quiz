@@ -1,9 +1,27 @@
 import json
 import logging
+import os
+import re
 import warnings
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, Generic, Iterable, Iterator, List, Mapping, Optional, Sequence, TypeVar, Union, cast
+from typing import (
+    Any,
+    Dict,
+    Generic,
+    Iterable,
+    Iterator,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+    overload,
+)
 
 import pandas as pd
 from typing_extensions import Self
@@ -17,12 +35,15 @@ class NoInstanceTableError(Exception):
     pass
 
 
+InstanceTableFileFormat = Optional[Union[str, Tuple[str, ...]]]
+
+
 class DataBase(ABC):
     """Base class for the representation of relations, relations results, and dataset collections."""
 
     @classmethod
     @abstractmethod
-    def from_path(cls, path: PathLike, *, lazy: bool = True):
+    def from_path(cls, path: PathLike, *, lazy: bool = True, fmt: InstanceTableFileFormat = None):
         """Load data from the given path.
 
         If `lazy`, only the metadata is loaded and the instances are loaded once they are accessed.
@@ -30,9 +51,8 @@ class DataBase(ABC):
         pass
 
     @abstractmethod
-    def save(self, path: PathLike):
+    def save(self, path: PathLike, fmt: InstanceTableFileFormat = None) -> Optional[Path]:
         """Save the data under the given path."""
-
         pass
 
     @property
@@ -50,7 +70,8 @@ class DataBase(ABC):
 class RelationBase(DataBase):
     """Base class for the representation of relations and relations results."""
 
-    _instance_table_file_name_suffix: str = ".jsonl"
+    _instance_table_file_name_suffix: str = ""
+    _instance_table_default_format: str = "jsonl"
     _metadata_file_name: str = "metadata_relations.json"
 
     _len: Optional[int] = None
@@ -59,13 +80,13 @@ class RelationBase(DataBase):
         self,
         relation_code: str,
         *,
-        lazy_load_path: Optional[Path] = None,
+        lazy_options: Optional[Dict[str, Any]] = None,
         instance_table: Optional[pd.DataFrame] = None,
         answer_space: Optional[pd.Series] = None,
     ):
 
         self._relation_code = relation_code
-        self._lazy_load_path = lazy_load_path
+        self._lazy_options = lazy_options
         self._instance_table = instance_table
         self._answer_space = answer_space
 
@@ -78,12 +99,26 @@ class RelationBase(DataBase):
 
         kw = {
             "relation_code": self.relation_code,
-            "lazy_load_path": self._lazy_load_path,
+            "lazy_options": self._lazy_options.copy() if self._lazy_options is not None else None,
             "instance_table": self._instance_table.copy() if self._instance_table is not None else None,
             "answer_space": self._answer_space.copy() if self._answer_space is not None else None,
             **kw,
         }
         return self.__class__(kw.pop("relation_code"), **kw)
+
+    def saved(self, path: PathLike, *, fmt: InstanceTableFileFormat = None) -> Self:
+        # Save relation and return the lazy-loading relation
+        saved_path = self.save(path, fmt=fmt)
+
+        if path is not None:
+            lazy_options = {
+                "path": saved_path,
+                "fmt": fmt,
+            }
+        else:
+            lazy_options = None
+
+        return self.copy(instance_table=None, lazy_options=lazy_options)
 
     def activated(self) -> Self:
         """Return self or a copy of self with the instance_table loaded (lazy loading disabled)."""
@@ -175,14 +210,14 @@ class RelationBase(DataBase):
     @property
     def instance_table(self) -> pd.DataFrame:
         if self._instance_table is None:
-            if self._lazy_load_path is None:
+            if self._lazy_options is None:
                 msg = (
                     f"Could not load instance table for {self.__class__.__name__} "
                     f"({self.relation_code}): No path given."
                 )
                 raise NoInstanceTableError(msg)
 
-            instance_table = self.load_instance_table(self._lazy_load_path, answer_space=self._answer_space)
+            instance_table = self.load_instance_table(answer_space=self._answer_space, **self._lazy_options)
 
             if self._answer_space is None:
                 # store answer_space
@@ -207,14 +242,16 @@ class RelationBase(DataBase):
             return len(self.instance_table)
 
     @abstractmethod
-    def filter_subset(
-        self, indices: Sequence[int], *, save_path: Optional[PathLike], keep_answer_space: bool = False
-    ) -> Self:
+    def filter_subset(self, indices: Sequence[int], *, keep_answer_space: bool = False) -> Self:
         pass
 
     @classmethod
     def load_instance_table(
-        cls, path: Path, *, answer_space: Optional[pd.Series] = None  # noqa: ARG003
+        cls,
+        path: Path,
+        *,
+        answer_space: Optional[pd.Series] = None,  # noqa: ARG003
+        fmt: InstanceTableFileFormat = None,
     ) -> pd.DataFrame:
         if not path.exists():
             msg = f"Could not load instance table for {cls.__name__}: Path `{path}` could not be found."
@@ -223,25 +260,66 @@ class RelationBase(DataBase):
             msg = f"Could not load instance table for {cls.__name__}: `{path}` is not a file."
             raise RuntimeError(msg)
 
-        log.debug("Loading instance table from: %s", path)
-        instance_table = pd.read_json(path, lines=True)
+        if fmt is None:
+            fmt = tuple(s[1:] for s in path.suffixes)
+        elif isinstance(fmt, str):
+            fmt = tuple(fmt.split("."))
+
+        log.debug("Loading instance table (format=.%s) from: %s", ".".join(fmt), path)
+
+        if fmt == ("jsonl",):
+            instance_table = pd.read_json(path, lines=True)
+
+        elif fmt[0] == "parquet" and len(fmt) <= 2:  # noqa: PLR2004
+            instance_table = pd.read_parquet(path)
+
+        else:
+            msg = f"Format .{'.'.join(fmt)} not recognized: Could not load instances at {path}."
+            raise ValueError(msg)
 
         return instance_table
 
     @classmethod
-    def save_instance_table(cls, instance_table: pd.DataFrame, path: Path):
-        instance_table.to_json(path, orient="records", lines=True)
+    def save_instance_table(cls, instance_table: pd.DataFrame, path: Path, fmt: InstanceTableFileFormat = None):
+        """Save instance table with the format determined by the path suffix.
+
+        Parameters:
+           instance_table (pd.DataFrame): The instances to save.
+           path (Path): Where to save the instance table. If format is not specified, the suffix is used to determined
+                        the format.
+           fmt (str): Which to save the instances in.
+        """
+        if fmt is None:
+            fmt = tuple(s[1:] for s in path.suffixes)
+        elif isinstance(fmt, str):
+            fmt = tuple(fmt.split("."))
+
+        if fmt == ("jsonl",):
+            instance_table.to_json(path, orient="records", lines=True)
+
+        elif fmt[0] == "parquet" and len(fmt) <= 2:  # noqa: PLR2004
+            compression: Optional[str]
+
+            if len(fmt) == 1:
+                compression = None
+            else:
+                compression = fmt[1]
+
+            instance_table.to_parquet(path, compression=compression)
+        else:
+            msg = f"Format .{'.'.join(fmt)} not recognized: Could not save instances at {path}."
+            raise ValueError(msg)
 
     @property
     def is_lazy(self) -> bool:
-        return self._instance_table is None and self._lazy_load_path is not None
+        return self._instance_table is None and self._lazy_options is not None
 
     @property
     @abstractmethod
     def has_instance_table(self) -> bool:
         pass
 
-    def save(self, save_path: PathLike) -> Optional[Path]:
+    def save(self, save_path: PathLike, fmt: InstanceTableFileFormat = None) -> Optional[Path]:
         """Save results to a file and export meta_data"""
         save_path = Path(save_path)
         save_path.mkdir(parents=True, exist_ok=True)
@@ -264,35 +342,110 @@ class RelationBase(DataBase):
         else:
             all_metadata = {}
 
+        ### Store instance table to .jsonl file ###
+        if self.has_instance_table:
+            instances_path = self.path_for_code(save_path, self.relation_code, fmt=fmt)
+            self.save_instance_table(self.instance_table, instances_path, fmt=fmt)
+            log.debug("Instance table was saved to: %s", instances_path)
+
+        else:
+            instances_path = None
+
         all_metadata[self.relation_code] = self.get_metadata()
 
         with open(metadata_path, "w") as file:
             json.dump(all_metadata, file, indent=4, default=str)
             log.debug("Metadata file was saved to: %s", metadata_path)
 
-        ### Store instance table to .jsonl file ###
-        if self.has_instance_table:
-            instances_path = self.path_for_code(save_path, self.relation_code)
-            self.save_instance_table(self.instance_table, instances_path)
-            log.debug("Instance table was saved to: %s", instances_path)
+        return instances_path
 
-            return instances_path
-
-        return None
+    @staticmethod
+    def true_stem(path: Path) -> str:
+        return path.name.partition(".")[0]
 
     @classmethod
     def code_from_path(cls, path: Path) -> str:
+
         if not path.name.endswith(cls._instance_table_file_name_suffix):
             msg = (
                 f"Incorrect path for {cls.__name__} instance table "
                 f"(expected suffix {cls._instance_table_file_name_suffix}): {path}"
             )
             raise ValueError(msg)
-        return path.name[: -len(cls._instance_table_file_name_suffix)]
+        code = cls.true_stem(path)
+        if len(cls._instance_table_file_name_suffix) > 0:
+            code = code[: -len(cls._instance_table_file_name_suffix)]
+        return code
 
     @classmethod
-    def path_for_code(cls, path: Path, relation_code: str) -> Path:
-        return path / f"{relation_code}{cls._instance_table_file_name_suffix}"
+    def suffix_from_instance_format(cls, fmt: InstanceTableFileFormat = None) -> str:
+        if fmt is None:
+            return cls._instance_table_default_format
+        elif isinstance(fmt, str):
+            return fmt
+        else:
+            return ".".join(fmt)
+
+    @classmethod
+    def path_for_code(cls, path: Path, relation_code: str, *, fmt: InstanceTableFileFormat = None) -> Path:
+        return path / f"{relation_code}{cls._instance_table_file_name_suffix}.{cls.suffix_from_instance_format(fmt)}"
+
+    @overload
+    @classmethod
+    def search_path(cls, path: Path, relation_code: None = None, fmt: InstanceTableFileFormat = None) -> List[Path]: ...
+
+    @overload
+    @classmethod
+    def search_path(cls, path: Path, relation_code: str, fmt: InstanceTableFileFormat = None) -> Path: ...
+
+    @classmethod
+    def search_path(
+        cls, path: Path, relation_code: Optional[str] = None, fmt: InstanceTableFileFormat = None
+    ) -> Union[List[Path], Path, None]:
+        """Search path for instance files."""
+
+        if relation_code is not None and fmt is not None:
+            # Just look for the file
+            p = cls.path_for_code(path, relation_code, fmt=fmt)
+            if p.exists():
+                return p
+            else:
+                return None
+
+        if relation_code is None:
+            code = ".*"
+        else:
+            code = re.escape(relation_code)
+
+        if fmt is None:
+            suffix = ".*"
+        else:
+            suffix = cls.suffix_from_instance_format(fmt)
+
+        pattern = re.compile(f"(?P<relation_code>{code}){cls._instance_table_file_name_suffix}.(?P<suffix>{suffix})")
+
+        matches: Dict[str, List[Path]] = defaultdict(list)
+        for p in map(Path, os.scandir(path)):
+            if p.name == cls._metadata_file_name:
+                continue
+
+            match = re.fullmatch(pattern, p.name)
+
+            if match is not None:
+                matches[match.group("relation_code")].append(p)
+
+        selected_paths = []
+        for code, matching_paths in matches.items():
+            if len(matching_paths) > 1:
+                log.warning("Found multiple files for relation %: %s", code, ", ".join(p.name for p in matching_paths))
+            selected_paths.append(matching_paths[0])
+
+        if relation_code is None:
+            return selected_paths
+        elif len(selected_paths) == 0:
+            return None
+        else:
+            return selected_paths[0]
 
 
 RT = TypeVar("RT", bound=RelationBase)
@@ -347,6 +500,6 @@ class DatasetBase(DataBase, Generic[RT]):
     def is_lazy(self) -> bool:
         return any(rel.is_lazy for rel in self)
 
-    def save(self, path: PathLike) -> None:
+    def save(self, path: PathLike, fmt: InstanceTableFileFormat = None) -> None:
         for result in self:
-            result.save(path)
+            result.save(path, fmt=fmt)
