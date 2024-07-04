@@ -126,7 +126,7 @@ class RelationResult(RelationBase):
                             "Metadata file exists, but no metadata for given result with relation code %s found.",
                             relation_code,
                         )
-                    raise
+                        raise
             else:
                 metadata = {}
 

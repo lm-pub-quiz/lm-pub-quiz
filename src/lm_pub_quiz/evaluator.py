@@ -483,7 +483,7 @@ class Evaluator(BaseEvaluator):
             model_type = cls._infer_type_from_name(model_str)
             log.debug("Inferred type of model `%s`: %s", model_str, model_type)
 
-        evaluator_class: Type["Evaluator"]
+        evaluator_class: Type[Evaluator]
         if model_type == "MLM":
             evaluator_class = MaskedLMEvaluator
         elif model_type == "CLM":

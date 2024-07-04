@@ -11,8 +11,8 @@ log = logging.getLogger(__name__)
 def test_help_texts():
     """Check the help text is ok, and the commands are available."""
     for script in ("evaluate_model", "rank_answers", "score_sentence"):
-        result = subprocess.run(
-            [str(script), "--help"], check=True, capture_output=True  # noqa: S603 (we can trust the script names)
+        result = subprocess.run(  # noqa: S603 (we can trust the script names)
+            [str(script), "--help"], check=True, capture_output=True
         )
         stdout = result.stdout.decode("utf8")
 
