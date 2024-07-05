@@ -481,6 +481,12 @@ class DatasetBase(DataBase, Generic[RT]):
             msg = f"Relation {key} not found in this {self.__class__.__name__}."
             raise KeyError(msg)
 
+    def __contains__(self, key: str) -> bool:
+        for relation in self:
+            if relation.relation_code == key:
+                return True
+        return False
+
     def __iter__(self) -> Iterator[RT]:
         yield from self.relation_data
 

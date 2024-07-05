@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from lm_pub_quiz import Dataset, Relation
 
@@ -23,6 +24,15 @@ def test_loading_dataset(request):
 
     assert len(dataset) == 2
     assert str(dataset) == "Dataset(dummy_dataset: example_1, example_2)"
+
+    assert "example_1" in dataset
+    assert "example_2" in dataset
+    assert "example_3" not in dataset
+
+    assert dataset["example_1"].relation_code == "example_1"
+
+    with pytest.raises(KeyError):
+        _ = dataset["example_3"]
 
 
 def test_lazy_dataset_loading(request):
