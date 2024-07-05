@@ -277,6 +277,9 @@ class RelationBase(DataBase):
             msg = f"Format .{'.'.join(fmt)} not recognized: Could not load instances at {path}."
             raise ValueError(msg)
 
+        if instance_table.index.name is None:
+            instance_table.index.name = "instance"
+
         return instance_table
 
     @classmethod

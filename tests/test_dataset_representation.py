@@ -15,6 +15,8 @@ def test_relation_loading(request):
     assert len(relation.instance_table) == 6
     assert len(relation.subsample(4)) == 4
 
+    assert relation.instance_table.index.name == "instance"
+
 
 def test_loading_dataset(request):
     dataset: Dataset = Dataset.from_path(request.path.parent / "test_data" / "dummy_dataset")
