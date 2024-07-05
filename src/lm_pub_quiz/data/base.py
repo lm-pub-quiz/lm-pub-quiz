@@ -506,3 +506,6 @@ class DatasetBase(DataBase, Generic[RT]):
     def save(self, path: PathLike, fmt: InstanceTableFileFormat = None) -> None:
         for result in self:
             result.save(path, fmt=fmt)
+
+    def joined_instance_table(self) -> pd.DataFrame:
+        return pd.concat({relation.relation_code: relation.instance_table for relation in self}, names=["relation"])
