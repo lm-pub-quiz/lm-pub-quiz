@@ -1,0 +1,52 @@
+{
+    "example_1": {
+        "templates": [
+            "[X] lost [Y]."
+        ],
+        "template_index": 0,
+        "model_name_or_path": "distilbert-base-cased",
+        "num_original_instances": 3,
+        "subsampled": null,
+        "time_start": "2024-03-04 17:28:55",
+        "answer_space_ids": [
+            "zyx",
+            "cba",
+            "uop"
+        ],
+        "answer_space_labels": [
+            "the souvenir",
+            "the football",
+            "the scalpel"
+        ],
+        "metrics": {},
+        "time_end": "2024-03-04 17:28:56",
+        "reduction": "sum",
+        "dataset_path": "tests/test_data/dummy_dataset",
+        "dataset_name": "dummy_dataset"
+    },
+    "example_2": {
+        "templates": [
+            "[Y] eats [X]."
+        ],
+        "template_index": 0,
+        "model_name_or_path": "distilbert-base-cased",
+        "num_original_instances": 6,
+        "subsampled": null,
+        "time_start": "2024-03-04 17:28:56",
+        "answer_space_ids": [
+            "dtz",
+            "irw",
+            "zte"
+        ],
+        "answer_space_labels": [
+            "the lion",
+            "the kid",
+            "the caterpillar"
+        ],
+        "metrics": {},
+        "time_end": "2024-03-04 17:28:57",
+        "reduction": "sum",
+        "dataset_path": "tests/test_data/dummy_dataset",
+        "dataset_name": "dummy_dataset"
+    }
+}
