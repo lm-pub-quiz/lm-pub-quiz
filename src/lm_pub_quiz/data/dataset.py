@@ -57,13 +57,18 @@ class Relation(RelationBase):
         answer_space: Optional[pd.Series],
         instance_table: Optional[pd.DataFrame],
         lazy_options: Optional[Dict[str, Any]],
+        relation_info: Optional[Dict[str, Any]] = None,
     ):
         if instance_table is None and lazy_options is None:
             msg = "Either instance_table of lazy_options must be specified"
             raise ValueError(msg)
 
         super().__init__(
-            relation_code, instance_table=instance_table, answer_space=answer_space, lazy_options=lazy_options
+            relation_code,
+            instance_table=instance_table,
+            answer_space=answer_space,
+            lazy_options=lazy_options,
+            relation_info=relation_info,
         )
         self.templates = templates
 

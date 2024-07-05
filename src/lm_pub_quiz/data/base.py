@@ -83,12 +83,14 @@ class RelationBase(DataBase):
         lazy_options: Optional[Dict[str, Any]] = None,
         instance_table: Optional[pd.DataFrame] = None,
         answer_space: Optional[pd.Series] = None,
+        relation_info: Optional[Dict[str, Any]] = None,
     ):
 
         self._relation_code = relation_code
         self._lazy_options = lazy_options
         self._instance_table = instance_table
         self._answer_space = answer_space
+        self._relation_info = relation_info or {}
 
     @property
     def relation_code(self) -> str:
@@ -102,6 +104,7 @@ class RelationBase(DataBase):
             "lazy_options": self._lazy_options.copy() if self._lazy_options is not None else None,
             "instance_table": self._instance_table.copy() if self._instance_table is not None else None,
             "answer_space": self._answer_space.copy() if self._answer_space is not None else None,
+            "relation_info": self._relation_info.copy(),
             **kw,
         }
         return self.__class__(kw.pop("relation_code"), **kw)
@@ -139,9 +142,41 @@ class RelationBase(DataBase):
             return {
                 "answer_space_labels": self.answer_space.tolist(),
                 "answer_space_ids": self.answer_space.index.tolist(),
+                "relation_info": self._relation_info.copy(),
             }
         else:
             return {}
+
+    @property
+    def _derived_cardinality(self) -> str:
+        if self.instance_table.duplicated("obj_id").any():
+            return "multiple instances per answer"
+        else:
+            return "single instance per answer"
+
+    @overload
+    def relation_info(self, /) -> Dict[str, Any]: ...
+
+    @overload
+    def relation_info(self, key: str, /) -> Any: ...
+
+    @overload
+    def relation_info(self, /, **kw) -> None: ...
+
+    def relation_info(self, key: Optional[str] = None, /, **kw) -> Union[None, Any, Dict[str, Any]]:
+        """Get or set additional relation information."""
+        if key is not None:
+            if key == "cardinality" and "cardinality" not in self._relation_info:
+                return self._derived_cardinality
+            else:
+                return self._relation_info[key]
+        elif len(kw) > 0:
+            self._relation_info.update(kw)
+        else:
+            info = self._relation_info.copy()
+            if "cardinality" not in info:
+                info["cardinality"] = self._derived_cardinality
+            return info
 
     @staticmethod
     def _generate_obj_ids(n: int, *, id_prefix: str = ""):
@@ -515,3 +550,8 @@ class DatasetBase(DataBase, Generic[RT]):
 
     def joined_instance_table(self) -> pd.DataFrame:
         return pd.concat({relation.relation_code: relation.instance_table for relation in self}, names=["relation"])
+
+    def update_relation_info(self, info: Dict[str, Dict[str, Any]]):
+        for rel in self:
+            if rel.relation_code in info:
+                rel.relation_info(**info[rel.relation_code])
