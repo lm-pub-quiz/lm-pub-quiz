@@ -155,13 +155,10 @@ class RelationBase(DataBase):
             return "single instance per answer"
 
     @overload
-    def relation_info(self, /) -> Dict[str, Any]: ...
+    def relation_info(self, /, **kw) -> Dict[str, Any]: ...
 
     @overload
     def relation_info(self, key: str, /) -> Any: ...
-
-    @overload
-    def relation_info(self, /, **kw) -> None: ...
 
     def relation_info(self, key: Optional[str] = None, /, **kw) -> Union[None, Any, Dict[str, Any]]:
         """Get or set additional relation information."""
@@ -172,11 +169,11 @@ class RelationBase(DataBase):
                 return self._relation_info[key]
         elif len(kw) > 0:
             self._relation_info.update(kw)
-        else:
-            info = self._relation_info.copy()
-            if "cardinality" not in info:
-                info["cardinality"] = self._derived_cardinality
-            return info
+
+        info = self._relation_info.copy()
+        if "cardinality" not in info:
+            info["cardinality"] = self._derived_cardinality
+        return info
 
     @staticmethod
     def _generate_obj_ids(n: int, *, id_prefix: str = ""):

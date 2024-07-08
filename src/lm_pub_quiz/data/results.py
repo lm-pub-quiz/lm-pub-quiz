@@ -135,6 +135,10 @@ class RelationResult(RelationBase):
             else:
                 metadata = {}
 
+        if metadata is not None and "num_instances" in metadata:
+            metadata["support"] = metadata["num_instances"]
+            del metadata["num_instances"]
+
         assert metadata is not None
 
         answer_space = cls.answer_space_from_metadata(metadata, id_prefix=f"{relation_code}-")
@@ -250,8 +254,8 @@ class RelationResult(RelationBase):
                 raise RuntimeError(msg) from e
 
     def __len__(self) -> int:
-        if self.is_lazy and "num_instances" in self.metadata:
-            return self.metadata["num_instances"]
+        if self.is_lazy and "support" in self.metadata:
+            return self.metadata["support"]
         else:
             return len(self.instance_table)
 
@@ -499,18 +503,49 @@ class DatasetResults(DatasetBase[RelationResult]):
         metrics: Union[str, Iterable[str]],
         *,
         accumulate: Union[bool, None, str] = False,
+        explode: bool = False,
+        divide_support: bool = False,
     ) -> Union[pd.DataFrame, pd.Series]:
+        """Return the metrics for the relations in this dataset.
+
+        Parameters:
+            accumulate (bool | str  | None):  Compute the metrics for groups of relations (e.g. over the domains) or
+                compute the overall scores for the complete dataset by setting `accumulate=True`.
+            explode (bool): Set to true if relations not only have a single group but multiple.
+            divide_support (bool): Set to true to divide the support (added by a relation to a group) by the number of
+                groups it adds to: This leads to a dataframe where the weightted mean is equal to the overall score.
+
+        Returns:
+            pandas.DataFrame | pandas.Series: A Series or DataFrame with the selected metrics depending on whether all
+                relations where accumulated.
+
+        """
+        if not isinstance(accumulate, str) and explode:
+            msg = "`explode` can only be used if a relation information field is passed to accumulate relation scores."
+            raise ValueError(msg)
+
+        if divide_support and not explode:
+            msg = "`divide_support` can only be applied if `explode` is used."
+            raise ValueError(msg)
+
         if isinstance(metrics, str):
             metrics = [metrics]
 
-        if "num_instances" not in metrics:
-            metrics = [*metrics, "num_instances"]
+        if "support" not in metrics:
+            metrics = [*metrics, "support"]
 
         df = pd.DataFrame({rel.relation_code: self._construct_metrics_dict(metrics, rel) for rel in self}).T
 
         if accumulate:
             if isinstance(accumulate, str):
                 df[accumulate] = pd.Series({rel.relation_code: rel.relation_info(accumulate) for rel in self})
+
+                if explode:
+                    df = df.explode(accumulate)
+
+                    if divide_support:
+                        df["support"] /= df.index.value_counts()
+
                 return df.groupby(accumulate).apply(accumulate_metrics)
             else:
                 return accumulate_metrics(df)
