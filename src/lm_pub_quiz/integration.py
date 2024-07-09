@@ -7,26 +7,24 @@ from lm_pub_quiz.evaluator import Evaluator
 
 class PubQuizCallback(TrainerCallback):
     """This callback handels on the fly BEAR evaluation for the huggingface Trainer class"""
-    def __init__(self, trainer, dataset_path, metrics=["accuracy"], model_type=None, save_path=None, batch_size=32, template=0):
+    def __init__(self, trainer, dataset_path, metrics=("accuracy"), model_type=None, save_path=None, batch_size=32, template=0):
         self.trainer = trainer
         self.model_type = model_type
         self.save_path = save_path
         self.batch_size = batch_size
         self.template = template
         if "accuracy" in metrics and "num_instances" not in metrics:
-            metrics.append("num_instances")
+            metrics = metrics + ("num_instances",)
         self.metrics = metrics
         # include default loading of dataset from url?
         self.dataset = Dataset.from_path(dataset_path)
 
-        self.dataset = self.dataset.filter_subset({'P6': list(range(10)), 'P19': list(range(10))})
-
     def on_evaluate(self, args, state, control, **kwargs):
         evaluator = Evaluator.from_model(
-            kwargs['model'],
+            kwargs["model"],
             model_type=self.model_type,
-            tokenizer=kwargs['tokenizer'],
-            device=kwargs['model'].device,
+            tokenizer=kwargs["tokenizer"],
+            device=kwargs["model"].device,
         )
         result = evaluator.evaluate_dataset(self.dataset, template_index=self.template, batch_size=self.batch_size)
         if self.save_path:
@@ -37,7 +35,7 @@ class PubQuizCallback(TrainerCallback):
 
         # TODO: Include additional metrics
         metrics_data = {
-            'eval_bear_score': weighted_accuracy
+            "eval_bear_score": weighted_accuracy
         }
 
         self.trainer.log(metrics_data)
