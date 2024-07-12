@@ -35,12 +35,12 @@ def test_result_accumulation_with_relation_info(request):
     assert df.loc["b", "support"] == 6.0
 
 
-def test_results_with_multiple_tags(request):
+def test_results_with_multiple_tags_without_dividied_support(request):
     results = DatasetResults.from_path(request.path.parent / "test_data" / "new_style_results_with_mistakes")
 
     results.update_relation_info({"example_1": {"domain": ("a", "b", "c")}, "example_2": {"domain": ("b", "d")}})
 
-    df = results.get_metrics(["accuracy"], accumulate="domain", explode=True)
+    df = results.get_metrics(["accuracy"], accumulate="domain", explode=True, divide_support=False)
 
     assert df.loc["a", "accuracy"] == 1.0
     assert df.loc["a", "support"] == 3
@@ -57,7 +57,7 @@ def test_results_with_multiple_tags_divided_support(request):
 
     results.update_relation_info({"example_1": {"domain": ("a", "b", "c")}, "example_2": {"domain": ("b", "d")}})
 
-    df = results.get_metrics(["accuracy"], accumulate="domain", explode=True, divide_support=True)
+    df = results.get_metrics(["accuracy"], accumulate="domain", explode=True)
 
     assert df.loc["a", "accuracy"] == 1.0
     assert df.loc["a", "support"] == 1.0

@@ -504,7 +504,7 @@ class DatasetResults(DatasetBase[RelationResult]):
         *,
         accumulate: Union[bool, None, str] = False,
         explode: bool = False,
-        divide_support: bool = False,
+        divide_support: bool = True,
     ) -> Union[pd.DataFrame, pd.Series]:
         """Return the metrics for the relations in this dataset.
 
@@ -513,7 +513,8 @@ class DatasetResults(DatasetBase[RelationResult]):
                 compute the overall scores for the complete dataset by setting `accumulate=True`.
             explode (bool): Set to true if relations not only have a single group but multiple.
             divide_support (bool): Set to true to divide the support (added by a relation to a group) by the number of
-                groups it adds to: This leads to a dataframe where the weightted mean is equal to the overall score.
+                groups it adds to (only relevant if there are multiple groups per relation i.e. when `explode` is set).
+                This leads to a dataframe where the weightted mean is equal to the overall score.
 
         Returns:
             pandas.DataFrame | pandas.Series: A Series or DataFrame with the selected metrics depending on whether all
@@ -522,10 +523,6 @@ class DatasetResults(DatasetBase[RelationResult]):
         """
         if not isinstance(accumulate, str) and explode:
             msg = "`explode` can only be used if a relation information field is passed to accumulate relation scores."
-            raise ValueError(msg)
-
-        if divide_support and not explode:
-            msg = "`divide_support` can only be applied if `explode` is used."
             raise ValueError(msg)
 
         if isinstance(metrics, str):
