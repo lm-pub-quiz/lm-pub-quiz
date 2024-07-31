@@ -136,7 +136,6 @@ class BaseEvaluator(ABC):
             desc=f"Relation {relation.relation_code}",
         ):
             row = r.to_dict()
-            row["answer_idx"] = relation.answer_space.index.get_loc(row["obj_id"])
 
             pll_scores = self.evaluate_instance(
                 template=template,
