@@ -1,3 +1,3 @@
-from lm_pub_quiz.integrations.transformers_trainer import LMPubQuizCallback
+from lm_pub_quiz.integrations.transformers_trainer import PubQuizCallback
 
-__all__ = ["LMPubQuizCallback"]
+__all__ = ["PubQuizCallback"]
