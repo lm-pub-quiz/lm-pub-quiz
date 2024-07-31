@@ -423,7 +423,13 @@ class DatasetResults(DatasetBase[RelationResult]):
 
     @classmethod
     def from_path(
-        cls, path: PathLike, *, lazy: bool = True, fmt: InstanceTableFileFormat = None, **kwargs
+        cls,
+        path: PathLike,
+        *,
+        lazy: bool = True,
+        fmt: InstanceTableFileFormat = None,
+        relation_info: Optional[PathLike] = None,
+        **kwargs,
     ) -> "DatasetResults":
         """
         Loads a results from a specified directory path.
@@ -478,6 +484,11 @@ class DatasetResults(DatasetBase[RelationResult]):
                     lazy=lazy,
                 )
             )
+
+        if relation_info is not None:
+            with open(relation_info) as f:
+                obj.update_relation_info(json.load(f))
+
         return obj
 
     def activated(self) -> Self:

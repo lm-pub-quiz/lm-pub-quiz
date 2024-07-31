@@ -67,3 +67,22 @@ def test_results_with_multiple_tags_divided_support(request):
     assert df.loc["c", "support"] == 1
     assert df.loc["d", "accuracy"] == 0.5
     assert df.loc["d", "support"] == 3
+
+
+def test_result_accumulation_with_relation_info_from_path(request):
+    """Test whether the deprecated representation of the results can still be loaded."""
+
+    results = DatasetResults.from_path(
+        request.path.parent / "test_data" / "new_style_results_with_mistakes",
+        relation_info=request.path.parent / "test_data" / "dummy_relation_info.json",
+    )
+    df = results.get_metrics(["accuracy"], accumulate="domain", explode=True)
+
+    assert df.loc["a", "accuracy"] == 1.0
+    assert df.loc["a", "support"] == 1.0
+    assert df.loc["b", "accuracy"] == (1 * 1.0 + 0.5 * 3) / 4
+    assert df.loc["b", "support"] == 4
+    assert df.loc["c", "accuracy"] == 1.0
+    assert df.loc["c", "support"] == 1
+    assert df.loc["d", "accuracy"] == 0.5
+    assert df.loc["d", "support"] == 3
