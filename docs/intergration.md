@@ -6,7 +6,7 @@ Here is an example of how to set up the Trainer Callback needed for integration.
 
 ```python
 # import the PubQuiz Trainer Callback class
-from lm_pub_quiz.integration import PubQuizCallback
+from lm_pub_quiz.integrations.transformers_trainer import PubQuizCallback
 
 # set up the trainer as you usually would
 trainer = Trainer(
@@ -18,13 +18,19 @@ trainer = Trainer(
     data_collator=data_collator,
 )
 
-# specify path to the BEAR dataset
-dataset_path = "/home/seb/BEAR/BEAR"
+# load the BEAR dataset
+bear_dataset = Dataset.from_path("../BEAR")
 
-# set up the Callback instance
+# create evaluator and Trainner callback
+evaluator = Evaluator.from_model(
+    model=model,
+    tokenizer=tokenizer,
+)
 pub_quiz_callback = PubQuizCallback(
     trainer=trainer,
-    dataset_path=dataset_path,
+    evaluator=evaluator,
+    dataset=bear_dataset,
+    save_path="./bear_results",
 )
 
 # add the PubQuiz callback to the Trainer
@@ -38,15 +44,15 @@ Setting up the trainer prior to the callback is needed for the callback to have 
 ## Optional Parameters
 The LM Pub Quiz Callback performs the BEAR probe automatically, whenever the evaluation strategy of the Trainer calls for it. It's behaviour can be further customized with a number of optional parameters:
 
-| Argument     | Description                                                                    |
-|:-------------|:-------------------------------------------------------------------------------|
-| `save_path`  | If other than `None`, full BEAR evaluation results are saved to this directory. |
-| `metrics`    | By default only reports the BEAR accuracy metric.                              |
+| Argument    | Description                                                                     |
+|:------------|:--------------------------------------------------------------------------------|
+| `save_path` | If other than `None`, full BEAR evaluation results are saved to this directory. |
+| `metrics`   | one of [None, "overall", "domains", "cardinality"]                              |
+| `template`  | either specify the template index a pass a list of template indices             |
 
 ## Complete Example
 After the `training_run()` was completed you can view the reported metrics by calling `tensorboard --logdir logs/`. And inspect the full BEAR results saved at `<PATH TO BEAR RESULTS SAVE DIR>`.
 ```python
-import numpy as np
 from datasets import load_dataset
 from transformers import (
     AutoTokenizer,
@@ -55,12 +61,14 @@ from transformers import (
     TrainingArguments,
     DataCollatorForLanguageModeling,
 )
-from lm_pub_quiz.integration import PubQuizCallback
+from lm_pub_quiz.integrations.transformers_trainer import PubQuizCallback
+from lm_pub_quiz.data import Dataset
+from lm_pub_quiz.evaluator import Evaluator
 
 
 def training_run(
         device="cpu",
-        dataset_reduction_factor=0.005,
+        dataset_reduction_factor=0.002,
 ):
     # Load reduced dataset
     dataset = load_dataset("Salesforce/wikitext", "wikitext-2-v1")
@@ -70,8 +78,8 @@ def training_run(
     dataset['validation'] = dataset['validation'].select(select_validation_indices)
 
     # load model and tokenizer
-    model = AutoModelForMaskedLM.from_pretrained("prajjwal1/bert-tiny")
-    tokenizer = AutoTokenizer.from_pretrained("prajjwal1/bert-tiny", truncation=True, max_length=512)
+    model = AutoModelForMaskedLM.from_pretrained("bert-base-uncased")
+    tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased", truncation=True, max_length=512)
 
     # do some minimal data preparation
     def filter_text(example):
@@ -97,17 +105,17 @@ def training_run(
     training_args = TrainingArguments(
         output_dir=model_save_dir,
         run_name="run_01",
-        num_train_epochs=2,
-        per_device_train_batch_size=4,
-        learning_rate=1e-05,
-        lr_scheduler_type='cosine',
+        num_train_epochs=1,
+        per_device_train_batch_size=2,
+        learning_rate=5e-01,
+        lr_scheduler_type='constant',
         eval_steps=5,
-        evaluation_strategy="steps",
+        eval_strategy="steps",
         logging_steps=5,
         logging_dir='logs',
         report_to='tensorboard',
         push_to_hub=False,
-        save_total_limit=1,
+        save_strategy="no",
         include_num_input_tokens_seen=True,
     )
     trainer = Trainer(
@@ -121,10 +129,20 @@ def training_run(
 
     # set up BEAR integration callback
     dataset_path = "<PATH TO BEAR DATASET>"
+    bear_dataset = Dataset.from_path(dataset_path, relation_info="/home/seb/test_lm_pub_quiz/relation_info.json")
+    bear_dataset = bear_dataset.filter_subset({"P6": list(range(5)), "P30": list(range(10)), "P103": list(range(5)), "P175": list(range(10))})
+    evaluator = Evaluator.from_model(
+        model=model,
+        tokenizer=tokenizer,
+        model_type="MLM",
+        device="cpu",
+    )
     pub_quiz_callback = PubQuizCallback(
         trainer=trainer,
-        dataset_path=dataset_path,
-        save_path="<PATH TO BEAR RESULTS SAVE DIR>",
+        evaluator=evaluator,
+        dataset=bear_dataset,
+        save_path="/home/seb/test_lm_pub_quiz/results",
+        metrics="domains",
     )
     trainer.add_callback(pub_quiz_callback)
 
