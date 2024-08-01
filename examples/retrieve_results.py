@@ -1,3 +1,4 @@
+# ruff: noqa: T201
 """
 This script illustrates how to interact with the results object.
 
