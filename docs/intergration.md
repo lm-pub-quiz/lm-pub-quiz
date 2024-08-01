@@ -44,11 +44,12 @@ Setting up the trainer prior to the callback is needed for the callback to have 
 ## Optional Parameters
 The LM Pub Quiz Callback performs the BEAR probe automatically, whenever the evaluation strategy of the Trainer calls for it. It's behaviour can be further customized with a number of optional parameters:
 
-| Argument    | Description                                                                     |
-|:------------|:--------------------------------------------------------------------------------|
-| `save_path` | If other than `None`, full BEAR evaluation results are saved to this directory. |
-| `metrics`   | one of [None, "overall", "domains", "cardinality"]                              |
-| `template`  | either specify the template index a pass a list of template indices             |
+| Argument     | Description                                                                     |
+|:-------------|:--------------------------------------------------------------------------------|
+| `save_path`  | If other than `None`, full BEAR evaluation results are saved to this directory. |
+| `metrics`    | one of [None, "overall", "domains", "cardinality"]                              |
+| `batch_size` | specifies the batch size for the Evaluator                                      |
+| `template`   | either specify the template index a pass a list of template indices             |
 
 ## Complete Example
 After the `training_run()` was completed you can view the reported metrics by calling `tensorboard --logdir logs/`. And inspect the full BEAR results saved at `<PATH TO BEAR RESULTS SAVE DIR>`.
