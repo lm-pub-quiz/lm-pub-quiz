@@ -4,7 +4,6 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from itertools import islice
-from pathlib import Path
 from typing import (
     Callable,
     Dict,
@@ -35,7 +34,7 @@ from lm_pub_quiz.data.base import InstanceTableFileFormat
 from lm_pub_quiz.metrics import RelationMetric
 from lm_pub_quiz.metrics.base import MetricSpecification
 from lm_pub_quiz.templating import Templater
-from lm_pub_quiz.util import EachTokenReturnFormat, ReducedReturnFormat, parse_dumped_raw_results
+from lm_pub_quiz.util import EachTokenReturnFormat, PathLike, ReducedReturnFormat, parse_dumped_raw_results
 
 tqdm.pandas()
 
@@ -179,7 +178,7 @@ class BaseEvaluator(ABC):
         *,
         batch_size: int = 1,
         subsample: Optional[int] = None,
-        save_path: Optional[Path] = None,
+        save_path: Optional[PathLike] = None,
         fmt: InstanceTableFileFormat = None,
         reduction: Optional[str] = "default",
         create_instance_table: bool = True,

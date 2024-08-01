@@ -514,7 +514,6 @@ class DatasetResults(DatasetBase[RelationResult]):
         metrics: Union[str, Iterable[str]],
         *,
         accumulate: Union[bool, None, str] = False,
-        explode: bool = False,
         divide_support: bool = True,
     ) -> Union[pd.DataFrame, pd.Series]:
         """Return the metrics for the relations in this dataset.
@@ -522,7 +521,6 @@ class DatasetResults(DatasetBase[RelationResult]):
         Parameters:
             accumulate (bool | str  | None):  Compute the metrics for groups of relations (e.g. over the domains) or
                 compute the overall scores for the complete dataset by setting `accumulate=True`.
-            explode (bool): Set to true if relations not only have a single group but multiple.
             divide_support (bool): Set to true to divide the support (added by a relation to a group) by the number of
                 groups it adds to (only relevant if there are multiple groups per relation i.e. when `explode` is set).
                 This leads to a dataframe where the weightted mean is equal to the overall score.
@@ -532,10 +530,6 @@ class DatasetResults(DatasetBase[RelationResult]):
                 relations where accumulated.
 
         """
-        if not isinstance(accumulate, str) and explode:
-            msg = "`explode` can only be used if a relation information field is passed to accumulate relation scores."
-            raise ValueError(msg)
-
         if isinstance(metrics, str):
             metrics = [metrics]
 
@@ -548,11 +542,10 @@ class DatasetResults(DatasetBase[RelationResult]):
             if isinstance(accumulate, str):
                 df[accumulate] = pd.Series({rel.relation_code: rel.relation_info(accumulate) for rel in self})
 
-                if explode:
-                    df = df.explode(accumulate)
+                df = df.explode(accumulate)
 
-                    if divide_support:
-                        df["support"] /= df.index.value_counts()
+                if divide_support:
+                    df["support"] /= df.index.value_counts()[df.index]
 
                 return df.groupby(accumulate).apply(accumulate_metrics)
             else:
@@ -594,7 +587,7 @@ class DatasetResults(DatasetBase[RelationResult]):
         for rel in self:
             new_rel = rel.reduced(reduction=reduction, reduction_name=reduction_name, pass_indices=pass_indices)
             if save_path is not None:
-                new_rel = rel.saved(save_path, fmt=fmt)
+                new_rel = new_rel.saved(save_path, fmt=fmt)
             relations.append(new_rel)
 
         return self.__class__(relations)
