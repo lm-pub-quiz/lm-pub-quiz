@@ -594,7 +594,7 @@ class DatasetResults(DatasetBase[RelationResult]):
         for rel in self:
             new_rel = rel.reduced(reduction=reduction, reduction_name=reduction_name, pass_indices=pass_indices)
             if save_path is not None:
-                new_rel = rel.saved(save_path, fmt=fmt)
+                new_rel = new_rel.saved(save_path, fmt=fmt)
             relations.append(new_rel)
 
         return self.__class__(relations)
