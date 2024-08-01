@@ -1,0 +1,150 @@
+{"instance":0,"sub_id":"Q3640302","sub_label":"pequin pepper","answer_idx":0,"pll_scores":[-57.295944214,-59.4152145387,-63.6997413637,-56.3873558045,-61.5739173891]}
+{"instance":1,"sub_id":"Q3316956","sub_label":"Rosa 'Mister Lincoln'","answer_idx":0,"pll_scores":[-80.4098663333,-81.1740264895,-84.5462303164,-79.5319862368,-81.7002449039]}
+{"instance":3,"sub_id":"Q7177934","sub_label":"Peter pepper","answer_idx":0,"pll_scores":[-50.5103855133,-48.5772762299,-55.1708621979,-48.1600551606,-52.2216892243]}
+{"instance":4,"sub_id":"Q1511362","sub_label":"Marasca cherry","answer_idx":0,"pll_scores":[-58.220111847,-63.1487007142,-66.5683212282,-58.0275268556,-62.6064834596]}
+{"instance":7,"sub_id":"Q489494","sub_label":"Rosa 'La France'","answer_idx":0,"pll_scores":[-74.9244918823,-74.6234245299,-79.5332336426,-73.20552063,-75.9388771057]}
+{"instance":10,"sub_id":"Q7366991","sub_label":"Rosa 'Angel Face'","answer_idx":0,"pll_scores":[-78.7676315307,-81.8013877868,-83.5278244017,-77.3165664672,-78.8522338866]}
+{"instance":11,"sub_id":"Q7284917","sub_label":"Rainier cherry","answer_idx":0,"pll_scores":[-58.0873775482,-62.9426593781,-65.259935379,-57.6080722809,-60.7448825836]}
+{"instance":23,"sub_id":"Q7366995","sub_label":"Rosa 'Chrysler Imperial'","answer_idx":0,"pll_scores":[-86.4192676543,-88.7505893707,-89.3869876861,-84.4535999297,-86.2749729157]}
+{"instance":26,"sub_id":"Q8060120","sub_label":"Yubari King","answer_idx":0,"pll_scores":[-67.2224674225,-67.3923969269,-69.9163837432,-64.5420322417,-65.7718982696]}
+{"instance":28,"sub_id":"Q2304833","sub_label":"Rosa 'Souvenir de la Malmaison'","answer_idx":0,"pll_scores":[-91.0362873075,-92.1358432768,-96.5599765775,-90.0409564971,-94.0354175567]}
+{"instance":30,"sub_id":"Q10879444","sub_label":"Prunus 'Kanzan'","answer_idx":0,"pll_scores":[-78.7656898499,-79.0899696351,-83.4249229431,-76.5602912903,-79.8244743348]}
+{"instance":31,"sub_id":"Q1956810","sub_label":"Rosa 'Queen Elizabeth'","answer_idx":0,"pll_scores":[-76.1038970948,-77.0801200867,-78.8914680481,-74.468372345,-76.2486457826]}
+{"instance":33,"sub_id":"Q1947082","sub_label":"Rosa 'G\u00e9n\u00e9ral Jacqueminot'","answer_idx":0,"pll_scores":[-102.1850910185,-104.2842693327,-107.7059307098,-100.9727535248,-104.900068283]}
+{"instance":36,"sub_id":"Q2663618","sub_label":"Alphonso","answer_idx":0,"pll_scores":[-51.1332035066,-51.2379322053,-56.1361255648,-49.4042110444,-52.2626819612]}
+{"instance":38,"sub_id":"Q5098689","sub_label":"Chile de \u00e1rbol","answer_idx":0,"pll_scores":[-69.187713623,-71.5230560304,-74.3750457764,-67.5161285401,-71.9413871765]}
+{"instance":40,"sub_id":"Q3308774","sub_label":"Rosa 'Harison's Yellow'","answer_idx":0,"pll_scores":[-88.6082515716,-91.3554553986,-93.6271152496,-86.8385066986,-90.4194393158]}
+{"instance":41,"sub_id":"Q727215","sub_label":"Vitelotte","answer_idx":0,"pll_scores":[-65.4968070984,-62.5145950318,-66.9213142394,-62.7333335876,-64.4078445436]}
+{"instance":46,"sub_id":"Q3246629","sub_label":"Valencia orange","answer_idx":0,"pll_scores":[-62.4899635316,-65.7633018495,-70.3652496338,-63.2471160889,-66.0297050477]}
+{"instance":49,"sub_id":"Q16860990","sub_label":"Datil pepper","answer_idx":0,"pll_scores":[-54.8872833252,-56.6065788268,-61.5128746032,-53.8457298278,-59.3644523621]}
+{"instance":53,"sub_id":"Q6958285","sub_label":"Naga Morich","answer_idx":0,"pll_scores":[-66.8816928863,-67.6749591828,-72.1852474213,-65.2093486785,-69.1582088471]}
+{"instance":59,"sub_id":"Q5503208","sub_label":"Fresno pepper","answer_idx":0,"pll_scores":[-55.7369880677,-58.2381782533,-61.4332313538,-54.5329322817,-59.4091377259]}
+{"instance":60,"sub_id":"Q7879447","sub_label":"Ulmus glabra 'Camperdownii'","answer_idx":0,"pll_scores":[-93.3381366729,-96.8690128326,-98.789773941,-93.2883472442,-97.3475818634]}
+{"instance":61,"sub_id":"Q432426","sub_label":"bird's eye chili","answer_idx":0,"pll_scores":[-59.910987854,-63.782119751,-67.2922363282,-58.9777946473,-63.6696166992]}
+{"instance":63,"sub_id":"Q6468137","sub_label":"Lacatan banana","answer_idx":0,"pll_scores":[-61.4579162599,-65.4262428286,-69.8304595949,-61.3530464174,-67.8656578065]}
+{"instance":67,"sub_id":"Q1710951","sub_label":"D\u00e9sir\u00e9e potato","answer_idx":0,"pll_scores":[-61.4853496552,-64.4356212617,-69.0625896453,-61.4201412202,-66.6745586396]}
+{"instance":69,"sub_id":"Q1616531","sub_label":"Lady Finger banana","answer_idx":0,"pll_scores":[-61.2717590332,-64.0939598083,-69.9619293212,-61.6356811523,-65.5805549622]}
+{"instance":70,"sub_id":"Q4762348","sub_label":"Angel wing begonia","answer_idx":0,"pll_scores":[-62.9193153382,-63.8919715882,-66.3545913698,-60.7268905641,-64.1392745972]}
+{"instance":71,"sub_id":"Q4048485","sub_label":"Rosa 'Knock Out'","answer_idx":0,"pll_scores":[-74.9417419433,-75.7093086242,-78.7693023681,-73.4238510131,-75.7807884216]}
+{"instance":73,"sub_id":"Q101418717","sub_label":"Matoke","answer_idx":0,"pll_scores":[-49.6907424925,-47.2787322998,-52.9790039063,-48.3800888061,-50.5761756896]}
+{"instance":74,"sub_id":"Q14539728","sub_label":"Dwarf Cavendish banana","answer_idx":0,"pll_scores":[-71.0981121064,-75.9879512788,-80.8652133942,-72.0162601471,-77.478345871]}
+{"instance":154,"sub_id":"Q92194946","sub_label":"Nucleocytoviricota","answer_idx":1,"pll_scores":[-89.5601940154,-91.5431194303,-92.8749904632,-88.1591701506,-91.7113475799]}
+{"instance":158,"sub_id":"Q3376321","sub_label":"Petalonamae","answer_idx":1,"pll_scores":[-67.6645069122,-63.5886783599,-71.8589801788,-65.1020298002,-68.1943149566]}
+{"instance":160,"sub_id":"Q130999","sub_label":"Proteobacteria","answer_idx":1,"pll_scores":[-49.6789741516,-48.851940155,-52.8090934753,-48.0320549011,-50.5107688903]}
+{"instance":161,"sub_id":"Q473809","sub_label":"Amoebozoa","answer_idx":1,"pll_scores":[-61.3536224364,-62.1457901,-66.7588539123,-61.1972618102,-63.4513320922]}
+{"instance":168,"sub_id":"Q2334797","sub_label":"Trilobozoa","answer_idx":1,"pll_scores":[-58.7546367644,-61.2525959014,-64.2001018524,-58.9645595549,-61.4762554169]}
+{"instance":170,"sub_id":"Q107027","sub_label":"Foraminifera","answer_idx":1,"pll_scores":[-47.0561332703,-48.4387855531,-51.0700149537,-45.9497756959,-48.7107887268]}
+{"instance":171,"sub_id":"Q10915","sub_label":"Chordata","answer_idx":1,"pll_scores":[-49.0886402131,-49.6710300447,-53.5529537201,-47.1503391267,-50.0822696686]}
+{"instance":172,"sub_id":"Q149075","sub_label":"Firmicutes","answer_idx":1,"pll_scores":[-57.1692314148,-53.054283142,-58.6760292053,-54.0673904418,-57.3318328857]}
+{"instance":175,"sub_id":"Q133219","sub_label":"Charophyta","answer_idx":1,"pll_scores":[-49.4737968444,-52.1346015929,-54.5261039733,-48.7276725768,-52.0028419494]}
+{"instance":181,"sub_id":"Q851406","sub_label":"Aschelminth","answer_idx":1,"pll_scores":[-67.5206794739,-69.3318290711,-72.7919807435,-66.9163856507,-70.1541595459]}
+{"instance":182,"sub_id":"Q192416","sub_label":"Chaetognatha","answer_idx":1,"pll_scores":[-62.3783683777,-65.1012916565,-66.8181190491,-61.0348472596,-65.1772804259]}
+{"instance":183,"sub_id":"Q502012","sub_label":"Cycliophora","answer_idx":1,"pll_scores":[-65.3517417908,-68.7052536012,-70.4651031496,-65.1423873902,-68.9186706543]}
+{"instance":184,"sub_id":"Q875679","sub_label":"Chlamydiae","answer_idx":1,"pll_scores":[-57.2160682677,-57.5082626342,-57.519947052,-54.6153907775,-56.6891288756]}
+{"instance":186,"sub_id":"Q459276","sub_label":"Gnathostomulida","answer_idx":1,"pll_scores":[-79.0019607544,-80.6528663635,-82.3712615967,-77.7330780029,-80.5184745788]}
+{"instance":187,"sub_id":"Q124900","sub_label":"Platyhelminthes","answer_idx":1,"pll_scores":[-68.6870880129,-70.8961677553,-75.682033539,-65.6676597597,-72.4331245425]}
+{"instance":189,"sub_id":"Q3570860","sub_label":"Xenacoelomorpha","answer_idx":1,"pll_scores":[-74.0200214385,-77.5550251005,-78.4078311918,-73.9283161162,-76.6406345366]}
+{"instance":191,"sub_id":"Q132652","sub_label":"Microsporidia","answer_idx":1,"pll_scores":[-47.801261902,-47.7721748352,-50.9270515442,-47.5070915223,-49.6694221496]}
+{"instance":197,"sub_id":"Q92194673","sub_label":"Kitrinoviricota","answer_idx":1,"pll_scores":[-83.05418396,-84.4638748168,-87.4023132324,-82.8037414551,-84.9162063599]}
+{"instance":198,"sub_id":"Q20721206","sub_label":"Melainabacteria","answer_idx":1,"pll_scores":[-60.504589081,-60.5421371461,-64.1995620729,-58.4772338868,-61.1816177369]}
+{"instance":199,"sub_id":"Q131032","sub_label":"Orthonectida","answer_idx":1,"pll_scores":[-67.2955322264,-67.5925216673,-69.351459503,-65.3204307555,-66.597328186]}
+{"instance":203,"sub_id":"Q500531","sub_label":"Haptophyta","answer_idx":1,"pll_scores":[-55.1931800843,-56.7407989502,-58.8416442872,-56.8278198243,-57.3950195314]}
+{"instance":204,"sub_id":"Q185631","sub_label":"Nemertea","answer_idx":1,"pll_scores":[-64.3032512664,-62.8597621917,-68.2420635221,-62.0532512663,-65.1469249724]}
+{"instance":207,"sub_id":"Q180148","sub_label":"Rotifera","answer_idx":1,"pll_scores":[-46.8592166902,-49.1340122223,-51.6333866119,-45.7594318391,-49.6308155061]}
+{"instance":212,"sub_id":"Q22094454","sub_label":"Percolozoa","answer_idx":1,"pll_scores":[-65.8910598756,-69.4732513428,-71.6355667115,-67.894481659,-69.9329795837]}
+{"instance":213,"sub_id":"Q15283231","sub_label":"Loukozoa","answer_idx":1,"pll_scores":[-66.3607940673,-64.5130386352,-69.0898284911,-62.5589981077,-64.9688301085]}
+{"instance":215,"sub_id":"Q5183","sub_label":"Loricifera","answer_idx":1,"pll_scores":[-53.9594116212,-55.7413635256,-57.5382232667,-52.8925704957,-54.9930877687]}
+{"instance":218,"sub_id":"Q5365047","sub_label":"Pseudofungi","answer_idx":1,"pll_scores":[-64.8549308776,-64.4260101317,-68.6537818908,-62.9335441588,-65.6970596313]}
+{"instance":219,"sub_id":"Q190115","sub_label":"Gastrotricha","answer_idx":1,"pll_scores":[-61.6129646302,-63.2595901489,-66.0864677429,-60.4367103576,-63.724105835]}
+{"instance":221,"sub_id":"Q3508193","sub_label":"Syndermata","answer_idx":1,"pll_scores":[-62.714931488,-65.8902969359,-68.1562576294,-62.7278518676,-64.8290939332]}
+{"instance":222,"sub_id":"Q1200941","sub_label":"Fibrobacteres","answer_idx":1,"pll_scores":[-76.5954132081,-79.2615127564,-82.0700912476,-76.4663543702,-80.4859161378]}
+{"instance":225,"sub_id":"Q2474088","sub_label":"Caninae","answer_idx":2,"pll_scores":[-52.9907302856,-51.3051605224,-56.0796127319,-49.9833641051,-52.792930603]}
+{"instance":226,"sub_id":"Q615263","sub_label":"Alcelaphinae","answer_idx":2,"pll_scores":[-71.2405166627,-72.9809417724,-75.5882797241,-69.105583191,-73.5006408692]}
+{"instance":227,"sub_id":"Q5559352","sub_label":"Groupers","answer_idx":2,"pll_scores":[-47.9053993225,-46.0125236512,-48.5788726806,-46.5132141114,-48.045879364]}
+{"instance":228,"sub_id":"Q273997","sub_label":"duiker","answer_idx":2,"pll_scores":[-49.5938606263,-44.8781776429,-52.7738380433,-46.8197555543,-49.4161949158]}
+{"instance":231,"sub_id":"Q7901176","sub_label":"Ursinae","answer_idx":2,"pll_scores":[-60.0102062226,-57.5448818207,-62.5388126375,-57.3039340974,-60.4739284516]}
+{"instance":233,"sub_id":"Q132226","sub_label":"Cypripedioideae","answer_idx":2,"pll_scores":[-77.0190315248,-77.6350669862,-81.531452179,-76.1586189271,-79.815738678]}
+{"instance":235,"sub_id":"Q904159","sub_label":"Hawaiian honeycreeper","answer_idx":2,"pll_scores":[-61.0800247193,-66.8143577575,-68.2019805909,-61.2327308655,-66.0433769226]}
+{"instance":237,"sub_id":"Q193833","sub_label":"ibis","answer_idx":2,"pll_scores":[-51.0955505371,-49.6491851807,-53.8117713928,-49.4033241272,-51.4367332459]}
+{"instance":240,"sub_id":"Q316856","sub_label":"Faboideae","answer_idx":2,"pll_scores":[-61.0691833495,-61.265296936,-65.7045936584,-59.7120246886,-63.1160888672]}
+{"instance":246,"sub_id":"Q57751738","sub_label":"Coronavirus","answer_idx":2,"pll_scores":[-46.8187656403,-47.9765033722,-50.4035129547,-44.3972797394,-47.0641002654]}
+{"instance":247,"sub_id":"Q2729984","sub_label":"Borophaginae","answer_idx":2,"pll_scores":[-62.1762046813,-63.7765274048,-65.0379257201,-61.4556045532,-64.5964202881]}
+{"instance":250,"sub_id":"Q2535664","sub_label":"crocodile","answer_idx":2,"pll_scores":[-46.9101543426,-48.1850566863,-49.8338985442,-44.3836841582,-48.6790676116]}
+{"instance":263,"sub_id":"Q196140","sub_label":"Cicindelinae","answer_idx":2,"pll_scores":[-67.9732990266,-68.2007694245,-71.5592937469,-66.2896823883,-69.6359272003]}
+{"instance":266,"sub_id":"Q149335","sub_label":"Sequoioideae","answer_idx":2,"pll_scores":[-62.8538513185,-63.9547500611,-66.5016021728,-64.1791763306,-64.5912399292]}
+{"instance":270,"sub_id":"Q3428868","sub_label":"loris","answer_idx":2,"pll_scores":[-51.9886951448,-48.8321132661,-54.8400440217,-48.7760868074,-51.4581890107]}
+{"instance":271,"sub_id":"Q27725","sub_label":"Anatinae","answer_idx":2,"pll_scores":[-60.4963150026,-58.7277565004,-63.46831131,-57.3423881533,-60.539279938]}
+{"instance":275,"sub_id":"Q42602","sub_label":"Felinae","answer_idx":2,"pll_scores":[-54.8974418641,-52.519809723,-57.6726341249,-52.2766036989,-54.9310264588]}
+{"instance":276,"sub_id":"Q2220578","sub_label":"Erycinae","answer_idx":2,"pll_scores":[-62.4927177431,-62.8892211916,-66.313964844,-60.9258155824,-64.2856178286]}
+{"instance":277,"sub_id":"Q1756486","sub_label":"Eumeninae","answer_idx":2,"pll_scores":[-64.9923057557,-64.635585785,-68.1570663453,-62.2515182495,-65.9263114931]}
+{"instance":278,"sub_id":"Q675781","sub_label":"pipefish","answer_idx":2,"pll_scores":[-53.0570163727,-55.0193080902,-58.8622188569,-49.767370224,-57.6667385101]}
+{"instance":280,"sub_id":"Q289448","sub_label":"lapwing","answer_idx":2,"pll_scores":[-55.999364853,-56.8921489717,-61.0454616548,-55.2985477448,-58.0316524506]}
+{"instance":282,"sub_id":"Q230177","sub_label":"Pantherinae","answer_idx":2,"pll_scores":[-56.3842926025,-56.5727539063,-60.4729919433,-54.9313354493,-58.1926765442]}
+{"instance":283,"sub_id":"Q840750","sub_label":"Arvicolinae","answer_idx":2,"pll_scores":[-70.776977539,-73.1240539552,-76.0347709656,-69.6233634948,-73.1863174439]}
+{"instance":284,"sub_id":"Q337197","sub_label":"Tremarctinae","answer_idx":2,"pll_scores":[-72.7017860411,-74.0005073546,-77.0660171507,-71.3753166197,-75.0625610351]}
+{"instance":285,"sub_id":"Q460286","sub_label":"Hydrophiinae","answer_idx":2,"pll_scores":[-62.7442951203,-63.1233844758,-64.9398479463,-61.0564861299,-64.3224773409]}
+{"instance":286,"sub_id":"Q122431","sub_label":"Cervinae","answer_idx":2,"pll_scores":[-62.6970539094,-62.7403736116,-65.6784725191,-60.4265499116,-63.7802524568]}
+{"instance":289,"sub_id":"Q242047","sub_label":"Homininae","answer_idx":2,"pll_scores":[-59.1106986997,-59.086994171,-62.5067634581,-56.4927864073,-59.8401260374]}
+{"instance":290,"sub_id":"Q1043473","sub_label":"Fur seal","answer_idx":2,"pll_scores":[-57.6213264465,-54.4846916199,-60.5606040954,-55.3802146911,-58.3182411193]}
+{"instance":292,"sub_id":"Q1095105","sub_label":"Paradoxurinae","answer_idx":2,"pll_scores":[-69.0561447144,-69.2965660096,-72.4675064087,-67.114593506,-70.7407875062]}
+{"instance":297,"sub_id":"Q3325926","sub_label":"Circinae","answer_idx":2,"pll_scores":[-53.6780166625,-52.9737243652,-56.5998535156,-50.9507179261,-53.6486511231]}
+{"instance":378,"sub_id":"Q200848","sub_label":"South-Chinese tiger","answer_idx":3,"pll_scores":[-52.0537204741,-53.0387172697,-56.5341091154,-46.5407085417,-55.210287094]}
+{"instance":379,"sub_id":"Q2336049","sub_label":"wood bison","answer_idx":3,"pll_scores":[-47.6067962646,-51.3088302611,-53.2570266723,-42.8965301513,-51.9725723267]}
+{"instance":384,"sub_id":"Q69581","sub_label":"Siberian tiger","answer_idx":3,"pll_scores":[-56.6401672363,-58.7924423217,-60.9284286499,-51.6359672547,-59.5984725951]}
+{"instance":385,"sub_id":"Q787","sub_label":"pig","answer_idx":3,"pll_scores":[-47.3625373841,-46.7073745728,-50.9323348999,-44.9890708924,-47.8269577027]}
+{"instance":387,"sub_id":"Q27358","sub_label":"head louse","answer_idx":3,"pll_scores":[-52.7052936553,-51.4558277131,-55.4422206878,-50.3906917572,-53.6246585845]}
+{"instance":388,"sub_id":"Q237260","sub_label":"Ursus arctos middendorffi","answer_idx":3,"pll_scores":[-86.9246215818,-88.8082656858,-92.2220916746,-86.9607086179,-90.6853942869]}
+{"instance":389,"sub_id":"Q221247","sub_label":"Cape lion","answer_idx":3,"pll_scores":[-58.4696674346,-60.8055171965,-61.8637180327,-54.3387660979,-60.8177318572]}
+{"instance":395,"sub_id":"Q200381","sub_label":"Javan tiger","answer_idx":3,"pll_scores":[-58.5718193055,-60.5955810547,-63.3347587585,-54.4789924621,-61.7701950073]}
+{"instance":397,"sub_id":"Q729553","sub_label":"Indian leopard","answer_idx":3,"pll_scores":[-44.4575710296,-46.788236618,-48.816007614,-39.929830551,-47.0791149139]}
+{"instance":399,"sub_id":"Q191129","sub_label":"Sumatran tiger","answer_idx":3,"pll_scores":[-55.6412849425,-57.6877212523,-58.6120605467,-50.5368499754,-57.630203247]}
+{"instance":400,"sub_id":"Q39153","sub_label":"African leopard","answer_idx":3,"pll_scores":[-43.6632347108,-46.1730422973,-46.0268859864,-39.4326324463,-45.9583358764]}
+{"instance":402,"sub_id":"Q3116028","sub_label":"Mackenzie Valley wolf","answer_idx":3,"pll_scores":[-67.621459961,-71.3000297547,-71.9245681762,-64.5453453063,-71.0033836365]}
+{"instance":411,"sub_id":"Q1095355","sub_label":"sea trout","answer_idx":3,"pll_scores":[-46.2761249541,-48.7815341949,-49.773820877,-40.0274066925,-48.8999576568]}
+{"instance":412,"sub_id":"Q182347","sub_label":"Asiatic lion","answer_idx":3,"pll_scores":[-55.6073246001,-57.4616947173,-59.2624645232,-52.6443386076,-57.7651996611]}
+{"instance":414,"sub_id":"Q45931","sub_label":"Peking Man","answer_idx":3,"pll_scores":[-57.0427570343,-55.2692737578,-61.4788875578,-55.9089260101,-57.7075710295]}
+{"instance":416,"sub_id":"Q375750","sub_label":"Honsh\u016b wolf","answer_idx":3,"pll_scores":[-67.4194488526,-69.9969635011,-71.5552444457,-64.4640274048,-69.6263656617]}
+{"instance":417,"sub_id":"Q695431","sub_label":"Atlas bear","answer_idx":3,"pll_scores":[-61.5271072387,-63.0744094849,-65.2706909179,-57.9153137206,-62.8147659302]}
+{"instance":418,"sub_id":"Q192993","sub_label":"Java Man","answer_idx":3,"pll_scores":[-51.3863010405,-56.8599872587,-55.5994663236,-54.7160434721,-51.333498001]}
+{"instance":420,"sub_id":"Q149741","sub_label":"mirabelle plum","answer_idx":3,"pll_scores":[-59.8697280886,-63.7299652101,-65.9981842042,-59.3149909975,-62.9548606874]}
+{"instance":421,"sub_id":"Q204179","sub_label":"Columba livia domestica","answer_idx":3,"pll_scores":[-62.4632911682,-66.5507164001,-67.1328315734,-59.7416877746,-65.4942283629]}
+{"instance":423,"sub_id":"Q1941059","sub_label":"Pyrenean ibex","answer_idx":3,"pll_scores":[-63.7111454008,-67.3583774566,-69.5069904326,-63.4631595611,-67.2878589629]}
+{"instance":424,"sub_id":"Q158464","sub_label":"rutabaga","answer_idx":3,"pll_scores":[-54.5621376036,-53.4949913024,-58.9281692504,-52.1739501953,-55.4877128601]}
+{"instance":425,"sub_id":"Q280189","sub_label":"Zanzibar leopard","answer_idx":3,"pll_scores":[-59.5920524596,-63.9856948852,-64.0363845824,-55.8177566528,-62.5053253173]}
+{"instance":430,"sub_id":"Q557342","sub_label":"Cross River gorilla","answer_idx":3,"pll_scores":[-60.1643619538,-63.1099910737,-63.3151149752,-55.26345253,-62.0866146088]}
+{"instance":436,"sub_id":"Q944893","sub_label":"Himalayan brown bear","answer_idx":3,"pll_scores":[-57.7348289488,-62.9555664061,-62.5745353698,-56.5591239928,-62.9258117674]}
+{"instance":437,"sub_id":"Q253941","sub_label":"domestic canary","answer_idx":3,"pll_scores":[-60.289138794,-56.8460502626,-60.8052825928,-57.5644683838,-60.4992027284]}
+{"instance":438,"sub_id":"Q278912","sub_label":"Asiatic cheetah","answer_idx":3,"pll_scores":[-56.8119182585,-59.194410324,-61.2269191741,-53.8405742644,-60.0230998992]}
+{"instance":440,"sub_id":"Q2222461","sub_label":"Rothschild giraffe","answer_idx":3,"pll_scores":[-61.6293945312,-65.1591072083,-64.8498725892,-58.0748519897,-63.5887870788]}
+{"instance":445,"sub_id":"Q737878","sub_label":"mountain gorilla","answer_idx":3,"pll_scores":[-55.5444164278,-59.0321598054,-57.9277591706,-52.4353008271,-57.768152237]}
+{"instance":448,"sub_id":"Q207839","sub_label":"Trachemys scripta elegans","answer_idx":3,"pll_scores":[-89.96292305,-93.019880295,-94.5944614412,-89.6675586701,-92.5577220917]}
+{"instance":450,"sub_id":"Q1139670","sub_label":"Delphinoidea","answer_idx":4,"pll_scores":[-61.1075458527,-60.3318958281,-65.0107784271,-59.9516658782,-61.8186321257]}
+{"instance":451,"sub_id":"Q425636","sub_label":"Vespoidea","answer_idx":4,"pll_scores":[-62.5619125365,-63.2577972412,-67.6052436829,-60.6612739563,-64.5849952698]}
+{"instance":452,"sub_id":"Q1366337","sub_label":"Chalcidoidea","answer_idx":4,"pll_scores":[-64.8297080994,-67.1675300598,-69.4361610413,-64.3230018615,-67.1710014343]}
+{"instance":455,"sub_id":"Q2246081","sub_label":"Cobitoidea","answer_idx":4,"pll_scores":[-67.0295200347,-68.3525180816,-71.3534564972,-65.9763660431,-68.4477481841]}
+{"instance":458,"sub_id":"Q609392","sub_label":"Grylloidea","answer_idx":4,"pll_scores":[-62.0730514527,-63.1512985228,-65.9283523559,-61.2021713256,-63.0408096314]}
+{"instance":459,"sub_id":"Q846771","sub_label":"Caenagnathoidea","answer_idx":4,"pll_scores":[-73.1546211242,-74.5478553772,-76.1803436279,-71.983657837,-74.2177085877]}
+{"instance":464,"sub_id":"Q15487229","sub_label":"Rhinocerotoidea","answer_idx":4,"pll_scores":[-72.8604507447,-74.8328590394,-76.8524284364,-71.8683280946,-74.188549042]}
+{"instance":465,"sub_id":"Q1617290","sub_label":"Hippoboscoidea","answer_idx":4,"pll_scores":[-71.4639396668,-74.5723381043,-75.370388031,-72.5849647522,-73.3816337586]}
+{"instance":467,"sub_id":"Q1097755","sub_label":"Acridoidea","answer_idx":4,"pll_scores":[-62.5282211305,-62.6557884217,-65.1722908021,-62.0429420472,-62.4430885315]}
+{"instance":472,"sub_id":"Q542987","sub_label":"Tenebrionoidea","answer_idx":4,"pll_scores":[-69.4856681823,-72.0083427428,-73.4208374023,-69.4908218384,-71.1106300353]}
+{"instance":476,"sub_id":"Q135051","sub_label":"Gelechioidea","answer_idx":4,"pll_scores":[-67.9570541382,-69.1539001465,-72.6614761353,-66.4058761597,-69.5859756471]}
+{"instance":477,"sub_id":"Q1570985","sub_label":"Fulgoroidea","answer_idx":4,"pll_scores":[-70.2094612122,-71.4124183656,-74.4819641115,-68.7706985475,-71.7803535462]}
+{"instance":478,"sub_id":"Q135335","sub_label":"Chrysidoidea","answer_idx":4,"pll_scores":[-74.0805740356,-75.7656555176,-78.4080924988,-73.2768211365,-75.9806137083]}
+{"instance":484,"sub_id":"Q137213","sub_label":"froghopper","answer_idx":4,"pll_scores":[-65.2185783386,-65.9006767274,-69.9733581543,-64.6344604493,-67.0309753419]}
+{"instance":487,"sub_id":"Q131396","sub_label":"Tyrannosauroidea","answer_idx":4,"pll_scores":[-67.1786861418,-69.5940265654,-70.9726009367,-66.5430965423,-68.2289905547]}
+{"instance":492,"sub_id":"Q58949","sub_label":"Muroidea","answer_idx":4,"pll_scores":[-56.185546875,-56.7266044617,-60.8016395569,-54.9994888307,-57.2186660767]}
+{"instance":493,"sub_id":"Q1228564","sub_label":"Tipuloidea","answer_idx":4,"pll_scores":[-58.9194812776,-60.0111255646,-64.3089733124,-57.9898052216,-61.0468273164]}
+{"instance":495,"sub_id":"Q132379","sub_label":"Scarabaeoidea","answer_idx":4,"pll_scores":[-61.8705348969,-64.8258686065,-66.2728061675,-61.1759586333,-65.0035114288]}
+{"instance":496,"sub_id":"Q15998878","sub_label":"Corvoidea","answer_idx":4,"pll_scores":[-57.6164188385,-57.0169086456,-61.3423442841,-54.9894695282,-58.022649765]}
+{"instance":502,"sub_id":"Q2909215","sub_label":"Alvarezsaur","answer_idx":4,"pll_scores":[-63.4082813263,-63.338918686,-69.0129795076,-61.7658901215,-65.5753574373]}
+{"instance":504,"sub_id":"Q1934003","sub_label":"Membracoidea","answer_idx":4,"pll_scores":[-67.5639686584,-67.5604438781,-72.1634254453,-65.9927635191,-69.4382629393]}
+{"instance":507,"sub_id":"Q248419","sub_label":"Pyraloidea","answer_idx":4,"pll_scores":[-62.5581684113,-65.2187175751,-67.3728199004,-62.7562808991,-65.4617061616]}
+{"instance":509,"sub_id":"Q183350","sub_label":"aphid","answer_idx":4,"pll_scores":[-51.3633594513,-50.6793727875,-54.6355953217,-49.3166217804,-52.121400833]}
+{"instance":511,"sub_id":"Q137513","sub_label":"Azhdarchoidea","answer_idx":4,"pll_scores":[-74.9596366884,-75.6263542177,-79.5234260561,-73.7555885317,-76.6036643984]}
+{"instance":512,"sub_id":"Q2737578","sub_label":"Culicoidea","answer_idx":4,"pll_scores":[-68.4095249176,-69.2748279571,-71.6466007233,-67.0311069489,-68.8534412385]}
+{"instance":514,"sub_id":"Q507496","sub_label":"Alligatoroidea","answer_idx":4,"pll_scores":[-62.9817733764,-66.9336090087,-68.4457359313,-63.0385780334,-67.3982238769]}
+{"instance":519,"sub_id":"Q1192405","sub_label":"Lemuroidea","answer_idx":4,"pll_scores":[-63.4619750974,-65.2326316831,-67.9945907591,-62.2155456542,-64.8815040587]}
+{"instance":522,"sub_id":"Q1188087","sub_label":"Percoidea","answer_idx":4,"pll_scores":[-54.1832885744,-53.3939857484,-57.7370529177,-51.8336677553,-54.1821632387]}
+{"instance":523,"sub_id":"Q263205","sub_label":"Colubroidea","answer_idx":4,"pll_scores":[-61.0924720764,-61.5334815979,-64.156463623,-59.2212219238,-61.0788497926]}
+{"instance":524,"sub_id":"Q280949","sub_label":"Majoidea","answer_idx":4,"pll_scores":[-58.0397720339,-56.2968597414,-62.8564720155,-56.1323738099,-59.8353996279]}
