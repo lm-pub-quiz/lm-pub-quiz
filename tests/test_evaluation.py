@@ -323,3 +323,19 @@ def test_automatic_tokenizer_loading(distilbert):
     _ = Evaluator.from_model(model)
 
     # TODO: Add additional checks here
+
+
+def test_evaluation_with_relation_info(request, distilbert):
+    """Test whether the deprecated representation of the results can still be loaded."""
+
+    dataset = Dataset.from_path(
+        request.path.parent / "test_data" / "dummy_dataset",
+        relation_info=request.path.parent / "test_data" / "dummy_relation_info.json",
+    )
+
+    model, tokenizer = distilbert
+    evaluator = Evaluator.from_model(model, tokenizer=tokenizer)
+
+    results = evaluator.evaluate_dataset(dataset, batch_size=16, reduction="sum")
+
+    assert results[0].relation_info("domains") == ["a", "b", "c"]
