@@ -8,16 +8,16 @@ from lm_pub_quiz.util import sort_scores
 
 
 class BasicMetric(RelationMetric):
-    metric_name = "num_instances"
+    metric_name = "support"
 
     def reset(self):
-        self.num_instances = 0
+        self.support = 0
 
     def add_instance(self, row: Mapping):  # noqa: ARG002
-        self.num_instances += 1
+        self.support += 1
 
     def compute(self):
-        return {"num_instances": self.num_instances}
+        return {"support": self.support}
 
 
 class PrecisionAtK(BasicMetric):
@@ -52,7 +52,7 @@ class PrecisionAtK(BasicMetric):
         if self.num_correct_at_k is None:
             return super().compute()
         else:
-            return {**super().compute(), "precision_at_k": (self.num_correct_at_k / self.num_instances).tolist()}
+            return {**super().compute(), "precision_at_k": (self.num_correct_at_k / self.support).tolist()}
 
 
 class Accuracy(BasicMetric):
@@ -68,4 +68,4 @@ class Accuracy(BasicMetric):
             self.num_correct += 1
 
     def compute(self) -> Dict[str, Any]:
-        return {**super().compute(), "accuracy": self.num_correct / self.num_instances}
+        return {**super().compute(), "accuracy": self.num_correct / self.support}

@@ -57,13 +57,18 @@ class Relation(RelationBase):
         answer_space: Optional[pd.Series],
         instance_table: Optional[pd.DataFrame],
         lazy_options: Optional[Dict[str, Any]],
+        relation_info: Optional[Dict[str, Any]] = None,
     ):
         if instance_table is None and lazy_options is None:
             msg = "Either instance_table of lazy_options must be specified"
             raise ValueError(msg)
 
         super().__init__(
-            relation_code, instance_table=instance_table, answer_space=answer_space, lazy_options=lazy_options
+            relation_code,
+            instance_table=instance_table,
+            answer_space=answer_space,
+            lazy_options=lazy_options,
+            relation_info=relation_info,
         )
         self.templates = templates
 
@@ -249,7 +254,13 @@ class Dataset(DatasetBase[Relation]):
 
     @classmethod
     def from_path(
-        cls, path: PathLike, *, lazy: bool = True, fmt: InstanceTableFileFormat = None, **kwargs
+        cls,
+        path: PathLike,
+        *,
+        lazy: bool = True,
+        fmt: InstanceTableFileFormat = None,
+        relation_info: Optional[PathLike] = None,
+        **kwargs,
     ) -> "Dataset":
         """
         Loads a multiple choice dataset from a specified directory path.
@@ -289,11 +300,24 @@ class Dataset(DatasetBase[Relation]):
 
         log.info("Loaded dataset `%s` (%d relations) from `%s`.", kwargs["name"], len(relation_files), dataset_path)
 
-        return cls(relations, **kwargs)
+        obj = cls(relations, **kwargs)
+
+        if relation_info is not None:
+            with open(relation_info) as f:
+                obj.update_relation_info(json.load(f))
+
+        return obj
 
     @classmethod
     def from_name(
-        cls, name: str, *, lazy: bool = True, base_path: Optional[Path] = None, chunk_size: int = 10 * 1024, **kwargs
+        cls,
+        name: str,
+        *,
+        lazy: bool = True,
+        base_path: Optional[Path] = None,
+        chunk_size: int = 10 * 1024,
+        relation_info: Optional[PathLike] = None,
+        **kwargs,
     ) -> "Dataset":
         """
         Loads a dataset from the cache (if available) or the url which is specified in the internal dataset table.
@@ -352,7 +376,7 @@ class Dataset(DatasetBase[Relation]):
         else:
             log.debug("Dataset %s found in cache at %s.", name, dataset_path)
 
-        return cls.from_path(dataset_path, lazy=lazy, name=name, **kwargs)
+        return cls.from_path(dataset_path, lazy=lazy, name=name, relation_info=relation_info, **kwargs)
 
     def activated(self):
         if not self.is_lazy:

@@ -181,7 +181,7 @@ def test_dataset_evaluation_with_direct_scores(distilbert, request, tmp_path):
             assert r.metadata["reduction"] == "sum"
             assert "distilbert" in r.metadata["model_name_or_path"]
 
-    assert results.get_metrics(["accuracy"], accumulate_all=True)["accuracy"] >= 0.5
+    assert results.get_metrics(["accuracy"], accumulate=True)["accuracy"] >= 0.5
 
 
 def test_dataset_evaluation_with_save_path(distilbert, request, tmp_path):

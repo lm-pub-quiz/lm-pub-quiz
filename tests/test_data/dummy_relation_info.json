@@ -1,0 +1,8 @@
+{
+  "example_1": {
+    "domain": ["a", "b", "c"]
+  },
+  "example_2": {
+    "domain": ["b", "d"]
+  }
+}
