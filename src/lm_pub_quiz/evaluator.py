@@ -111,7 +111,7 @@ class BaseEvaluator(ABC):
                 "time_start": datetime.now(tz=timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M:%S"),
                 "relation_type": relation_type,
             },
-            relation_info=relation.relation_info()
+            relation_info=relation.relation_info(),
         )
 
         template = relation.templates[template_index]
