@@ -521,7 +521,6 @@ class DatasetResults(DatasetBase[RelationResult]):
         Parameters:
             accumulate (bool | str  | None):  Compute the metrics for groups of relations (e.g. over the domains) or
                 compute the overall scores for the complete dataset by setting `accumulate=True`.
-            explode (bool): Set to true if relations not only have a single group but multiple.
             divide_support (bool): Set to true to divide the support (added by a relation to a group) by the number of
                 groups it adds to (only relevant if there are multiple groups per relation i.e. when `explode` is set).
                 This leads to a dataframe where the weightted mean is equal to the overall score.
