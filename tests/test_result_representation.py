@@ -328,3 +328,18 @@ def test_result_formats(request, tmp_path):
         ).all(axis=None)
 
         assert tuple(a.instance_table.loc[0, "tokens"]) == tuple(a.instance_table.loc[0, "tokens"])
+
+
+def test_joined_instance_table(request):
+    """Test whether the deprecated representation of the results can still be loaded."""
+
+    results = DatasetResults.from_path(request.path.parent / "test_data" / "new_style_results", lazy=True)
+
+    df = results.joined_instance_table()
+
+    assert len(df) == 9
+
+    assert df.index.names == ["relation", "instance"]
+
+    assert len(df.loc["example_1"]) == 3
+    assert len(df.loc["example_2"]) == 6

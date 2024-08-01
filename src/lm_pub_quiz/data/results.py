@@ -25,7 +25,7 @@ import pandas as pd
 from typing_extensions import Self
 
 from lm_pub_quiz.data.base import DatasetBase, InstanceTableFileFormat, NoInstanceTableError, RelationBase
-from lm_pub_quiz.metrics.base import RelationMetric
+from lm_pub_quiz.metrics import RelationMetric, accumulate_metrics
 from lm_pub_quiz.util import PathLike, parse_dumped_raw_results
 
 log = logging.getLogger(__name__)
@@ -49,9 +49,14 @@ class RelationResult(RelationBase):
         instance_table: Optional[pd.DataFrame] = None,
         answer_space: Optional[pd.Series] = None,
         lazy_options: Optional[Dict[str, Any]] = None,
+        relation_info: Optional[Dict[str, Any]] = None,
     ):
         super().__init__(
-            relation_code, instance_table=instance_table, answer_space=answer_space, lazy_options=lazy_options
+            relation_code,
+            instance_table=instance_table,
+            answer_space=answer_space,
+            lazy_options=lazy_options,
+            relation_info=relation_info,
         )
         self.metadata = metadata
         self.metric_values: Dict[str, Any] = metric_values or {}
@@ -126,9 +131,13 @@ class RelationResult(RelationBase):
                             "Metadata file exists, but no metadata for given result with relation code %s found.",
                             relation_code,
                         )
-                    raise
+                        raise
             else:
                 metadata = {}
+
+        if metadata is not None and "num_instances" in metadata:
+            metadata["support"] = metadata["num_instances"]
+            del metadata["num_instances"]
 
         assert metadata is not None
 
@@ -245,8 +254,8 @@ class RelationResult(RelationBase):
                 raise RuntimeError(msg) from e
 
     def __len__(self) -> int:
-        if self.is_lazy and "num_instances" in self.metadata:
-            return self.metadata["num_instances"]
+        if self.is_lazy and "support" in self.metadata:
+            return self.metadata["support"]
         else:
             return len(self.instance_table)
 
@@ -402,15 +411,6 @@ class RelationResult(RelationBase):
         )  # ignore non-existing columns
         super().save_instance_table(instance_table, path, fmt=fmt)
 
-    @property
-    def relation_type(self) -> str:
-        if "relation_type" in self.metadata:
-            return self.metadata["relation_type"]
-        elif self.instance_table.duplicated("obj_id").any():
-            return "multiple instances per answer"
-        else:
-            return "single instance per answer"
-
 
 class DatasetResults(DatasetBase[RelationResult]):
     """Container for relation results."""
@@ -423,7 +423,13 @@ class DatasetResults(DatasetBase[RelationResult]):
 
     @classmethod
     def from_path(
-        cls, path: PathLike, *, lazy: bool = True, fmt: InstanceTableFileFormat = None, **kwargs
+        cls,
+        path: PathLike,
+        *,
+        lazy: bool = True,
+        fmt: InstanceTableFileFormat = None,
+        relation_info: Optional[PathLike] = None,
+        **kwargs,
     ) -> "DatasetResults":
         """
         Loads a results from a specified directory path.
@@ -478,6 +484,11 @@ class DatasetResults(DatasetBase[RelationResult]):
                     lazy=lazy,
                 )
             )
+
+        if relation_info is not None:
+            with open(relation_info) as f:
+                obj.update_relation_info(json.load(f))
+
         return obj
 
     def activated(self) -> Self:
@@ -502,46 +513,50 @@ class DatasetResults(DatasetBase[RelationResult]):
         self,
         metrics: Union[str, Iterable[str]],
         *,
-        accumulate_all: bool = False,
-        accumulate_relation_types: bool = False,
+        accumulate: Union[bool, None, str] = False,
+        explode: bool = False,
+        divide_support: bool = True,
     ) -> Union[pd.DataFrame, pd.Series]:
-        if accumulate_relation_types and accumulate_all:
-            warnings.warn(
-                "It is recommended to only set `accumulate_all` or `accumulate_relation_types`. "
-                "Defaulting to accumultate for each relation type.",
-                stacklevel=1,
-            )
+        """Return the metrics for the relations in this dataset.
+
+        Parameters:
+            accumulate (bool | str  | None):  Compute the metrics for groups of relations (e.g. over the domains) or
+                compute the overall scores for the complete dataset by setting `accumulate=True`.
+            explode (bool): Set to true if relations not only have a single group but multiple.
+            divide_support (bool): Set to true to divide the support (added by a relation to a group) by the number of
+                groups it adds to (only relevant if there are multiple groups per relation i.e. when `explode` is set).
+                This leads to a dataframe where the weightted mean is equal to the overall score.
+
+        Returns:
+            pandas.DataFrame | pandas.Series: A Series or DataFrame with the selected metrics depending on whether all
+                relations where accumulated.
+
+        """
+        if not isinstance(accumulate, str) and explode:
+            msg = "`explode` can only be used if a relation information field is passed to accumulate relation scores."
+            raise ValueError(msg)
 
         if isinstance(metrics, str):
             metrics = [metrics]
 
-        if (accumulate_all or accumulate_relation_types) and "num_instances" not in metrics:
-            metrics = [*metrics, "num_instances"]
+        if "support" not in metrics:
+            metrics = [*metrics, "support"]
 
         df = pd.DataFrame({rel.relation_code: self._construct_metrics_dict(metrics, rel) for rel in self}).T
 
-        df["relation_type"] = pd.Series({rel.relation_code: rel.relation_type for rel in self})
+        if accumulate:
+            if isinstance(accumulate, str):
+                df[accumulate] = pd.Series({rel.relation_code: rel.relation_info(accumulate) for rel in self})
 
-        if accumulate_all or accumulate_relation_types:
+                if explode:
+                    df = df.explode(accumulate)
 
-            def acc_group(group):
-                return pd.Series(
-                    {
-                        k: (np.average(v, weights=group["num_instances"]) if k != "num_instances" else v.sum())
-                        for k, v in group.items()
-                        if k != "relation_type"
-                    }
-                )
+                    if divide_support:
+                        df["support"] /= df.index.value_counts()
 
-            if accumulate_relation_types:
-                return pd.concat(
-                    [
-                        df.groupby("relation_type").apply(acc_group),
-                        pd.DataFrame([acc_group(df).to_dict()], index=["all"]),
-                    ]
-                )
+                return df.groupby(accumulate).apply(accumulate_metrics)
             else:
-                return acc_group(df)
+                return accumulate_metrics(df)
         else:
             return df
 
