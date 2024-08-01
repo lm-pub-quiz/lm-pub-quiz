@@ -552,7 +552,7 @@ class DatasetResults(DatasetBase[RelationResult]):
                     df = df.explode(accumulate)
 
                     if divide_support:
-                        df["support"] /= df.index.value_counts()
+                        df["support"] /= df.index.value_counts()[df.index]
 
                 return df.groupby(accumulate).apply(accumulate_metrics)
             else:
