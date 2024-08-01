@@ -514,7 +514,6 @@ class DatasetResults(DatasetBase[RelationResult]):
         metrics: Union[str, Iterable[str]],
         *,
         accumulate: Union[bool, None, str] = False,
-        explode: bool = False,
         divide_support: bool = True,
     ) -> Union[pd.DataFrame, pd.Series]:
         """Return the metrics for the relations in this dataset.
@@ -532,10 +531,6 @@ class DatasetResults(DatasetBase[RelationResult]):
                 relations where accumulated.
 
         """
-        if not isinstance(accumulate, str) and explode:
-            msg = "`explode` can only be used if a relation information field is passed to accumulate relation scores."
-            raise ValueError(msg)
-
         if isinstance(metrics, str):
             metrics = [metrics]
 
@@ -548,11 +543,10 @@ class DatasetResults(DatasetBase[RelationResult]):
             if isinstance(accumulate, str):
                 df[accumulate] = pd.Series({rel.relation_code: rel.relation_info(accumulate) for rel in self})
 
-                if explode:
-                    df = df.explode(accumulate)
+                df = df.explode(accumulate)
 
-                    if divide_support:
-                        df["support"] /= df.index.value_counts()[df.index]
+                if divide_support:
+                    df["support"] /= df.index.value_counts()[df.index]
 
                 return df.groupby(accumulate).apply(accumulate_metrics)
             else:
