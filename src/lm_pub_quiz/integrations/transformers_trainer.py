@@ -3,14 +3,14 @@ from transformers import TrainerCallback
 
 class PubQuizCallback(TrainerCallback):
     """This callback handels on the fly LM Pub Quiz evaluation for the huggingface Trainer class"""
-    def __init__(self, trainer, evaluator, dataset, metrics=None, save_path=None, batch_size=32, template=0):
+    def __init__(self, trainer, evaluator, dataset, accumulate=None, save_path=None, batch_size=32, template=0):
         """
 
         Args:
             trainer: required to call trainer logging functionality
             evaluator:
             dataset:
-            metrics: one of [None, "overall", "domains", "cardinality"]
+            accumulate: one of [None, "domains", "cardinality"]
             save_path: if specified, complete LM Pub Quiz results for each evaluation are saved under the path
             batch_size:
             template: specify list of or single LM Pub Quiz template indices to be used for evaluation
@@ -21,18 +21,18 @@ class PubQuizCallback(TrainerCallback):
         self.save_path = save_path
         self.batch_size = batch_size
         self.template = template
-        self.metrics = metrics
+        self.accumulate = accumulate
         self.report_name = dataset.name if dataset.name is not None else "lm_pub_quiz"
 
         # check dataset for compatibility with requested metrics
-        if self.metrics == "domains":
+        if isinstance(self.accumulate, str):
             try:
-                dataset[0].relation_info("domains")
+                dataset[0].relation_info(self.accumulate)
             except KeyError as e:
-                error_msg = "Cannot retrieve domain results without domain info in dataset."
+                error_msg = f"Cannot retrieve {self.accumulate} results without relevant info in dataset."
                 raise ValueError(error_msg) from e
 
-    def on_evaluate(self, args, state, control, **kwargs): # noqa: ARG002
+    def on_evaluate(self, args, state, control, **kwargs):  # noqa: ARG002
         if isinstance(self.template, int):
             templates = [self.template]
             flag_template = False
@@ -51,13 +51,9 @@ class PubQuizCallback(TrainerCallback):
             overall_score = result.get_metrics(["accuracy", "support"], accumulate=True)
             metrics_data[f"eval_{self.report_name}_score{template_suffix}"] = overall_score["accuracy"]
 
-            if self.metrics == "domains":
-                domain_scores = result.get_metrics(["accuracy", "support"], accumulate="domains")
-                for domain, score in domain_scores["accuracy"].items():
-                    metrics_data[f"eval_{self.report_name}_{domain}{template_suffix}"] = score
-            elif self.metrics == "cardinality":
-                cardinality_scores = result.get_metrics(["accuracy", "support"], accumulate="cardinality")
-                for cardinality, score in cardinality_scores["accuracy"].items():
-                    metrics_data[f"eval_{self.report_name}_{cardinality.replace(' ', '_')}{template_suffix}"] = score
+            if isinstance(self.accumulate, str):
+                accumulated_scores = result.get_metrics(["accuracy", "support"], accumulate=self.accumulate)
+                for metric, score in accumulated_scores["accuracy"].items():
+                    metrics_data[f"eval_{self.report_name}_{metric.replace(' ', '_')}{template_suffix}"] = score
 
         self.trainer.log(metrics_data)

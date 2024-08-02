@@ -47,7 +47,7 @@ The LM Pub Quiz Callback performs the BEAR probe automatically, whenever the eva
 | Argument     | Description                                                                     |
 |:-------------|:--------------------------------------------------------------------------------|
 | `save_path`  | If other than `None`, full BEAR evaluation results are saved to this directory. |
-| `metrics`    | one of [None, "overall", "domains", "cardinality"]                              |
+| `accumulate` | one of [None, "domains", "cardinality"]                                         |
 | `batch_size` | specifies the batch size for the Evaluator                                      |
 | `template`   | either specify the template index a pass a list of template indices             |
 
