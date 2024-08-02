@@ -7,16 +7,20 @@ from transformers import (
     TrainerCallback,
     TrainingArguments,
 )
+import logging
 
 from lm_pub_quiz import Dataset, Evaluator
 from lm_pub_quiz.integrations import PubQuizCallback
+
+
+logger = logging.getLogger(__name__)
 
 
 class LoggingCallback(TrainerCallback):
     def __init__(self):
         self.log_data = []
 
-    def on_log(self, args, state, control, logs=None, **kwargs): # noqa: ARG002
+    def on_log(self, args, state, control, logs=None, **kwargs):  # noqa: ARG002
         if logs is not None:
             self.log_data.append(logs)
 
@@ -36,7 +40,7 @@ def test_callback(request, tmp_path):
     mlm_eval_dataset = HFDataset.from_dict(
         {
             "text": ["I will not waste chalk.", "I will not skateboard in the halls."]
-            + ["I will not cut corners."] * 6,
+            + ["I will not cut corners."] * 2,
         }
     ).map(
         preprocess_function,
@@ -94,20 +98,29 @@ def test_callback(request, tmp_path):
 
     trainer.train()
 
-    print(logging_callback.log_data)
-
     losses = []
-    bear_scores = []
+    overall_probing_scores = []
+    single_domain_probing_scores = []
 
     for log in logging_callback.log_data:
+        logger.debug(log)
         if "loss" in log:
             losses.append(log["loss"])
 
-        if "bear_score" in log:
-            bear_scores.append(bear_scores)
+        if "eval_dummy_dataset_score" in log:
+            overall_probing_scores.append(overall_probing_scores)
+
+        if "eval_dummy_dataset_d" in log:
+            single_domain_probing_scores.append(single_domain_probing_scores)
 
     assert losses[0] > losses[-1]
 
-    # TODO: check that the log_data actually contains the relevant scores
-    assert len(bear_scores) > 0
-    assert bear_scores[0] > bear_scores[-1]  # Seeing the same sentences over and over can't help
+    logger.debug(overall_probing_scores)
+    logger.debug(single_domain_probing_scores)
+
+    assert len(overall_probing_scores) > 0
+    assert overall_probing_scores[0] > overall_probing_scores[-1]  # Seeing the same sentences over and over can't help
+
+    assert len(single_domain_probing_scores) > 0
+    assert single_domain_probing_scores[0] > single_domain_probing_scores[-1]
+
