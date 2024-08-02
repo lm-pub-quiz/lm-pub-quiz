@@ -22,7 +22,7 @@ class PubQuizCallback(TrainerCallback):
         self.batch_size = batch_size
         self.template = template
         self.accumulate = accumulate
-        self.report_name = dataset.name if dataset.name is not None else "lm_pub_quiz"
+        self.report_name = dataset.name.replace(" ", "_") if dataset.name is not None else "lm_pub_quiz"
 
         # check dataset for compatibility with requested metrics
         if isinstance(self.accumulate, str):
