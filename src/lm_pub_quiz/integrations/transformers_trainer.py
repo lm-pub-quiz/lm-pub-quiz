@@ -3,6 +3,7 @@ from transformers import TrainerCallback
 
 class PubQuizCallback(TrainerCallback):
     """This callback handels on the fly LM Pub Quiz evaluation for the huggingface Trainer class"""
+
     def __init__(self, trainer, evaluator, dataset, accumulate=None, save_path=None, batch_size=32, template=0):
         """
 
@@ -43,8 +44,9 @@ class PubQuizCallback(TrainerCallback):
         metrics_data = {}
         for template in templates:
             template_suffix = "_" + str(template) if flag_template else ""
-            result = self.evaluator.evaluate_dataset(self.dataset, template_index=self.template,
-                                                     batch_size=self.batch_size)
+            result = self.evaluator.evaluate_dataset(
+                self.dataset, template_index=self.template, batch_size=self.batch_size
+            )
             if self.save_path:
                 result.save(f"{self.save_path}/{state.epoch}_{self.report_name}_results{template_suffix}")
 
