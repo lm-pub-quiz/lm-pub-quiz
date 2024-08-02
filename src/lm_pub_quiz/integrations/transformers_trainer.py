@@ -29,9 +29,10 @@ class PubQuizCallback(TrainerCallback):
             try:
                 dataset[0].relation_info("domains")
             except KeyError as e:
-                raise ValueError("Cannot retrieve domain results without domain info in dataset.") from e
+                error_msg = "Cannot retrieve domain results without domain info in dataset."
+                raise ValueError(error_msg) from e
 
-    def on_evaluate(self, args, state, control, **kwargs): # noqa: args, control, **kwargs
+    def on_evaluate(self, args, state, control, **kwargs): # noqa: ARG002
         if isinstance(self.template, int):
             templates = [self.template]
             flag_template = False

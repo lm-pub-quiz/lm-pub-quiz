@@ -16,7 +16,7 @@ class LoggingCallback(TrainerCallback):
     def __init__(self):
         self.log_data = []
 
-    def on_log(self, args, state, control, logs=None, **kwargs): # noqa: args, state, control, **kwargs
+    def on_log(self, args, state, control, logs=None, **kwargs): # noqa: ARG002
         if logs is not None:
             self.log_data.append(logs)
 
