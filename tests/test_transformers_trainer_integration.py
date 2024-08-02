@@ -16,7 +16,7 @@ class LoggingCallback(TrainerCallback):
     def __init__(self):
         self.log_data = []
 
-    def on_log(self, args, state, control, logs=None, **kwargs):
+    def on_log(self, args, state, control, logs=None, **kwargs): # noqa: args, state, control, **kwargs
         if logs is not None:
             self.log_data.append(logs)
 
@@ -83,7 +83,12 @@ def test_callback(request, tmp_path):
         template_index=0,
     )
 
-    callback = PubQuizCallback(trainer=trainer, evaluator=evaluator)
+    probing_dataset = Dataset.from_path(
+        request.path.parent / "test_data" / "dummy_dataset",
+        relation_info=request.path.parent / "test_data" / "dummy_relation_info.json",
+    )
+
+    callback = PubQuizCallback(trainer=trainer, evaluator=evaluator, dataset=probing_dataset)
 
     trainer.add_callback(callback)
 
