@@ -1,3 +1,6 @@
+import logging
+
+import pytest
 from datasets import Dataset as HFDataset
 from transformers import (
     AutoModelForMaskedLM,
@@ -7,11 +10,9 @@ from transformers import (
     TrainerCallback,
     TrainingArguments,
 )
-import logging
 
 from lm_pub_quiz import Dataset, Evaluator
 from lm_pub_quiz.integrations import PubQuizCallback
-
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ def test_callback(request, tmp_path):
         batched=True,
         num_proc=4,
     )
-    mlm_train_dataset = HFDataset.from_dict({"text": ["I will not bury the new kid."] * 10}).map(
+    mlm_train_dataset = HFDataset.from_dict({"text": ["I will not bury the new kid."] * 2}).map(
         preprocess_function,
         batched=True,
         num_proc=4,
@@ -58,12 +59,15 @@ def test_callback(request, tmp_path):
     training_args = TrainingArguments(
         tmp_path,
         do_train=True,
-        num_train_epochs=1,
+        do_eval=True,
+        eval_strategy="epoch",
+        num_train_epochs=5.0,
         logging_first_step=True,
         logging_steps=2,
         per_device_train_batch_size=1,
         per_device_eval_batch_size=1,
         report_to="none",
+        learning_rate=1e-4,
     )
 
     logging_callback = LoggingCallback()
@@ -81,18 +85,25 @@ def test_callback(request, tmp_path):
     evaluator = Evaluator.from_model(
         model,
         tokenizer=tokenizer,
-        model_type="CLM",
+        model_type="MLM",
         batch_size=1,
         dataset=probing_dataset,
         template_index=0,
     )
+
+    assert evaluator.evaluate_dataset(probing_dataset).get_metrics("accuracy", accumulate=True)["accuracy"] == 1.0
 
     probing_dataset = Dataset.from_path(
         request.path.parent / "test_data" / "dummy_dataset",
         relation_info=request.path.parent / "test_data" / "dummy_relation_info.json",
     )
 
-    callback = PubQuizCallback(trainer=trainer, evaluator=evaluator, dataset=probing_dataset)
+    with pytest.raises(ValueError):
+        callback = PubQuizCallback(
+            trainer=trainer, evaluator=evaluator, dataset=probing_dataset, accumulate="non_existing"
+        )
+
+    callback = PubQuizCallback(trainer=trainer, evaluator=evaluator, dataset=probing_dataset, accumulate="domains")
 
     trainer.add_callback(callback)
 
@@ -108,10 +119,11 @@ def test_callback(request, tmp_path):
             losses.append(log["loss"])
 
         if "eval_dummy_dataset_score" in log:
-            overall_probing_scores.append(overall_probing_scores)
+            overall_probing_scores.append(log["eval_dummy_dataset_score"])
 
+        # We should observe scores for the domains
         if "eval_dummy_dataset_d" in log:
-            single_domain_probing_scores.append(single_domain_probing_scores)
+            single_domain_probing_scores.append(log["eval_dummy_dataset_d"])
 
     assert losses[0] > losses[-1]
 
@@ -123,4 +135,3 @@ def test_callback(request, tmp_path):
 
     assert len(single_domain_probing_scores) > 0
     assert single_domain_probing_scores[0] > single_domain_probing_scores[-1]
-
