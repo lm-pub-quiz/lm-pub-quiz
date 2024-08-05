@@ -22,7 +22,7 @@ from typing import (
 
 import pandas as pd
 from minicons import scorer
-from tqdm import tqdm
+from tqdm.auto import tqdm
 from transformers import (
     AutoTokenizer,
     PreTrainedModel,
