@@ -7,7 +7,7 @@ import cordage
 
 from lm_pub_quiz import Dataset
 from lm_pub_quiz.cli.config import ModelConfig
-from lm_pub_quiz.evaluator import BaseEvaluator, MaskedLMEvaluator
+from lm_pub_quiz.evaluators import BaseEvaluator, MaskedLMEvaluator
 
 log = logging.getLogger(__name__)
 

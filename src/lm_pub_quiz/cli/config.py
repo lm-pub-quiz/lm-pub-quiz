@@ -2,8 +2,7 @@ from dataclasses import dataclass
 from typing import Optional, Type, Union
 
 from lm_pub_quiz import Evaluator
-from lm_pub_quiz.evaluator import BaseEvaluator
-from lm_pub_quiz.tyq_evaluator import TyQEvaluator
+from lm_pub_quiz.evaluators import BaseEvaluator, TyQEvaluator
 
 
 @dataclass
@@ -25,9 +24,10 @@ class ModelConfig:
         if self.lm_type is not None:
             kw["model_type"] = self.lm_type
 
-        cls: Union[Type[Evaluator], Type[TyQEvaluator]]
+        cls: Type[BaseEvaluator]
         if self.reduction != "tyq":
-            cls = Evaluator
+            cls = Evaluator  # type: ignore
+            # (mypy complains since Evaluator is still an abstract class)
         else:
             cls = TyQEvaluator
 

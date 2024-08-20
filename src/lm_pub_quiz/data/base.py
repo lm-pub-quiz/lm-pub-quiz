@@ -26,7 +26,7 @@ from typing import (
 import pandas as pd
 from typing_extensions import Self
 
-from lm_pub_quiz.util import PathLike
+from lm_pub_quiz.types import PathLike
 
 log = logging.getLogger(__name__)
 
@@ -147,9 +147,8 @@ class RelationBase(DataBase):
         else:
             return {}
 
-    @property
-    def _derived_cardinality(self) -> str:
-        if self.instance_table.duplicated("obj_id").any():
+    def _derive_cardinality(self, instance_table: pd.DataFrame) -> str:
+        if instance_table.duplicated("obj_id").any():
             return "multiple instances per answer"
         else:
             return "single instance per answer"
@@ -164,7 +163,7 @@ class RelationBase(DataBase):
         """Get or set additional relation information."""
         if key is not None:
             if key == "cardinality" and "cardinality" not in self._relation_info:
-                return self._derived_cardinality
+                return self._derive_cardinality(self.instance_table)
             else:
                 return self._relation_info[key]
         elif len(kw) > 0:
@@ -172,7 +171,7 @@ class RelationBase(DataBase):
 
         info = self._relation_info.copy()
         if "cardinality" not in info:
-            info["cardinality"] = self._derived_cardinality
+            info["cardinality"] = self._derive_cardinality(self.instance_table)
         return info
 
     @staticmethod
@@ -250,6 +249,7 @@ class RelationBase(DataBase):
                 raise NoInstanceTableError(msg)
 
             instance_table = self.load_instance_table(answer_space=self._answer_space, **self._lazy_options)
+            self.relation_info(cardinality=self._derive_cardinality(instance_table))
 
             if self._answer_space is None:
                 # store answer_space

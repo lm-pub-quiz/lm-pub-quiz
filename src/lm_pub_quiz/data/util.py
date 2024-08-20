@@ -8,7 +8,7 @@ from zipfile import ZipFile
 import requests
 from tqdm import tqdm
 
-from lm_pub_quiz.util import PathLike
+from lm_pub_quiz.types import PathLike
 
 
 def _natural_sort_convert(text: str) -> Union[str, int]:

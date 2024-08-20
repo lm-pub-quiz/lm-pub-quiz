@@ -5,7 +5,7 @@ from typing import Union, cast
 import cordage
 
 from lm_pub_quiz.cli.config import ModelConfig
-from lm_pub_quiz.evaluator import Evaluator
+from lm_pub_quiz.evaluators import Evaluator
 
 log = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ def evaluate_sentence(config: SentenceConfig):
     reduction = config.model.reduction if config.model.reduction != "none" else None
     # if existing, replace marker with itself
     result = evaluator.score_answers(
-        template=config.sentence, answers=[evaluator.templater._answer_placeholder], reduction=reduction
+        template=config.sentence, answers=[evaluator._answer_placeholder], reduction=reduction
     )[0]
 
     if reduction is not None:

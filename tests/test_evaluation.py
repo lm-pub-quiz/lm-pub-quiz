@@ -9,21 +9,27 @@ from lm_pub_quiz.data import NoInstanceTableError
 log = logging.getLogger(__name__)
 
 
-def test_evaluator_instantiations(distilbert):
-    model, tokenizer = distilbert
+@pytest.mark.parametrize("model_key", ("distilbert", "distilgpt"))
+def test_evaluator_instantiations(model_key, model_cache):
+    model = model_cache[model_key]
 
     # Instantiate using model name
-    Evaluator.from_model("distilbert-base-cased")
+    Evaluator.from_model(model.name_or_path, model_type=model.model_type)
+
+    Evaluator.from_model(model.name_or_path)
 
     # Instantiate from existing model
-    Evaluator.from_model(model, tokenizer=tokenizer)
+    Evaluator.from_model(model.model, tokenizer=model.tokenizer, model_type=model.model_type)
+
+    Evaluator.from_model(model.model, tokenizer=model.tokenizer)
 
 
-def test_reduction_functionality(distilbert):
-    model, tokenizer = distilbert
+@pytest.mark.parametrize("model_key", ("distilbert", "distilgpt"))
+def test_reduction_functionality(model_key, model_cache):
+    model = model_cache[model_key]
 
     # Instantiate from existing model
-    evaluator = Evaluator.from_model(model, tokenizer=tokenizer)
+    evaluator = Evaluator.from_model(model.model, tokenizer=model.tokenizer)
 
     with pytest.raises(ValueError):
         evaluator.score_answers(
@@ -52,9 +58,9 @@ def test_model_type_inference(model_name, model_type):
     assert Evaluator._infer_type_from_name(model_name) == model_type
 
 
-def test_incorrect_template(distilbert):
-    model, tokenizer = distilbert
-    evaluator = Evaluator.from_model(model, tokenizer=tokenizer)
+def test_incorrect_template(model_cache):
+    model = model_cache["distilbert"]
+    evaluator = Evaluator.from_model(model.model, tokenizer=model.tokenizer)
 
     with pytest.raises(ValueError):
         evaluator.evaluate_instance(template="No object slot available", answers=["a", "b"], reduction="sum")
