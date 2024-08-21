@@ -58,9 +58,9 @@ def test_model_type_inference(model_name, model_type):
     assert Evaluator._infer_type_from_name(model_name) == model_type
 
 
-def test_incorrect_template(model_cache):
-    model = model_cache["distilbert"]
-    evaluator = Evaluator.from_model(model.model, tokenizer=model.tokenizer)
+def test_incorrect_template(distilbert):
+    model, tokenizer = distilbert
+    evaluator = Evaluator.from_model(model, tokenizer=tokenizer)
 
     with pytest.raises(ValueError):
         evaluator.evaluate_instance(template="No object slot available", answers=["a", "b"], reduction="sum")
@@ -320,8 +320,8 @@ def test_conditional_score(distilbert):
         template="The traveler lost the [Y].", answers=["bet", "souvenir"], reduction="sum"
     )
 
-    assert -6 < result[0] < -5
-    assert -13 < result[1] < -12
+    assert result[0] == pytest.approx(-5.98468, abs=1e-5)
+    assert result[1] == pytest.approx(-12.20265, abs=1e-5)
 
 
 def test_automatic_tokenizer_loading(distilbert):

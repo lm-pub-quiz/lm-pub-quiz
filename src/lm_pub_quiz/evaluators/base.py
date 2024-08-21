@@ -239,11 +239,11 @@ class Evaluator(BaseEvaluator, PLLScorerBase):
     def __init__(
         self,
         *,
-        conditional: bool = False,
+        conditional_score: bool = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.conditional = conditional
+        self.conditional_score = conditional_score
 
     def evaluate_instance(
         self,
@@ -378,7 +378,7 @@ class Evaluator(BaseEvaluator, PLLScorerBase):
         self,
         batch: BatchEncoding,
         span_roles: Sequence[SpanRoles],
-        scoring_masks: Optional[Sequence[ScoringMask]] = None,
+        scoring_masks: Optional[Sequence[ScoringMask]],
     ) -> Sequence[TokenRoles]:
         """Derive which tokens belong to the subject, answer, and template."""
         token_roles = []
@@ -430,12 +430,13 @@ class Evaluator(BaseEvaluator, PLLScorerBase):
                 for m in scoring_masks[statement_index]:
                     if m:
                         remapped.append(i)
-                        i = +1
+                        i += 1
                     else:
                         remapped.append(-1)
 
                 token_indices = {
-                    k: [remapped[i] for i in v if scoring_masks[statement_index][i]] for k, v in token_indices.items()
+                    k: [remapped[i] for i in v if scoring_masks[statement_index][i] if remapped[i] > 0]
+                    for k, v in token_indices.items()
                 }
 
             token_roles.append(token_indices)
@@ -493,18 +494,21 @@ class MaskedLMEvaluator(MaskedLMScorer, Evaluator):
             list(statements), return_tensors="pt", padding=True, return_special_tokens_mask=True, return_length=True
         )
 
-        if self.conditional:
-            token_roles = self.derive_token_roles(batch, span_roles)
+        if self.conditional_score:
+            token_roles = self.derive_token_roles(batch, span_roles, scoring_masks=None)
 
             scoring_masks = []
 
             for roles in token_roles:
                 mask = [False] * batch["input_ids"].size(1)
+
+                # Only set the mask to true where a token is part of the answer
                 for i in roles["answer"]:
                     mask[i] = True
+                scoring_masks.append(mask)
 
         else:
-            scoring_masks = [(~mask).tolist() for mask in batch["special_tokens_mask"]]
+            scoring_masks = [(~mask.bool()).tolist() for mask in batch["special_tokens_mask"]]
 
         return batch, scoring_masks
 
@@ -521,10 +525,10 @@ class CausalLMEvaluator(CausalLMScorer, Evaluator):
             list(statements), return_tensors="pt", padding=True, return_special_tokens_mask=True, return_length=True
         )
 
-        scoring_masks = [(~mask).tolist() for mask in batch["special_tokens_mask"]]
+        scoring_masks = [(~mask.bool()).tolist() for mask in batch["special_tokens_mask"]]
 
-        if self.conditional:
-            token_roles = self.derive_token_roles(batch, span_roles)
+        if self.conditional_score:
+            token_roles = self.derive_token_roles(batch, span_roles, scoring_masks=None)
 
             for i, roles in enumerate(token_roles):
                 # In autoregressive models, we can exclude everything leading up to the first part of the answer

@@ -126,7 +126,7 @@ class ModelMixin(BaseMixin):
         **kw,
     ) -> Self:
 
-        model = cls._get_model(model=model, model_type=model_type, **kw)
+        model = cls._get_model(model=model, model_type=model_type)
         tokenizer = cls._get_tokenizer(model=model, tokenizer=kw.pop("tokenizer", None))
 
         return cls(model=model, tokenizer=tokenizer, model_type=model_type, device=cls._get_device(device), **kw)
