@@ -16,6 +16,7 @@ class PLLScorerBase(ModelMixin):
     def score_statements(
         self,
         batched_statements: BatchEncoding,
+        *,
         scoring_masks: Optional[Sequence[ScoringMask]],
         batch_size: int = 1,
     ) -> List[List[float]]:
@@ -43,7 +44,7 @@ class MaskedLMScorer(PLLScorerBase):
 
     def score_statements(
         self,
-        batch: BatchEncoding,
+        batched_statements: BatchEncoding,
         *,
         scoring_masks: Optional[Sequence[ScoringMask]] = None,
         batch_size: int = 1,
@@ -51,11 +52,11 @@ class MaskedLMScorer(PLLScorerBase):
 
         if scoring_masks is None:
             # If no scoring mask is given, all non-special tokens are scored
-            scoring_masks = [(~mask.bool()).tolist() for mask in batch["special_tokens_mask"]]
+            scoring_masks = [(~mask.bool()).tolist() for mask in batched_statements["special_tokens_mask"]]
 
-        extended_batch = self.create_masked_batch(batch, scoring_masks)
+        extended_batch = self.create_masked_batch(batched_statements, scoring_masks)
 
-        token_scores: List[List[float]] = [[] for _ in range(batch["input_ids"].size(0))]
+        token_scores: List[List[float]] = [[] for _ in range(batched_statements["input_ids"].size(0))]
 
         # Split up the larger batch based on the batch size
         for sub in iter_batches(extended_batch, batch_size=batch_size):
@@ -166,7 +167,7 @@ class MaskedLMScorer(PLLScorerBase):
 class CausalLMScorer(PLLScorerBase):
     def score_statements(
         self,
-        batch: BatchEncoding,
+        batched_statements: BatchEncoding,
         *,
         scoring_masks: Optional[Sequence[ScoringMask]] = None,
         batch_size: int = 1,
@@ -176,10 +177,10 @@ class CausalLMScorer(PLLScorerBase):
 
         if scoring_masks is None:
             # If no scoring mask is given, all non-special tokens are scored
-            scoring_masks = [(~mask.bool()).tolist() for mask in batch["special_tokens_mask"]]
+            scoring_masks = [(~mask.bool()).tolist() for mask in batched_statements["special_tokens_mask"]]
 
         for subbatch, masks in zip(
-            iter_batches(batch, batch_size=batch_size),  # Iter through the batches
+            iter_batches(batched_statements, batch_size=batch_size),  # Iter through the batches
             iter_batches(scoring_masks, batch_size=batch_size),  # and masks at the same time
         ):
             # Forward the batch through the model
