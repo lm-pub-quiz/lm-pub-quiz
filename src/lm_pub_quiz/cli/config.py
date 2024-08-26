@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, Type, Union
+from typing import Any, Dict, Optional, Type, Union
 
 from lm_pub_quiz import Evaluator
 from lm_pub_quiz.evaluators import BaseEvaluator, TyQEvaluator
@@ -16,7 +16,7 @@ class ModelConfig:
     pll_metric: Optional[str] = None
 
     def create_evaluator(self, device: Union[str, int, None] = None) -> BaseEvaluator:
-        kw = {}
+        kw: Dict[str, Any] = {}
 
         if self.pll_metric is not None:
             kw["pll_metric"] = self.pll_metric

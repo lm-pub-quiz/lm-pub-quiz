@@ -1,5 +1,5 @@
 import logging
-from typing import Literal, Optional, Tuple, Type, Union
+from typing import Any, Dict, Literal, Optional, Tuple, Type, Union
 
 import torch
 from transformers import (
@@ -123,10 +123,12 @@ class ModelMixin(BaseMixin):
         *,
         model_type: Optional[str] = None,
         device: Union[torch.device, None, str, int] = None,
+        model_kw: Optional[Dict[str, Any]] = None,
         **kw,
     ) -> Self:
 
-        model = cls._get_model(model=model, model_type=model_type)
+        model_kw = model_kw or {}
+        model = cls._get_model(model=model, model_type=model_type, **model_kw)
         tokenizer = cls._get_tokenizer(model=model, tokenizer=kw.pop("tokenizer", None))
 
         return cls(model=model, tokenizer=tokenizer, model_type=model_type, device=cls._get_device(device), **kw)
