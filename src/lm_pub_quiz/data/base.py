@@ -43,7 +43,7 @@ class DataBase(ABC):
 
     @classmethod
     @abstractmethod
-    def from_path(cls, path: PathLike, *, lazy: bool = True, fmt: InstanceTableFileFormat = None):
+    def from_path(cls, path: PathLike, *, lazy: bool = True, fmt: InstanceTableFileFormat = None) -> "DataBase":
         """Load data from the given path.
 
         If `lazy`, only the metadata is loaded and the instances are loaded once they are accessed.
@@ -332,7 +332,7 @@ class RelationBase(DataBase):
         if fmt == ("jsonl",):
             instance_table.to_json(path, orient="records", lines=True)
 
-        elif fmt[0] == "parquet" and len(fmt) <= 2:  # noqa: PLR2004
+        elif 0 < len(fmt) <= 2 and fmt[0] == "parquet":  # noqa: PLR2004
             compression: Optional[str]
 
             if len(fmt) == 1:
@@ -354,9 +354,9 @@ class RelationBase(DataBase):
     def has_instance_table(self) -> bool:
         pass
 
-    def save(self, save_path: PathLike, fmt: InstanceTableFileFormat = None) -> Optional[Path]:
+    def save(self, path: PathLike, fmt: InstanceTableFileFormat = None) -> Optional[Path]:
         """Save results to a file and export meta_data"""
-        save_path = Path(save_path)
+        save_path = Path(path)
         save_path.mkdir(parents=True, exist_ok=True)
 
         log.debug("Saving %s result to: %s", self, save_path)
@@ -530,7 +530,7 @@ class DatasetBase(DataBase, Generic[RT]):
         save_path: Optional[PathLike] = None,
         keep_answer_space: bool = False,
         dataset_name: Optional[str] = None,
-    ):
+    ) -> Self:
         pass
 
     @property

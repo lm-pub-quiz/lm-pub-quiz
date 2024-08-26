@@ -48,8 +48,6 @@ class Relation(RelationBase):
         load_from_file: Class method to create a Relation instance from a JSONL file.
     """
 
-    relation_code: str
-
     def __init__(
         self,
         relation_code: str,
@@ -103,7 +101,7 @@ class Relation(RelationBase):
         relation_code: Optional[str] = None,
         lazy: bool = True,
         fmt: InstanceTableFileFormat = None,
-    ) -> "Relation":
+    ) -> Self:
         """
         Loads a relation from a JSONL file and associated metadata.
 
@@ -257,7 +255,7 @@ class Dataset(DatasetBase[Relation]):
         fmt: InstanceTableFileFormat = None,
         relation_info: Optional[PathLike] = None,
         **kwargs,
-    ) -> "Dataset":
+    ) -> Self:
         """
         Loads a multiple choice dataset from a specified directory path.
 
@@ -314,7 +312,7 @@ class Dataset(DatasetBase[Relation]):
         chunk_size: int = 10 * 1024,
         relation_info: Optional[PathLike] = None,
         **kwargs,
-    ) -> "Dataset":
+    ) -> Self:
         """
         Loads a dataset from the cache (if available) or the url which is specified in the internal dataset table.
 
@@ -388,7 +386,7 @@ class Dataset(DatasetBase[Relation]):
         fmt: InstanceTableFileFormat = None,
         dataset_name: Optional[str] = None,
         keep_answer_space: bool = False,
-    ):
+    ) -> Self:
         relations: List[Relation] = []
 
         for key, value in indices.items():
