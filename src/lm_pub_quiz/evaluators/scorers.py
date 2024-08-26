@@ -54,7 +54,7 @@ class MaskedLMScorer(PLLScorerBase):
             # If no scoring mask is given, all non-special tokens are scored
             scoring_masks = [(~mask.bool()).tolist() for mask in batched_statements["special_tokens_mask"]]
 
-        extended_batch = self.create_masked_batch(batched_statements, scoring_masks)
+        extended_batch = self.create_masked_batch(batched_statements.to(self.device), scoring_masks)
 
         token_scores: List[List[float]] = [[] for _ in range(batched_statements["input_ids"].size(0))]
 
@@ -75,7 +75,7 @@ class MaskedLMScorer(PLLScorerBase):
             batch_logits = batch_logits[torch.arange(batch_logits.size(0)), masked_indices].contiguous()
 
             batch_preds = torch.nn.functional.log_softmax(batch_logits, -1)
-            batch_scores = batch_preds[torch.arange(batch_labels.size(0)), batch_labels]
+            batch_scores = batch_preds[torch.arange(batch_labels.size(0)), batch_labels].to("cpu")
 
             # Retrieve the score for each of the tokens
             for statement_index, score in zip(statement_indices, batch_scores):
@@ -180,7 +180,7 @@ class CausalLMScorer(PLLScorerBase):
             scoring_masks = [(~mask.bool()).tolist() for mask in batched_statements["special_tokens_mask"]]
 
         for subbatch, masks in zip(
-            iter_batches(batched_statements, batch_size=batch_size),  # Iter through the batches
+            iter_batches(batched_statements.to(self.device), batch_size=batch_size),  # Iter through the batches
             iter_batches(scoring_masks, batch_size=batch_size),  # and masks at the same time
         ):
             # Forward the batch through the model
@@ -199,7 +199,7 @@ class CausalLMScorer(PLLScorerBase):
                     logits = batch_logits[i, mask].contiguous()
                     labels = batch_labels[i, mask].contiguous()
 
-                preds = torch.nn.functional.log_softmax(logits, -1)
+                preds = torch.nn.functional.log_softmax(logits, -1).to("cpu")
 
                 scores.append(preds[labels.size(0), labels].tolist())
 
