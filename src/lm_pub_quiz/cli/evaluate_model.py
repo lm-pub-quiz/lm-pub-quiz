@@ -15,7 +15,8 @@ log = logging.getLogger(__name__)
 @dataclass
 class Configuration:
     model: ModelConfig
-    dataset_path: Path
+    dataset_path: Optional[Path] = None
+    dataset_name: Optional[str] = None
     output_base_path: Path = Path("outputs")
     debug: bool = field(default=False, metadata={"help": "Only use 2 instances per relation (if true)."})
     device: Union[str, None] = None
@@ -26,8 +27,15 @@ class Configuration:
 
 def evaluate_model(config: Configuration):
     """Evaluate a given model on a dataset."""
+
     # Load dataset
-    dataset = Dataset.from_path(config.dataset_path)
+    if config.dataset_path is not None:
+        dataset = Dataset.from_path(config.dataset_path, name=config.dataset_name)
+    elif config.dataset_name is not None:
+        dataset = Dataset.from_name(config.dataset_name)
+    else:
+        msg = "Either the dataset path or the dataset name must be specified."
+        raise ValueError(msg)
 
     # Create Evaluator (and load model)
     evaluator: BaseEvaluator = config.model.create_evaluator(config.device)

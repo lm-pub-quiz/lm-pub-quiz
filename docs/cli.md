@@ -7,7 +7,7 @@ There are three commands introduced by this package:
 | :------ | :---------- |
 | [`score_sentence`](#score_sentence) | A thin wrapper around [`minicons` package](https://github.com/kanishkamisra/minicons) -- scores a given sentence. |
 | [`rank_answers`](#rank_answers) | Rank answers for a given template. |
-| [`evaluate_dataset`](#evaluate_dataset) | Run a complete evaluation on a given dataset. |
+| [`evaluate_model`](#evaluate_model) | Run a complete evaluation of a model on a given dataset. |
 
 
 Run a command with `--help` to get a description of the command and all its configuration options.
@@ -41,11 +41,12 @@ Configuration files can be in either of the following formats (the extension mus
 - YAML (`.yaml` or `.yml`)
 - TOML (`.toml`)
 
-## `evaluate_dataset`
+## `evaluate_model`
 
 | Option       | Description | 
 | :----------- | :---------- |
-| `dataset_path` | Path to the dataset which is used for the evaluation. |
+| `dataset_path` | Path to the dataset used for the evaluation. |
+| `dataset_name` | Name of the the dataset used for the evaluation. |
 | `batch_size` | How many sentences score per batch. |
 | `output_base_path` | Base path for storing the results. |
 | `debug` | Set `debug` to true (or use `--debug`) to only evaluate two random instances per relation. |
