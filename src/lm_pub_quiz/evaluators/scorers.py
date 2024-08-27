@@ -100,7 +100,7 @@ class MaskedLMScorer(PLLScorerBase):
         mask_indices = self.mask_to_indices(scoring_masks)
 
         extended_batch = {
-            k: torch.repeat_interleave(v, torch.tensor([i.size(0) for i in mask_indices]), dim=0)
+            k: torch.repeat_interleave(v, torch.tensor([i.size(0) for i in mask_indices], device=v.device), dim=0)
             for k, v in batch.items()
         }
 
