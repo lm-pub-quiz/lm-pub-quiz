@@ -123,9 +123,9 @@ class BaseEvaluator(Templater, ModelMixin, ABC):
             pll_scores = self.evaluate_instance(
                 template=template,
                 answers=relation.answer_space.tolist(),
-                batch_size=batch_size,
                 subject=str(row["sub_label"]),
                 reduction=reduction,
+                batch_size=batch_size,
             )
 
             if reduction is None:
@@ -187,11 +187,11 @@ class BaseEvaluator(Templater, ModelMixin, ABC):
                 relation_result = self.evaluate_relation(
                     relation,
                     template_index=template_index,
-                    batch_size=batch_size,
                     subsample=subsample,
                     reduction=reduction,
                     create_instance_table=create_instance_table,
                     metric=metric,
+                    batch_size=batch_size,
                 )
                 self.update_result_metadata(relation_result, dataset=dataset)
 
@@ -491,7 +491,12 @@ class MaskedLMEvaluator(MaskedLMScorer, Evaluator):
         In case the conditional scores need to be created, set the scoring mask accordingly.
         """
         batch = self.tokenizer(
-            list(statements), return_tensors="pt", padding=True, return_special_tokens_mask=True, return_length=True
+            list(statements),
+            return_tensors="pt",
+            padding=True,
+            return_special_tokens_mask=True,
+            return_length=True,
+            return_attention_mask=True,
         )
 
         if self.conditional_score:
@@ -499,8 +504,8 @@ class MaskedLMEvaluator(MaskedLMScorer, Evaluator):
 
             scoring_masks = []
 
-            for roles in token_roles:
-                mask = [False] * batch["input_ids"].size(1)
+            for input_ids, roles in zip(batch["input_ids"], token_roles):
+                mask = [False] * len(input_ids)
 
                 # Only set the mask to true where a token is part of the answer
                 for i in roles["answer"]:
@@ -522,10 +527,15 @@ class CausalLMEvaluator(CausalLMScorer, Evaluator):
         In case the conditional scores need to be created, set the scoring mask accordingly.
         """
         batch = self.tokenizer(
-            list(statements), return_tensors="pt", padding=True, return_special_tokens_mask=True, return_length=True
+            list(statements),
+            return_tensors="pt",
+            padding=True,
+            return_special_tokens_mask=True,
+            return_length=True,
+            return_attention_mask=True,
         )
 
-        scoring_masks = [(~mask.bool()).tolist() for mask in batch["special_tokens_mask"]]
+        scoring_masks = self.default_scoring_mask(batch)
 
         if self.conditional_score:
             token_roles = self.derive_token_roles(batch, span_roles, scoring_masks=None)

@@ -58,7 +58,11 @@ class ModelMixin(BaseMixin):
 
     @classmethod
     def _get_model(
-        cls, model: Union[str, PreTrainedModel], model_type: Optional[str] = None, device: Optional[str] = None, **kw
+        cls,
+        model: Union[str, PreTrainedModel],
+        model_type: Optional[str] = None,
+        device: Optional[torch.device] = None,
+        **kw,
     ) -> PreTrainedModel:
         if not isinstance(model, str):
             return model
@@ -78,7 +82,15 @@ class ModelMixin(BaseMixin):
             log.error(msg)
             raise ValueError(msg)
 
-        return model_class.from_pretrained(model, device_map=device, return_dict=True, **kw)
+        if "device_map" not in kw and device is not None:
+            kw["device_map"] = device
+
+        model = model_class.from_pretrained(model, return_dict=True, **kw)
+
+        if "device_map" not in kw and device is not None:
+            model.to(device)
+
+        return model
 
     @staticmethod
     def _get_tokenizer(
@@ -87,13 +99,23 @@ class ModelMixin(BaseMixin):
         """Retrieve a tokenizer that matches the model or tokenizer string."""
         if tokenizer is None:
             if isinstance(model, str):
-                return AutoTokenizer.from_pretrained(model, use_fast=True)
+                tokenizer = AutoTokenizer.from_pretrained(model, use_fast=True)
             else:
-                return AutoTokenizer.from_pretrained(model.config.name_or_path, use_fast=True)
+                tokenizer = AutoTokenizer.from_pretrained(model.config.name_or_path, use_fast=True)
         elif isinstance(tokenizer, str):
-            return AutoTokenizer.from_pretrained(tokenizer, use_fast=True)
-        else:
-            return tokenizer
+            tokenizer = AutoTokenizer.from_pretrained(tokenizer, use_fast=True)
+
+        assert isinstance(tokenizer, PreTrainedTokenizerFast)
+
+        if tokenizer.pad_token is None:
+            if tokenizer.eos_token is not None:
+                log.info("Tokenizer has no PAD token: Using the EOS token instead.")
+                tokenizer.pad_token = tokenizer.eos_token
+            else:
+                msg = "Tokenizer has not PAD or EOS token."
+                raise ValueError(msg)
+
+        return tokenizer
 
     @classmethod
     def _infer_type_from_name(cls, model: str) -> Literal["MLM", "CLM"]:
@@ -111,10 +133,7 @@ class ModelMixin(BaseMixin):
     @classmethod
     def _infer_type_from_object(cls, model: PreTrainedModel):
         """Infer the type of model (MLM or CLM) based on model object."""
-        if model.config.is_decoder:
-            return "CLM"
-        else:
-            return "MLM"
+        return cls._infer_type_from_name(model.config.model_type)
 
     @classmethod
     def from_model(
@@ -127,8 +146,13 @@ class ModelMixin(BaseMixin):
         **kw,
     ) -> Self:
 
+        device = cls._get_device(device)
+
         model_kw = model_kw or {}
+        if "device" not in model_kw:
+            model_kw["device"] = device
+
         model = cls._get_model(model=model, model_type=model_type, **model_kw)
         tokenizer = cls._get_tokenizer(model=model, tokenizer=kw.pop("tokenizer", None))
 
-        return cls(model=model, tokenizer=tokenizer, model_type=model_type, device=cls._get_device(device), **kw)
+        return cls(model=model, tokenizer=tokenizer, model_type=model_type, device=device, **kw)

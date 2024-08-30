@@ -1,8 +1,8 @@
-from typing import Dict, Iterable, Optional, TypeVar, Union, overload
+from typing import Dict, Generator, List, Optional, TypeVar
 
 import torch
-
-T = TypeVar("T", list, torch.Tensor)
+from transformers import BatchEncoding
+from typing_extensions import reveal_type
 
 
 class BaseMixin:
@@ -10,35 +10,43 @@ class BaseMixin:
         pass
 
 
-@overload
-def iter_batches(batch: T, batch_size: int) -> Iterable[T]: ...
+DataCollection = TypeVar("DataCollection", Dict, List, torch.Tensor, BatchEncoding)
 
 
-@overload
-def iter_batches(batch: Dict[str, T], batch_size: int) -> Iterable[Dict[str, T]]: ...
-
-
-def iter_batches(batch: Union[T, Dict[str, T]], batch_size: int) -> Union[Iterable[T], Iterable[Dict[str, T]]]:
+def iter_batches(data_collection: DataCollection, batch_size: int) -> Generator[DataCollection, None, None]:
     """Yield successive n-sized chunks from tensors in provided dictionary."""
-    if isinstance(batch, dict):
-        if len(batch) == 0:
+
+    if isinstance(data_collection, BatchEncoding):
+        data = data_collection.data
+    else:
+        data = data_collection
+
+    if isinstance(data, dict):
+        if len(data) == 0:
             return
         else:
             # Determine the total number of elements
             n: Optional[int] = None
-            for v in batch.values():
+            for v in data.values():
                 if n is not None and len(v) != n:
                     msg = "Values in batch have uneven sizes."
                     raise ValueError(msg)
                 else:
                     n = len(v)
     else:
-        n = len(batch)
+        n = len(data)
 
     assert n is not None
 
-    for i in range(0, n, batch_size):
-        if isinstance(batch, dict):
-            yield {k: v[i : i + batch_size] for k, v in batch.items()}
-        else:
-            yield batch[i : i + batch_size]
+    if isinstance(data_collection, BatchEncoding):
+        for i in range(0, n, batch_size):
+            yield BatchEncoding({k: v[i : i + batch_size] for k, v in data.items()})
+
+    elif isinstance(data_collection, dict):
+        reveal_type(data_collection)
+        for i in range(0, n, batch_size):
+            yield {k: v[i : i + batch_size] for k, v in data.items()}
+
+    else:
+        for i in range(0, n, batch_size):
+            yield data[i : i + batch_size]

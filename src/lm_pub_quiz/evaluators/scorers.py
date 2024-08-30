@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Dict, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
 import torch
 from transformers import BatchEncoding
@@ -54,21 +54,23 @@ class MaskedLMScorer(PLLScorerBase):
             # If no scoring mask is given, all non-special tokens are scored
             scoring_masks = [(~mask.bool()).tolist() for mask in batched_statements["special_tokens_mask"]]
 
-        extended_batch = self.create_masked_batch(batched_statements.to(self.device), scoring_masks)
+        extended_batch = self.create_masked_batch(batched_statements, scoring_masks)
 
         token_scores: List[List[float]] = [[] for _ in range(batched_statements["input_ids"].size(0))]
 
         # Split up the larger batch based on the batch size
-        for sub in iter_batches(extended_batch, batch_size=batch_size):
-            batch_labels = sub.pop("labels")
-            masked_indices = sub.pop("masked_indices")
-            statement_indices = sub.pop("statement_index")
+        for minibatch in iter_batches(extended_batch.to(self.device), batch_size=batch_size):
+            minibatch.to(self.device)
+
+            masked_indices = minibatch.pop("masked_indices")
+            statement_indices = minibatch.pop("statement_index")
+            batch_labels = minibatch.pop("labels")
 
             # Forward the batches through the model
             with torch.no_grad():
-                del sub["special_tokens_mask"]
-                del sub["length"]
-                model_output = self.model(**sub)
+                minibatch.pop("special_tokens_mask")
+                minibatch.pop("length")
+                model_output = self.model(**minibatch)
 
             # Shift so that tokens < n predict n
             batch_logits = model_output.logits
@@ -89,13 +91,11 @@ class MaskedLMScorer(PLLScorerBase):
         # Replace the relevant tokens by the pad token
         for mask in scoring_masks:
             (indices,) = torch.where(torch.tensor(mask))
-            mask_indices.append(indices)
+            mask_indices.append(indices.to(self.device))
 
         return mask_indices
 
-    def create_masked_batch(
-        self, batch: BatchEncoding, scoring_masks: Sequence[ScoringMask]
-    ) -> Dict[str, torch.Tensor]:
+    def create_masked_batch(self, batch: BatchEncoding, scoring_masks: Sequence[ScoringMask]) -> BatchEncoding:
         """Extend the existing batch and mask the relevant tokens based on the scoring mask."""
         mask_indices = self.mask_to_indices(scoring_masks)
 
@@ -105,12 +105,17 @@ class MaskedLMScorer(PLLScorerBase):
         }
 
         # Prepare tensors holding relevant information
-        extended_batch["labels"] = torch.full((extended_batch["input_ids"].size(0),), -1, dtype=torch.long)
-        extended_batch["masked_indices"] = torch.full((extended_batch["input_ids"].size(0),), -1, dtype=torch.long)
-        extended_batch["statement_index"] = torch.full((extended_batch["input_ids"].size(0),), -1, dtype=torch.long)
+        extended_batch["labels"] = torch.full(
+            (extended_batch["input_ids"].size(0),), -1, dtype=torch.long, device=self.device
+        )
+        extended_batch["masked_indices"] = torch.full(
+            (extended_batch["input_ids"].size(0),), -1, dtype=torch.long, device=self.device
+        )
+        extended_batch["statement_index"] = torch.full(
+            (extended_batch["input_ids"].size(0),), -1, dtype=torch.long, device=self.device
+        )
 
         ### Apply the masking strategy ###
-
         statement_offset = 0  # to keep track which element in large batch to modify
 
         for statemet_index, token_indices in enumerate(mask_indices):
@@ -118,7 +123,7 @@ class MaskedLMScorer(PLLScorerBase):
             n = token_indices.size(0)
 
             # Passes within the extended_batch which belong to the current statement
-            extended_batch_indices = torch.arange(statement_offset, statement_offset + n)
+            extended_batch_indices = torch.arange(statement_offset, statement_offset + n, device=self.device)
 
             extended_batch["labels"][extended_batch_indices] = extended_batch["input_ids"][
                 extended_batch_indices, token_indices
@@ -161,10 +166,13 @@ class MaskedLMScorer(PLLScorerBase):
 
             statement_offset += n
 
-        return extended_batch
+        return BatchEncoding(extended_batch)
 
 
 class CausalLMScorer(PLLScorerBase):
+    def default_scoring_mask(self, batched_statements: BatchEncoding) -> Sequence[ScoringMask]:
+        return [(~mask.bool()).tolist()[1:] for mask in batched_statements["special_tokens_mask"]]
+
     def score_statements(
         self,
         batched_statements: BatchEncoding,
@@ -177,19 +185,21 @@ class CausalLMScorer(PLLScorerBase):
 
         if scoring_masks is None:
             # If no scoring mask is given, all non-special tokens are scored
-            scoring_masks = [(~mask.bool()).tolist() for mask in batched_statements["special_tokens_mask"]]
+            scoring_masks = self.default_scoring_mask(batched_statements)
 
-        for subbatch, masks in zip(
+        for minibatch, masks in zip(
             iter_batches(batched_statements.to(self.device), batch_size=batch_size),  # Iter through the batches
             iter_batches(scoring_masks, batch_size=batch_size),  # and masks at the same time
         ):
             # Forward the batch through the model
             with torch.no_grad():
-                model_output = self.model(subbatch)
+                minibatch.pop("special_tokens_mask")
+                minibatch.pop("length")
+                model_output = self.model(**minibatch)
 
             # Shift so that tokens < n predict n
             batch_logits = model_output.logits[:, :-1]
-            batch_labels = subbatch["input_ids"][:, 1:]
+            batch_labels = minibatch["input_ids"][:, 1:]
 
             for i, mask in enumerate(masks):
                 if mask is None:
@@ -199,8 +209,8 @@ class CausalLMScorer(PLLScorerBase):
                     logits = batch_logits[i, mask].contiguous()
                     labels = batch_labels[i, mask].contiguous()
 
-                preds = torch.nn.functional.log_softmax(logits, -1).to("cpu")
+                preds = torch.nn.functional.log_softmax(logits, -1)
 
-                scores.append(preds[labels.size(0), labels].tolist())
+                scores.append(preds[torch.arange(labels.size(0)), labels].to("cpu").tolist())
 
         return scores

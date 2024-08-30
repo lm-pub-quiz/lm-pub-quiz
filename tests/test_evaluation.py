@@ -5,6 +5,7 @@ import pytest
 
 from lm_pub_quiz import Dataset, DatasetResults, Evaluator, RelationResult
 from lm_pub_quiz.data import NoInstanceTableError
+from lm_pub_quiz.evaluators.base import CausalLMEvaluator, MaskedLMEvaluator
 
 log = logging.getLogger(__name__)
 
@@ -16,12 +17,22 @@ def test_evaluator_instantiations(model_key, model_cache):
     # Instantiate using model name
     Evaluator.from_model(model.name_or_path, model_type=model.model_type)
 
-    Evaluator.from_model(model.name_or_path)
+    evaluator = Evaluator.from_model(model.name_or_path)
+
+    if model.model_type == "MLM":
+        assert isinstance(evaluator, MaskedLMEvaluator)
+    else:
+        assert isinstance(evaluator, CausalLMEvaluator)
 
     # Instantiate from existing model
     Evaluator.from_model(model.model, tokenizer=model.tokenizer, model_type=model.model_type)
 
-    Evaluator.from_model(model.model, tokenizer=model.tokenizer)
+    evaluator = Evaluator.from_model(model.model, tokenizer=model.tokenizer)
+
+    if model.model_type == "MLM":
+        assert isinstance(evaluator, MaskedLMEvaluator)
+    else:
+        assert isinstance(evaluator, CausalLMEvaluator)
 
 
 @pytest.mark.parametrize("model_key", ("distilbert", "distilgpt"))
