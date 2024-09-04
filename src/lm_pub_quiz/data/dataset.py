@@ -71,11 +71,16 @@ class Relation(RelationBase):
         )
         self.templates = templates
 
-    def get_metadata(self) -> Dict[str, Any]:
-        return {
-            "templates": self.templates,
-            **super().get_metadata(),
-        }
+    def get_metadata(self, key: Optional[str] = None) -> Any:
+        if key == "template":
+            return self.templates
+        elif key is not None:
+            return super().get_metadata(key)
+        else:
+            return {
+                "templates": self.templates,
+                **super().get_metadata(),
+            }
 
     @property
     def has_instance_table(self) -> bool:

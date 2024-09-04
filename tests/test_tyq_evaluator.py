@@ -41,8 +41,8 @@ def test_tyq_evaluator(distilbert, request, tmp_path):
                 assert len(row["pll_scores"]) == 3
                 assert row["answer_idx"] == row["pll_scores"].index(max(row["pll_scores"]))
 
-            assert r.metadata["dataset_name"] == "dummy_dataset"
-            assert "distilbert" in r.metadata["model_name_or_path"]
+            assert r.get_metadata("dataset_name") == "dummy_dataset"
+            assert "distilbert" in r.get_metadata("model_name_or_path")
 
 
 def test_reduction_functionality(distilbert):

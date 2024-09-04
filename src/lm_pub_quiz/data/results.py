@@ -59,15 +59,23 @@ class RelationResult(RelationBase):
             lazy_options=lazy_options,
             relation_info=relation_info,
         )
-        self.metadata = metadata
+        self._metadata = metadata
         self.metric_values: Dict[str, Any] = metric_values or {}
 
-    def get_metadata(self) -> Dict[str, Any]:
-        return {
-            **self.metadata,
-            "metric_values": self.metric_values,
-            **super().get_metadata(),
-        }
+    def get_metadata(self, key: Optional[str] = None) -> Any:
+        if key == "metric_values":
+            return self.metric_values
+        elif key is not None:
+            try:
+                return self._metadata[key]
+            except KeyError:
+                return super().get_metadata(key)
+        else:
+            return {
+                "metric_values": self.get_metadata("metric_values"),
+                **self._metadata,
+                **super().get_metadata(),
+            }
 
     @property
     def has_instance_table(self):
@@ -75,7 +83,7 @@ class RelationResult(RelationBase):
 
     @property
     def used_template(self):
-        return self.metadata["templates"][self.metadata["template_index"]]
+        return self.get_metadata("templates")[self.get_metadata("template_index")]
 
     @classmethod
     def from_path(
@@ -171,7 +179,7 @@ class RelationResult(RelationBase):
 
     def copy(self, **kw):
         if "metadata" not in kw:
-            kw["metadata"] = deepcopy(self.metadata)
+            kw["metadata"] = deepcopy(self._metadata)
 
         return super().copy(**kw)
 
@@ -182,7 +190,7 @@ class RelationResult(RelationBase):
         reduction_name: Optional[str] = None,
         pass_indices: bool = False,
     ) -> Self:
-        if self.metadata.get("reduction") is not None:
+        if self.get_metadata("reduction") is not None:
             msg = "The conversion to reduced format is only possible if the original reduction is set to None."
             raise RuntimeError(msg)
 
@@ -216,7 +224,7 @@ class RelationResult(RelationBase):
         instance_table.drop(columns=["tokens", "sub_indices", "obj_indices", "template_indices"], inplace=True)
         instance_table["pll_scores"] = reduced_scores
 
-        metadata = self.metadata.copy()
+        metadata = self._metadata.copy()
         metadata["reduction"] = reduction_name
 
         return self.copy(
@@ -226,7 +234,7 @@ class RelationResult(RelationBase):
 
     def get_metric(self, metric: str):
         rel = self
-        if self.metadata["reduction"] is None:
+        if self.get_metadata("reduction") is None:
             warnings.warn(
                 "Results are in the raw form. Defaulting to 'sum' reduction. "
                 "Use `raw_format_converter` method for the explicit choice of the reduction method.",
@@ -255,8 +263,8 @@ class RelationResult(RelationBase):
                 raise RuntimeError(msg) from e
 
     def __len__(self) -> int:
-        if self.is_lazy and "support" in self.metadata:
-            return self.metadata["support"]
+        if self.is_lazy and "support" in self._metadata:
+            return self._metadata["support"]
         else:
             return len(self.instance_table)
 
@@ -272,20 +280,23 @@ class RelationResult(RelationBase):
 
         instance_table = original_instance_table.iloc[indices].copy().reset_index()
 
-        metadata = self.metadata.copy()
+        metadata = self._metadata.copy()
         if dataset_name is not None:
             metadata["dataset_name"] = dataset_name
 
         if keep_answer_space:
             answer_space = original_answer_space
         else:
+            # Map answers to new answer space
             answer_space = self.answer_space_from_instance_table(instance_table)
 
-            old_positions = [self.answer_space.index.get_loc(_id) for _id in answer_space.index]
+            old_positions = [original_answer_space.index.get_loc(_id) for _id in answer_space.index]
 
             answer_space_translation = {_id: i for i, _id in enumerate(old_positions)}
+            instance_table["answer_idx"] = instance_table["answer_idx"].map(answer_space_translation)
 
-            if self.metadata["reduction"] is None:
+            # Filter all columns which store lists with an element per answer
+            if self.get_metadata("reduction") is None:
 
                 def _filter_indices(values, kept_indices=old_positions):
                     return [values[i] for i in kept_indices]
@@ -299,8 +310,6 @@ class RelationResult(RelationBase):
                     return [scores[i] for i in old_positions]
 
                 instance_table["pll_scores"] = instance_table["pll_scores"].map(_filter_scores)
-
-            instance_table["answer_idx"] = instance_table["answer_idx"].map(answer_space_translation)
 
         return self.copy(
             instance_table=instance_table,

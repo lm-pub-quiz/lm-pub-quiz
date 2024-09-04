@@ -2,7 +2,6 @@ from typing import Dict, Generator, List, Optional, TypeVar
 
 import torch
 from transformers import BatchEncoding
-from typing_extensions import reveal_type
 
 
 class BaseMixin:
@@ -43,7 +42,6 @@ def iter_batches(data_collection: DataCollection, batch_size: int) -> Generator[
             yield BatchEncoding({k: v[i : i + batch_size] for k, v in data.items()})
 
     elif isinstance(data_collection, dict):
-        reveal_type(data_collection)
         for i in range(0, n, batch_size):
             yield {k: v[i : i + batch_size] for k, v in data.items()}
 

@@ -4,6 +4,7 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from typing import (
+    Any,
     Callable,
     Dict,
     Iterable,
@@ -42,6 +43,7 @@ from lm_pub_quiz.types import (
     TokenRoles,
 )
 from lm_pub_quiz.util import parse_dumped_raw_results
+from lm_pub_quiz.__about__ import __version__
 
 tqdm.pandas()
 
@@ -150,9 +152,12 @@ class BaseEvaluator(Templater, ModelMixin, ABC):
         for m in metrics:
             relation_result.metric_values.update(m.compute())
 
-        relation_result.metadata["time_end"] = datetime.now(tz=timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M:%S")
-
-        self.update_result_metadata(relation_result, reduction=reduction)
+        relation_result._metadata.update(
+            {
+                "time_end": datetime.now(tz=timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M:%S"),
+                **self.get_result_metadata(reduction=reduction),
+            }
+        )
 
         return relation_result
 
@@ -193,7 +198,7 @@ class BaseEvaluator(Templater, ModelMixin, ABC):
                     metric=metric,
                     batch_size=batch_size,
                 )
-                self.update_result_metadata(relation_result, dataset=dataset)
+                relation_result._metadata.update(self.get_result_metadata(dataset=dataset))
 
                 if save_path is not None:
                     log.debug("Saving")
@@ -210,13 +215,19 @@ class BaseEvaluator(Templater, ModelMixin, ABC):
 
         return dataset_results
 
-    def update_result_metadata(self, result, **kw) -> None:
-        if "dataset" in kw:
-            dataset = kw.pop("dataset")
-            result.metadata["dataset_path"] = dataset.path
-            result.metadata["dataset_name"] = dataset.name
+    def get_result_metadata(self, **kw) -> Dict[str, Any]:
+        metadata = {
+            "lm_pub_quiz_version": __version__,
+        }
 
-        result.metadata.update(kw)
+        if "dataset" in kw:
+            dataset = kw["dataset"]
+            metadata["dataset_path"] = dataset.path
+            metadata["dataset_name"] = dataset.name
+
+        if "reduction" in kw:
+            metadata["reduction"] = kw["reduction"]
+        return metadata
 
     @staticmethod
     def print_ranking(answers: Iterable[str], scores: List[float]) -> None:
@@ -480,8 +491,8 @@ class Evaluator(BaseEvaluator, PLLScorerBase):
 
 
 class MaskedLMEvaluator(MaskedLMScorer, Evaluator):
-    def update_result_metadata(self, result, **kw) -> None:
-        super().update_result_metadata(result, pll_metric=self.pll_metric, **kw)
+    def get_result_metadata(self, **kw) -> Dict[str, Any]:
+        return {"pll_metric": self.pll_metric, **super().get_result_metadata(**kw)}
 
     def encode(
         self, statements: Sequence[str], span_roles: Sequence[SpanRoles]
