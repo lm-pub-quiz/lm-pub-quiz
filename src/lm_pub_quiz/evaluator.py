@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from itertools import islice
 from typing import (
+    Any,
     Callable,
     Dict,
     Iterable,
@@ -29,6 +30,7 @@ from transformers import (
     PreTrainedTokenizerFast,
 )
 
+from lm_pub_quiz.__about__ import __version__
 from lm_pub_quiz.data import Dataset, DatasetResults, Relation, RelationResult
 from lm_pub_quiz.data.base import InstanceTableFileFormat
 from lm_pub_quiz.metrics import RelationMetric
@@ -110,6 +112,7 @@ class BaseEvaluator(ABC):
                 "subsampled": subsample,
                 "time_start": datetime.now(tz=timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M:%S"),
                 "relation_type": relation_type,
+                "lm_pub_quiz_version": __version__,
             },
             relation_info=relation.relation_info(),
         )
@@ -166,9 +169,12 @@ class BaseEvaluator(ABC):
         for m in metrics:
             relation_result.metric_values.update(m.compute())
 
-        relation_result.metadata["time_end"] = datetime.now(tz=timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M:%S")
-
-        self.update_result_metadata(relation_result, reduction=reduction)
+        relation_result._metadata.update(
+            {
+                "time_end": datetime.now(tz=timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M:%S"),
+                **self.get_result_metadata(reduction=reduction),
+            }
+        )
 
         return relation_result
 
@@ -209,7 +215,7 @@ class BaseEvaluator(ABC):
                     create_instance_table=create_instance_table,
                     metric=metric,
                 )
-                self.update_result_metadata(relation_result, dataset=dataset)
+                relation_result._metadata.update(self.get_result_metadata(dataset=dataset))
 
                 if save_path is not None:
                     relation_result = relation_result.saved(save_path, fmt=fmt)
@@ -221,14 +227,17 @@ class BaseEvaluator(ABC):
 
         return dataset_results
 
-    def update_result_metadata(self, result, **kw) -> None:
+    def get_result_metadata(self, **kw) -> Dict[str, Any]:
+        metadata = {}
+
         if "dataset" in kw:
             dataset = kw["dataset"]
-            result.metadata["dataset_path"] = dataset.path
-            result.metadata["dataset_name"] = dataset.name
+            metadata["dataset_path"] = dataset.path
+            metadata["dataset_name"] = dataset.name
 
         if "reduction" in kw:
-            result.metadata["reduction"] = kw["reduction"]
+            metadata["reduction"] = kw["reduction"]
+        return metadata
 
     def _set_device(self, device_input: Union[int, str]):
         if isinstance(device_input, int):
@@ -607,11 +616,8 @@ class MaskedLMEvaluator(Evaluator):
                 )
             ]
 
-    def update_result_metadata(self, result, **kw) -> None:
-        if "pll_metric" in kw:
-            result.metadata["pll_metric"] = kw.pop("pll_metric")
-
-        super().update_result_metadata(result, **kw)
+    def get_result_metadata(self, **kw) -> Dict[str, Any]:
+        return {"pll_metric": self.pll_metric, **super().get_result_metadata(**kw)}
 
 
 class CausalLMEvaluator(Evaluator):

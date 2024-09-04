@@ -137,16 +137,6 @@ class RelationBase(DataBase):
     def __str__(self) -> str:
         return f"{self.__class__.__name__} `{self.relation_code}`"
 
-    def get_metadata(self) -> Dict[str, Any]:
-        if self._answer_space is not None:
-            return {
-                "answer_space_labels": self.answer_space.tolist(),
-                "answer_space_ids": self.answer_space.index.tolist(),
-                "relation_info": self._relation_info.copy(),
-            }
-        else:
-            return {}
-
     @property
     def _derived_cardinality(self) -> str:
         if self.instance_table.duplicated("obj_id").any():
@@ -174,6 +164,33 @@ class RelationBase(DataBase):
         if "cardinality" not in info:
             info["cardinality"] = self._derived_cardinality
         return info
+
+    @overload
+    def get_metadata(self) -> Dict[str, Any]: ...
+
+    @overload
+    def get_metadata(self, key: str, /) -> Any: ...
+
+    def get_metadata(self, key: Optional[str] = None) -> Union[Any, Dict[str, Any]]:
+        """Get or set metadata."""
+        if key is not None:
+            if self._answer_space is None:
+                msg = f"Key '{key}' not in metadata (no answer space in metadata)."
+                raise KeyError(msg)
+            elif key == "answer_space_labels":
+                return self.answer_space.tolist()
+            elif key == "answer_space_ids":
+                return self.answer_space.index.tolist()
+            elif key == "relation_info":
+                return self.relation_info()
+            else:
+                msg = f"Key '{key}' not in metadata."
+                raise KeyError(msg)
+
+        elif self._answer_space is not None:
+            return {k: self.get_metadata(k) for k in ("answer_space_labels", "answer_space_ids", "relation_info")}
+        else:
+            return {}
 
     @staticmethod
     def _generate_obj_ids(n: int, *, id_prefix: str = ""):

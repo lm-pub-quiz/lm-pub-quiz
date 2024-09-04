@@ -43,10 +43,10 @@ def test_new_style_results_loading(request, lazy):
 
             assert r.get_metric("accuracy") == 1.0
 
-            assert r.metadata["dataset_name"] == "dummy_dataset"
-            assert r.metadata["reduction"] == "sum"
+            assert r.get_metadata("dataset_name") == "dummy_dataset"
+            assert r.get_metadata("reduction") == "sum"
 
-            assert "distilbert" in r.metadata["model_name_or_path"]
+            assert "distilbert" in r.get_metadata("model_name_or_path")
 
     df = results.get_metrics(["accuracy", "precision_at_k"])
 
@@ -54,7 +54,7 @@ def test_new_style_results_loading(request, lazy):
     assert isinstance(df.loc["example_1", "precision_at_k"], list)
 
     for r in results:
-        del r.metadata["metrics"]
+        r.metric_values.clear()
 
     df = results.get_metrics(["accuracy", "precision_at_k"])
 
@@ -100,10 +100,10 @@ def test_old_style_results_loading(request, lazy):
 
             assert r.get_metric("accuracy") == 1.0
 
-            assert r.metadata["dataset_name"] == "dummy_dataset"
-            assert r.metadata["reduction"] == "sum"
+            assert r.get_metadata("dataset_name") == "dummy_dataset"
+            assert r.get_metadata("reduction") == "sum"
 
-            assert "distilbert" in r.metadata["model_name_or_path"]
+            assert "distilbert" in r.get_metadata("model_name_or_path")
 
     df = results.get_metrics(["accuracy", "precision_at_k"])
 
@@ -111,7 +111,7 @@ def test_old_style_results_loading(request, lazy):
     assert isinstance(df.loc["example_1", "precision_at_k"], list)
 
     for r in results:
-        del r.metadata["metrics"]
+        r.metric_values.clear()
 
     df = results.get_metrics(["accuracy", "precision_at_k"])
 
@@ -203,10 +203,10 @@ def test_result_subset_same_answer_space(request, tmp_path, lazy_result):
 
             assert r.get_metric("accuracy") == 1.0
 
-            assert r.metadata["dataset_name"] == "dummy_subset"
-            assert r.metadata["reduction"] == "sum"
+            assert r.get_metadata("dataset_name") == "dummy_subset"
+            assert r.get_metadata("reduction") == "sum"
 
-            assert "distilbert" in r.metadata["model_name_or_path"]
+            assert "distilbert" in r.get_metadata("model_name_or_path")
 
     df = results.get_metrics(["accuracy", "precision_at_k"])
 
@@ -214,7 +214,7 @@ def test_result_subset_same_answer_space(request, tmp_path, lazy_result):
     assert isinstance(df.loc["example_1", "precision_at_k"], list)
 
     for r in results:
-        del r.metadata["metrics"]
+        r.metric_values.clear()
 
     df = results.get_metrics(["accuracy", "precision_at_k"])
 
@@ -264,8 +264,12 @@ def test_result_subset_smaller_answer_space(request, tmp_path, lazy_result):
                 log.info(row)
 
                 columns = ["tokens", "pll_scores", "sub_indices", "obj_indices", "template_indices"]
+
+                answer_space_size = len(r.answer_space)
+                assert answer_space_size == 2
+
                 for c in columns:
-                    assert len(row[c]) == 2
+                    assert len(row[c]) == answer_space_size
 
                 assert row["answer_idx"] == np.argmax(np.array([sum(v) for v in row["pll_scores"]]))
 
@@ -273,10 +277,10 @@ def test_result_subset_smaller_answer_space(request, tmp_path, lazy_result):
             with pytest.warns(UserWarning):
                 assert r.get_metric("accuracy") == 1.0
 
-            assert r.metadata["dataset_name"] == "dummy_dataset"
-            assert r.metadata["reduction"] is None
+            assert r.get_metadata("dataset_name") == "dummy_dataset"
+            assert r.get_metadata("reduction") is None
 
-            assert "distilbert" in r.metadata["model_name_or_path"]
+            assert "distilbert" in r.get_metadata("model_name_or_path")
 
     with pytest.warns(UserWarning):
 

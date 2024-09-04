@@ -71,7 +71,7 @@ def evaluate_model(config: Configuration):
             batch_size=config.batch_size,
             subsample=subsample,
         )
-        evaluator.update_result_metadata(relation_result, dataset=dataset)
+        relation_result._metadata.update(evaluator.get_result_metadata(dataset=dataset))
         rel_path = relation_result.save(save_path)
         log.info("Saved relation results at: %s.", str(rel_path))
 
