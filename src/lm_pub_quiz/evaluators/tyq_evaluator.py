@@ -1,10 +1,10 @@
 import logging
-from typing import Iterable, List, Optional, Union, cast
+from typing import Iterable, List, Optional
 
 import torch
 import torch.nn.functional as torch_func
 
-from lm_pub_quiz.evaluators.base import BaseEvaluator, EachTokenReturnFormat, ReducedReturnFormat
+from lm_pub_quiz.evaluators.base import BaseEvaluator, ReducedReturnFormat
 from lm_pub_quiz.evaluators.util import iter_batches
 
 log = logging.getLogger(__name__)
@@ -20,10 +20,10 @@ class TyQEvaluator(BaseEvaluator):
         template: str,
         answers: Iterable[str],
         reduction: Optional[str] = "tyq",
-        batch_size: int = -1,
+        batch_size: int = 1,
         subject: Optional[str] = None,
         print_ranking: bool = False,
-    ) -> Union[ReducedReturnFormat, EachTokenReturnFormat]:
+    ) -> ReducedReturnFormat:
         if "[Y]" not in template:
             msg = 'Provided sentence is missing a placeholder ("[Y]") used for answers.'
             raise ValueError(msg)
@@ -31,14 +31,11 @@ class TyQEvaluator(BaseEvaluator):
         if reduction != "tyq" and not self._reduction_warned:
             log.warning("Reduction other than 'tyq' are being ignored ('%s' set).", str(reduction))
 
-        results = cast(
-            ReducedReturnFormat,
-            self.score_answers(
-                template=template,
-                answers=answers,
-                subject=subject,
-                batch_size=batch_size,
-            ),
+        results = self.score_answers(
+            template=template,
+            answers=answers,
+            subject=subject,
+            batch_size=batch_size,
         )
 
         if print_ranking:
@@ -48,7 +45,7 @@ class TyQEvaluator(BaseEvaluator):
 
     def score_answers(
         self, *, template: str, answers: Iterable[str], subject: Optional[str], batch_size: int = 1
-    ) -> Union[ReducedReturnFormat, EachTokenReturnFormat]:
+    ) -> ReducedReturnFormat:
         # tokenize the answers
         encoded_answers = self.tokenizer(list(answers), return_length=True, padding=False)
 

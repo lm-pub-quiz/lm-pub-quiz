@@ -26,6 +26,7 @@ from transformers import (
     PreTrainedModel,
 )
 
+from lm_pub_quiz.__about__ import __version__
 from lm_pub_quiz.data import Dataset, DatasetResults, Relation, RelationResult
 from lm_pub_quiz.data.base import InstanceTableFileFormat
 from lm_pub_quiz.evaluators.model_util import ModelMixin
@@ -43,7 +44,6 @@ from lm_pub_quiz.types import (
     TokenRoles,
 )
 from lm_pub_quiz.util import parse_dumped_raw_results
-from lm_pub_quiz.__about__ import __version__
 
 tqdm.pandas()
 
