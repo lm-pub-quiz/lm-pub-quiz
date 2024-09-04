@@ -310,7 +310,6 @@ class RelationResult(RelationBase):
 
                 instance_table["pll_scores"] = instance_table["pll_scores"].map(_filter_scores)
 
-
         return self.copy(
             instance_table=instance_table,
             metadata=metadata,
