@@ -47,8 +47,6 @@ class Relation(RelationBase):
         load_from_file: Class method to create a Relation instance from a JSONL file.
     """
 
-    relation_code: str
-
     def __init__(
         self,
         relation_code: str,
@@ -72,11 +70,16 @@ class Relation(RelationBase):
         )
         self.templates = templates
 
-    def get_metadata(self) -> Dict[str, Any]:
-        return {
-            "templates": self.templates,
-            **super().get_metadata(),
-        }
+    def get_metadata(self, key: Optional[str] = None) -> Any:
+        if key == "template":
+            return self.templates
+        elif key is not None:
+            return super().get_metadata(key)
+        else:
+            return {
+                "templates": self.templates,
+                **super().get_metadata(),
+            }
 
     @property
     def has_instance_table(self) -> bool:

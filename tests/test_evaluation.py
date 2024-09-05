@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from lm_pub_quiz import Dataset, DatasetResults, Evaluator, RelationResult
+from lm_pub_quiz.__about__ import __version__
 from lm_pub_quiz.data import NoInstanceTableError
 
 log = logging.getLogger(__name__)
@@ -110,6 +111,10 @@ def test_dataset_evaluation(distilbert, request, tmp_path, lazy):
 
             assert metadata["dataset_name"] == "dummy_dataset"
             assert metadata["reduction"] == "sum"
+
+            assert metadata["lm_pub_quiz_version"] == __version__
+            assert metadata["pll_metric"] == "within_word_l2r"
+
             assert "distilbert" in metadata["model_name_or_path"]
             assert all(key in metadata.keys() for key in ["answer_space_ids", "answer_space_labels"])
             assert len(metadata["answer_space_ids"]) == len(metadata["answer_space_labels"])
@@ -177,9 +182,9 @@ def test_dataset_evaluation_with_direct_scores(distilbert, request, tmp_path):
 
             assert r.get_metric("accuracy") == 1.0
 
-            assert r.metadata["dataset_name"] == "dummy_dataset"
-            assert r.metadata["reduction"] == "sum"
-            assert "distilbert" in r.metadata["model_name_or_path"]
+            assert r.get_metadata("dataset_name") == "dummy_dataset"
+            assert r.get_metadata("reduction") == "sum"
+            assert "distilbert" in r.get_metadata("model_name_or_path")
 
     assert results.get_metrics(["accuracy"], accumulate=True)["accuracy"] >= 0.5
 
@@ -226,9 +231,26 @@ def test_dataset_evaluation_with_save_path(distilbert, request, tmp_path):
 
             assert r.get_metric("accuracy") == 1.0
 
-            assert r.metadata["dataset_name"] == "dummy_dataset"
-            assert r.metadata["reduction"] == "sum"
-            assert "distilbert" in r.metadata["model_name_or_path"]
+            assert r.get_metadata("dataset_name") == "dummy_dataset"
+            assert r.get_metadata("reduction") == "sum"
+            assert r.get_metadata("pll_metric") == "within_word_l2r"
+            assert "distilbert" in r.get_metadata("model_name_or_path")
+
+
+@pytest.mark.parametrize("pll_metric", ("original", "within_word_l2r"))
+def test_pll_metric_metadata(distilbert, request, pll_metric):
+    dataset = Dataset.from_path(request.path.parent / "test_data" / "dummy_dataset")
+
+    model, tokenizer = distilbert
+    evaluator = Evaluator.from_model(model, tokenizer=tokenizer, pll_metric=pll_metric)
+
+    result: RelationResult = evaluator.evaluate_relation(dataset[0], batch_size=16, reduction="sum")
+
+    assert result.relation_code == "example_1"
+
+    assert result.get_metadata("reduction") == "sum"
+    assert result.get_metadata("pll_metric") == pll_metric
+    assert "distilbert" in result.get_metadata("model_name_or_path")
 
 
 def test_dataset_conditional_evaluation(distilbert, request, tmp_path):
@@ -266,9 +288,9 @@ def test_dataset_conditional_evaluation(distilbert, request, tmp_path):
                 assert len(row["pll_scores"]) == 3
                 assert row["answer_idx"] == np.argmax(row["pll_scores"])
 
-            assert r.metadata["dataset_name"] == "dummy_dataset"
-            assert r.metadata["reduction"] == "sum"
-            assert "distilbert" in r.metadata["model_name_or_path"]
+            assert r.get_metadata("dataset_name") == "dummy_dataset"
+            assert r.get_metadata("reduction") == "sum"
+            assert "distilbert" in r.get_metadata("model_name_or_path")
 
 
 def test_token_scores_within_word_l2r(distilbert):
