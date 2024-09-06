@@ -10,6 +10,7 @@ dependencies = [
   "accelerate>0.25.0",
   "hydra-core",
   "pandas",
+  "numpy<2.0.0",
   "seaborn",
   "cordage",
   "scikit-learn",
@@ -30,11 +31,6 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
 ]
-
-[project.scripts]
-evaluate_model = "lm_pub_quiz.cli:evaluate_model_cli"
-rank_answers = "lm_pub_quiz.cli:rank_answers_cli"
-score_sentence = "lm_pub_quiz.cli:score_sentence_cli"
 
 [build-system]
 requires = ["hatchling"]
