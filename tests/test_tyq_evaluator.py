@@ -1,7 +1,7 @@
 import logging
 
 from lm_pub_quiz import Dataset, DatasetResults, RelationResult
-from lm_pub_quiz.tyq_evaluator import TyQEvaluator
+from lm_pub_quiz.evaluators.tyq_evaluator import TyQEvaluator
 
 log = logging.getLogger(__name__)
 
@@ -49,6 +49,6 @@ def test_reduction_functionality(distilbert):
     model, tokenizer = distilbert
 
     # Instantiate from existing model
-    evaluator = TyQEvaluator.from_model(model, tokenizer=tokenizer)
+    evaluator: TyQEvaluator = TyQEvaluator.from_model(model, tokenizer=tokenizer)
 
     _ = evaluator.evaluate_instance(template="The traveler lost the [Y]", answers=["souvenir", "bet"])

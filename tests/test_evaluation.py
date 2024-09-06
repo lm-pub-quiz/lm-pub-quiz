@@ -6,25 +6,42 @@ import pytest
 from lm_pub_quiz import Dataset, DatasetResults, Evaluator, RelationResult
 from lm_pub_quiz.__about__ import __version__
 from lm_pub_quiz.data import NoInstanceTableError
+from lm_pub_quiz.evaluators.base import CausalLMEvaluator, MaskedLMEvaluator
 
 log = logging.getLogger(__name__)
 
 
-def test_evaluator_instantiations(distilbert):
-    model, tokenizer = distilbert
+@pytest.mark.parametrize("model_key", ("distilbert", "distilgpt"))
+def test_evaluator_instantiations(model_key, model_cache):
+    model = model_cache[model_key]
 
     # Instantiate using model name
-    Evaluator.from_model("distilbert-base-cased")
+    Evaluator.from_model(model.name_or_path, model_type=model.model_type)
+
+    evaluator = Evaluator.from_model(model.name_or_path)
+
+    if model.model_type == "MLM":
+        assert isinstance(evaluator, MaskedLMEvaluator)
+    else:
+        assert isinstance(evaluator, CausalLMEvaluator)
 
     # Instantiate from existing model
-    Evaluator.from_model(model, tokenizer=tokenizer)
+    Evaluator.from_model(model.model, tokenizer=model.tokenizer, model_type=model.model_type)
+
+    evaluator = Evaluator.from_model(model.model, tokenizer=model.tokenizer)
+
+    if model.model_type == "MLM":
+        assert isinstance(evaluator, MaskedLMEvaluator)
+    else:
+        assert isinstance(evaluator, CausalLMEvaluator)
 
 
-def test_reduction_functionality(distilbert):
-    model, tokenizer = distilbert
+@pytest.mark.parametrize("model_key", ("distilbert", "distilgpt"))
+def test_reduction_functionality(model_key, model_cache):
+    model = model_cache[model_key]
 
     # Instantiate from existing model
-    evaluator = Evaluator.from_model(model, tokenizer=tokenizer)
+    evaluator = Evaluator.from_model(model.model, tokenizer=model.tokenizer)
 
     with pytest.raises(ValueError):
         evaluator.score_answers(
@@ -336,8 +353,8 @@ def test_conditional_score(distilbert):
         template="The traveler lost the [Y].", answers=["bet", "souvenir"], reduction="sum"
     )
 
-    assert -6 < result[0] < -5
-    assert -13 < result[1] < -12
+    assert result[0] == pytest.approx(-5.98468, abs=1e-5)
+    assert result[1] == pytest.approx(-12.20265, abs=1e-5)
 
 
 def test_automatic_tokenizer_loading(distilbert):

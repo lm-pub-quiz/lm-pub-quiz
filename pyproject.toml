@@ -7,7 +7,6 @@ dependencies = [
   "torch",
   "datasets",
   "transformers>=4.38",
-  "minicons>0.2.22",
   "accelerate>0.25.0",
   "hydra-core",
   "pandas",

@@ -32,8 +32,9 @@ def test_callback(request, tmp_path):
         relation_info=request.path.parent / "test_data" / "dummy_relation_info.json",
     )
 
+    # Since the model will be modified, we will not use the model cache
     model = AutoModelForMaskedLM.from_pretrained("distilbert-base-cased")
-    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-cased")
+    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-cased", clean_up_tokenization_spaces=True)
 
     def preprocess_function(examples):
         return tokenizer([" ".join(x) for x in examples["text"]], truncation=True, padding="max_length", max_length=512)
