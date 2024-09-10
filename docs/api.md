@@ -11,7 +11,7 @@ Example (compare with [`src/lm_pub_quiz/cli/evaluate_model.py`](https://github.c
 from lm_pub_quiz import Dataset, Evaluator
 
 # Load dataset
-dataset = Dataset.from_path("data/BEAR")
+dataset = Dataset.from_name("BEAR")
 
 # Create Evaluator (and load model)
 evaluator = Evaluator.from_model("distilbert-base-cased")

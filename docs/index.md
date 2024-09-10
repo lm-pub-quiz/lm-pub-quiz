@@ -36,13 +36,26 @@ conda install pytorch cpuonly -c pytorch
 
 You can install the package locally or directly from PyPI.
 
-##### From PyPI
+##### From PyPI (recommended for most usage)
 
 
 ```shell
 pip install lm-pub-quiz
 
 ```
+
+
+### Install in a *hatch*-managed environment (Recommended for Development)
+
+If you want to contribute to *lm-pub-quiz*, we recommend to use [hatch](https://hatch.pypa.io). In this case you need to:
+
+1. Clone the repository,
+2. in the directoy run your respective commands in a hatch shell (either `hatch run <command>` or run `hatch shell` and continue your work there).
+
+This allows you to run the test cases by executing 
+To run the test cases, run `hatch run test` or `hatch run all:test` (to test on multiple python versions) and to check the formatting and correct typing using `hatch run lint:all`.
+
+
 
 ##### From the Source Code
 
@@ -54,57 +67,4 @@ pip install -e lm-pub-quiz # local package (replace lm-pub-quiz with the path to
 
 This allows you to make changes source code which will be reflected directly.
 
-
-### Install in a *pipx*-managed environment
-
-If you only want to use the command line interface, we recommend to install the package using `pipx`.
-With `pipx`, you can install the package directly using `pipx install lm-pub-quiz`.
-This will make the commands available on your system, but isolate all dependencies.
-
-
-### Install in a *hatch*-managed environment
-
-If you want to contribute to *lm-pub-quiz*, we recommend to use [hatch](https://hatch.pypa.io). In this case you need to:
-
-1. Clone the repository,
-2. in the directoy run your respective commands in a hatch shell (either `hatch run <command>` or run `hatch shell` and continue your work there).
-
-This allows you to run the test cases by executing 
-To run the test cases, run `hatch run test` or `hatch run all:test` (to test on multiple python versions) and to check the formatting and correct typing using `hatch run lint:all`.
-
-## Verify the Installation
-
-To verify the package has been installed correctly, execute:
-
-``` shell
-evaluate_model --help
-```
-
-You should than see an output similar to this:
-
-``` shell-session
-$ evaluate_model --help
-
-usage: evaluate_model [-h] [config_file] <configuration options to overwrite>
-
-Evaluate a given model on a dataset.
-
-positional arguments:
-  config_file           Top-level config file to load (optional).
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --series-skip N       Skip first N trials in the execution of a series.
-
-configuration:
-  --model PATH
-  --model.name_or_path MODEL.NAME_OR_PATH
-  --model.tokenizer MODEL.TOKENIZER
-  --model.reduction MODEL.REDUCTION
-  --model.pll_metric MODEL.PLL_METRIC
-  --dataset PATH
-  --dataset.path DATASET.PATH
-  --output_base_path OUTPUT_BASE_PATH
-
-```
 
