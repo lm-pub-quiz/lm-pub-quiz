@@ -6,8 +6,6 @@ log = logging.getLogger(__name__)
 
 
 def test_result_accumulation(request):
-    """Test whether the deprecated representation of the results can still be loaded."""
-
     results = DatasetResults.from_path(request.path.parent / "test_data" / "new_style_results_with_mistakes")
 
     df = results.get_metrics(["accuracy"], accumulate=False)
@@ -20,9 +18,13 @@ def test_result_accumulation(request):
     assert results.get_metrics(["accuracy"], accumulate=True)["accuracy"] == (1.0 * 3 + 0.5 * 6) / 9
 
 
-def test_result_accumulation_with_relation_info(request):
-    """Test whether the deprecated representation of the results can still be loaded."""
+def test_single_metric(request):
+    results = DatasetResults.from_path(request.path.parent / "test_data" / "new_style_results_with_mistakes")
 
+    assert results.get_metrics("accuracy") == (1.0 * 3 + 0.5 * 6) / 9
+
+
+def test_result_accumulation_with_relation_info(request):
     results = DatasetResults.from_path(request.path.parent / "test_data" / "new_style_results_with_mistakes")
 
     results.update_relation_info({"example_1": {"domains": "a"}, "example_2": {"domains": "b"}})

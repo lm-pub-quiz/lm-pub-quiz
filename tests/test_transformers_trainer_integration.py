@@ -91,7 +91,7 @@ def test_callback(request, tmp_path):
         template_index=0,
     )
 
-    assert evaluator.evaluate_dataset(probing_dataset).get_metrics("accuracy", accumulate=True)["accuracy"] == 1.0
+    assert evaluator.evaluate_dataset(probing_dataset).get_metrics(["accuracy"], accumulate=True)["accuracy"] == 1.0
 
     probing_dataset = Dataset.from_path(
         request.path.parent / "test_data" / "dummy_dataset",

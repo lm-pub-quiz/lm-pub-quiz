@@ -119,19 +119,19 @@ def test_dataset_evaluation(distilbert, request, tmp_path, lazy):
             assert all(key in metadata.keys() for key in ["answer_space_ids", "answer_space_labels"])
             assert len(metadata["answer_space_ids"]) == len(metadata["answer_space_labels"])
 
-    df = results.get_metrics(["accuracy", "precision_at_k"])
+    df = results.get_metrics(["accuracy", "precision_at_k"], accumulate=False)
     assert df.loc["example_1", "accuracy"] == 1.0
     assert isinstance(df.loc["example_1", "precision_at_k"], list)
 
     for r in results:
         r.metric_values.clear()
 
-    df = results.get_metrics(["accuracy", "precision_at_k"])
+    df = results.get_metrics(["accuracy", "precision_at_k"], accumulate=False)
     assert df.loc["example_1", "accuracy"] == 1.0
     assert isinstance(df.loc["example_1", "precision_at_k"], list)
     assert df.loc["example_1", "precision_at_k"] == [1.0, 1.0, 1.0]
 
-    df = results.get_metrics("accuracy")
+    df = results.get_metrics(["accuracy"], accumulate=False)
     assert df.loc["example_1", "accuracy"] == 1.0
 
 
