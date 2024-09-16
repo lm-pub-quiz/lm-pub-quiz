@@ -22,7 +22,7 @@ from typing import (
 
 import numpy as np
 import pandas as pd
-from typing_extensions import Self
+from typing_extensions import Literal, Self
 
 from lm_pub_quiz.data.base import DatasetBase, InstanceTableFileFormat, NoInstanceTableError, RelationBase
 from lm_pub_quiz.metrics import RelationMetric, accumulate_metrics
@@ -518,13 +518,49 @@ class DatasetResults(DatasetBase[RelationResult]):
 
         return d
 
+    @overload
     def get_metrics(
         self,
-        metrics: Union[str, Iterable[str]],
+        metrics: str,
         *,
-        accumulate: Union[bool, None, str] = False,
+        accumulate: Literal[True] = True,
         divide_support: bool = True,
-    ) -> Union[pd.DataFrame, pd.Series]:
+    ) -> float: ...
+
+    @overload
+    def get_metrics(
+        self,
+        metrics: str,
+        *,
+        accumulate: Union[Literal[False], None, str],
+        divide_support: bool = True,
+    ) -> pd.Series: ...
+
+    @overload
+    def get_metrics(
+        self,
+        metrics: Sequence[str],
+        *,
+        accumulate: Literal[True] = True,
+        divide_support: bool = True,
+    ) -> pd.Series: ...
+
+    @overload
+    def get_metrics(
+        self,
+        metrics: Sequence[str],
+        *,
+        accumulate: Union[Literal[False], None, str],
+        divide_support: bool = True,
+    ) -> pd.DataFrame: ...
+
+    def get_metrics(
+        self,
+        metrics: Union[str, Sequence[str]],
+        *,
+        accumulate: Union[bool, None, str] = True,
+        divide_support: bool = True,
+    ) -> Union[pd.DataFrame, pd.Series, float]:
         """Return the metrics for the relations in this dataset.
 
         Parameters:
@@ -541,26 +577,32 @@ class DatasetResults(DatasetBase[RelationResult]):
         """
         if isinstance(metrics, str):
             metrics = [metrics]
+            single_metric = True
+        else:
+            single_metric = False
 
         if "support" not in metrics:
             metrics = [*metrics, "support"]
 
-        df = pd.DataFrame({rel.relation_code: self._construct_metrics_dict(metrics, rel) for rel in self}).T
+        result = pd.DataFrame({rel.relation_code: self._construct_metrics_dict(metrics, rel) for rel in self}).T
 
         if accumulate:
             if isinstance(accumulate, str):
-                df[accumulate] = pd.Series({rel.relation_code: rel.relation_info(accumulate) for rel in self})
+                result[accumulate] = pd.Series({rel.relation_code: rel.relation_info(accumulate) for rel in self})
 
-                df = df.explode(accumulate)
+                result = result.explode(accumulate)
 
                 if divide_support:
-                    df["support"] /= df.index.value_counts()[df.index]
+                    result["support"] /= result.index.value_counts()[result.index]
 
-                return df.groupby(accumulate).apply(accumulate_metrics)
+                result = result.groupby(accumulate).apply(accumulate_metrics)
             else:
-                return accumulate_metrics(df)
-        else:
-            return df
+                result = accumulate_metrics(result)
+
+        if single_metric:
+            result = result[metrics[0]]
+
+        return result
 
     def filter_subset(
         self,

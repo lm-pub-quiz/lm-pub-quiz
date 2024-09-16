@@ -48,7 +48,7 @@ def test_new_style_results_loading(request, lazy):
 
             assert "distilbert" in r.get_metadata("model_name_or_path")
 
-    df = results.get_metrics(["accuracy", "precision_at_k"])
+    df = results.get_metrics(["accuracy", "precision_at_k"], accumulate=False)
 
     assert df.loc["example_1", "accuracy"] == 1.0
     assert isinstance(df.loc["example_1", "precision_at_k"], list)
@@ -56,14 +56,14 @@ def test_new_style_results_loading(request, lazy):
     for r in results:
         r.metric_values.clear()
 
-    df = results.get_metrics(["accuracy", "precision_at_k"])
+    df = results.get_metrics(["accuracy", "precision_at_k"], accumulate=False)
 
     assert df.loc["example_1", "accuracy"] == 1.0
     assert isinstance(df.loc["example_1", "precision_at_k"], list)
     assert df.loc["example_1", "precision_at_k"] == [1.0, 1.0, 1.0]
 
-    df = results.get_metrics("accuracy")
-    assert df.loc["example_1", "accuracy"] == 1.0
+    relation_results = results.get_metrics("accuracy", accumulate=False)
+    assert relation_results["example_1"] == 1.0
 
 
 @pytest.mark.parametrize("lazy", [False, True])
@@ -105,7 +105,7 @@ def test_old_style_results_loading(request, lazy):
 
             assert "distilbert" in r.get_metadata("model_name_or_path")
 
-    df = results.get_metrics(["accuracy", "precision_at_k"])
+    df = results.get_metrics(["accuracy", "precision_at_k"], accumulate=False)
 
     assert df.loc["example_1", "accuracy"] == 1.0
     assert isinstance(df.loc["example_1", "precision_at_k"], list)
@@ -113,14 +113,13 @@ def test_old_style_results_loading(request, lazy):
     for r in results:
         r.metric_values.clear()
 
-    df = results.get_metrics(["accuracy", "precision_at_k"])
+    df = results.get_metrics(["accuracy", "precision_at_k"], accumulate=False)
 
     assert df.loc["example_1", "accuracy"] == 1.0
     assert isinstance(df.loc["example_1", "precision_at_k"], list)
     assert df.loc["example_1", "precision_at_k"] == [1.0, 1.0, 1.0]
 
-    df = results.get_metrics("accuracy")
-    assert df.loc["example_1", "accuracy"] == 1.0
+    assert results.get_metrics("accuracy", accumulate=False)["example_1"] == 1.0
 
 
 def test_old_style_results_non_reduced(request):
@@ -208,7 +207,7 @@ def test_result_subset_same_answer_space(request, tmp_path, lazy_result):
 
             assert "distilbert" in r.get_metadata("model_name_or_path")
 
-    df = results.get_metrics(["accuracy", "precision_at_k"])
+    df = results.get_metrics(["accuracy", "precision_at_k"], accumulate=False)
 
     assert df.loc["example_1", "accuracy"] == 1.0
     assert isinstance(df.loc["example_1", "precision_at_k"], list)
@@ -216,14 +215,14 @@ def test_result_subset_same_answer_space(request, tmp_path, lazy_result):
     for r in results:
         r.metric_values.clear()
 
-    df = results.get_metrics(["accuracy", "precision_at_k"])
+    df = results.get_metrics(["accuracy", "precision_at_k"], accumulate=False)
 
     assert df.loc["example_1", "accuracy"] == 1.0
     assert isinstance(df.loc["example_1", "precision_at_k"], list)
     assert df.loc["example_1", "precision_at_k"] == [1.0, 1.0, 1.0]
 
-    df = results.get_metrics("accuracy")
-    assert df.loc["example_1", "accuracy"] == 1.0
+    df = results.get_metrics("accuracy", accumulate=False)
+    assert df.loc["example_1"] == 1.0
 
 
 @pytest.mark.parametrize("lazy_result", [False, True])
@@ -284,14 +283,13 @@ def test_result_subset_smaller_answer_space(request, tmp_path, lazy_result):
 
     with pytest.warns(UserWarning):
 
-        df = subset.get_metrics(["accuracy", "precision_at_k"])
+        df = subset.get_metrics(["accuracy", "precision_at_k"], accumulate=False)
 
         assert df.loc["example_1", "accuracy"] == 1.0
         assert isinstance(df.loc["example_1", "precision_at_k"], list)
         assert df.loc["example_1", "precision_at_k"] == [1.0, 1.0]
 
-        df = results.get_metrics("accuracy")
-        assert df.loc["example_1", "accuracy"] == 1.0
+        assert results.get_metrics("accuracy", accumulate=False)["example_1"] == 1.0
 
 
 def test_result_formats(request, tmp_path):

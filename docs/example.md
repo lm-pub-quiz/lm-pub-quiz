@@ -35,7 +35,7 @@ bear_results = DatasetResults.from_path(result_save_path)
 ### Aggregate Results
 The DatasetResults object allows us to retrieve some aggregate results. Here we are loading the accuracy and the precision_at_k metrics:
 ```python
-metrics = bear_results.get_metrics(["accuracy", "num_instances"])
+metrics = bear_results.get_metrics(["accuracy", "num_instances"], accumulate=False)
 ```
 The method returns a pandas dataframe that holds the specified metrics for each relation (P6 to P7959) in the BEAR dataset (here showing the first five entries):
 ```
@@ -47,13 +47,15 @@ P26  0.050000             60          None
 P27  0.406667            150          None
 ```
 
-To aggregate these accuracy scores over all relations we weigh them by the number of instances within each relation. Otherwise, greater accuracies more easily achieved on a small relation would inflate the overall accuracy.
+To accumulate the accuracy for all relations, simply use:
 
 ```python
-import numpy as np
-weighted_accuracy = np.average(metrics.accuracy, weights=metrics.num_instances)
+print(bear_results.get_metrics("accuracy"))
+# 0.1495
 ```
-For the *gpt2* model we thus get a `weighted_accuracy` of `0.1495`. Note that this overall accuracy score is based only on the first template of each relation, which is the template considered by default by the `Evaluator`.
+
+For the *gpt2* model we thus get an accuracy of `0.1495`. Note that this overall accuracy score is based only on the first template of each relation, which is the template considered by default by the `Evaluator`.
+
 
 ### Individual Results
 

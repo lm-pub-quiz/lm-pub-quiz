@@ -10,7 +10,7 @@ from lm_pub_quiz import DatasetResults
 bear_results = DatasetResults.from_path("examples/gpt2_results")
 
 print("=== Overall score ===")
-print(bear_results.get_metrics(["accuracy", "support"], accumulate=True))
+print(bear_results.get_metrics("accuracy"))
 print()
 
 print("=== Score by cardinality ===")
