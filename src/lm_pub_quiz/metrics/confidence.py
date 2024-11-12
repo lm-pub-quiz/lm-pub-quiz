@@ -162,7 +162,8 @@ class BrierScore(UncertaintyScore):
         y_true_one_hot[np.arange(len(y_true)), y_true] = 1
 
         brier_scores = [
-            brier_score_loss(y_true_one_hot[:, i], y_pred_probs[:, i]) for i in range(y_pred_probs.shape[1])  # type: ignore
+            brier_score_loss(y_true_one_hot[:, i], y_pred_probs[:, i])  # type: ignore
+            for i in range(y_pred_probs.shape[1])  # type: ignore
         ]
 
         return {"brier_score": np.mean(brier_scores)}

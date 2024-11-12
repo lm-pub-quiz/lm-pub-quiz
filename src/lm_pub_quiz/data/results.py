@@ -590,7 +590,6 @@ class DatasetResults(DatasetBase[RelationResult]):
         reduction_name: Optional[str] = None,
         pass_indices: bool = False,
     ) -> Self:
-
         relations: List[RelationResult] = []
 
         for rel in self:
