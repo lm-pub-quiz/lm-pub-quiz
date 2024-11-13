@@ -90,7 +90,6 @@ class Templater:
         include_template_indices: bool = True,
         include_special_tokens: bool = True,
     ) -> Tuple[BatchEncoding, Dict[str, List[int]]]:
-
         encoded = tokenizer(text, return_length=True, add_special_tokens=include_special_tokens)
 
         non_template_tokens: Set[int] = set()

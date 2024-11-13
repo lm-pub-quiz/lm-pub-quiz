@@ -6,7 +6,6 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/lm-pub-quiz.svg?logo=pypi&label=Version&logoColor=gold)](https://pypi.org/project/lm-pub-quiz/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/lm-pub-quiz?logo=python&label=Python&logoColor=gold)](https://pypi.org/project/lm-pub-quiz/)
 [![License](https://img.shields.io/github/license/lm-pub-quiz/lm-pub-quiz?logo=pypi&logoColor=gold)](https://github.com/lm-pub-quiz/lm-pub-quiz/blob/main/LICENSE)
-[![Code style: black](https://img.shields.io/badge/Code%20style-black-000000.svg)](https://github.com/psf/black)
 
 ---
 

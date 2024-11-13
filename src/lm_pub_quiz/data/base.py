@@ -85,7 +85,6 @@ class RelationBase(DataBase):
         answer_space: Optional[pd.Series] = None,
         relation_info: Optional[Dict[str, Any]] = None,
     ):
-
         self._relation_code = relation_code
         self._lazy_options = lazy_options
         self._instance_table = instance_table
@@ -417,7 +416,6 @@ class RelationBase(DataBase):
 
     @classmethod
     def code_from_path(cls, path: Path) -> str:
-
         if not path.name.endswith(cls._instance_table_file_name_suffix):
             msg = (
                 f"Incorrect path for {cls.__name__} instance table "
