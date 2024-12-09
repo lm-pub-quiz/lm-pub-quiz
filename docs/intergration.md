@@ -19,7 +19,7 @@ trainer = Trainer(
 )
 
 # load the BEAR dataset
-bear_dataset = Dataset.from_path("../BEAR")
+bear_dataset = Dataset.from_name("BEAR")
 
 # create evaluator and Trainner callback
 evaluator = Evaluator.from_model(

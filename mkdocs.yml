@@ -10,7 +10,6 @@ theme:
     repo: fontawesome/brands/git-alt
 nav:
   - index.md
-  - cli.md
   - example.md
   - data_files.md
   - api.md

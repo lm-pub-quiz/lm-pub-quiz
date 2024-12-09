@@ -283,7 +283,6 @@ def test_result_subset_smaller_answer_space(request, tmp_path, lazy_result):
             assert "distilbert" in r.get_metadata("model_name_or_path")
 
     with pytest.warns(UserWarning):
-
         df = subset.get_metrics(["accuracy", "precision_at_k"])
 
         assert df.loc["example_1", "accuracy"] == 1.0

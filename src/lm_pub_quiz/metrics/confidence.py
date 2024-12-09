@@ -85,7 +85,7 @@ class ConfidenceMargin(SoftmaxBase):
 
 
 class ConfidenceScore(SoftmaxBase):
-    """Confidence Score: This is the maximum probability value in the softmax output.
+    """Confidence Score: Maximum probability value in the softmax output.
 
     This corresponds to the first (0-indexed) value in the sorted softmax values.
 
@@ -110,7 +110,7 @@ class ConfidenceScore(SoftmaxBase):
 
 
 class UncertaintyScore(SoftmaxBase):
-    """UncertaintyScore: This is a normalized entropy of the predicted prob. distribution.
+    """UncertaintyScore: Normalized entropy of the predicted prob. distribution.
 
     This is Equation 2.1.1
     """
@@ -162,7 +162,8 @@ class BrierScore(UncertaintyScore):
         y_true_one_hot[np.arange(len(y_true)), y_true] = 1
 
         brier_scores = [
-            brier_score_loss(y_true_one_hot[:, i], y_pred_probs[:, i]) for i in range(y_pred_probs.shape[1])  # type: ignore
+            brier_score_loss(y_true_one_hot[:, i], y_pred_probs[:, i])  # type: ignore
+            for i in range(y_pred_probs.shape[1])  # type: ignore
         ]
 
         return {"brier_score": np.mean(brier_scores)}

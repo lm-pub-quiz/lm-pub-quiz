@@ -8,8 +8,8 @@ First we run the BEAR probe on the given model and save its results to our file 
 from lm_pub_quiz import Dataset, Evaluator
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-# Load the BEAR dataset from its specific location
-dataset = Dataset.from_path("<BEAR data path, e.g. ./transformer-knowledge-probe/data/BEAR>")
+# Load the BEAR dataset
+dataset = Dataset.from_name("BEAR")
 
 # Load the gpt2 model
 model = AutoModelForCausalLM.from_pretrained("gpt2").to("cuda")
@@ -19,7 +19,7 @@ model = AutoModelForCausalLM.from_pretrained("gpt2").to("cuda")
 result_save_path = "<BEAR results save path>"  # doctest: +SKIP
 
 # In case the tokenizer cannot be loaded from the model directory, it may be loaded explicitly and passed to the Evaluator.from_model method via the 'tokenizer=' keyword
-evaluator = Evaluator.from_model(model, model_type="CLM", device="cuda")
+evaluator = Evaluator.from_model(model, model_type="CLM", device="cuda:0")
 evaluator.evaluate_dataset(dataset, save_path=result_save_path, batch_size=32)
 ```
 

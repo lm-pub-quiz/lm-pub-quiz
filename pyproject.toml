@@ -68,18 +68,17 @@ python = ["3.8", "3.9", "3.10", "3.11"]
 [tool.hatch.envs.lint]
 detached = true
 dependencies = [
-  "black>=24.1.0",
   "mypy>=1.8.0",
   "ruff>=0.4",
 ]
 [tool.hatch.envs.lint.scripts]
 typing = "mypy --install-types --non-interactive {args:src/lm_pub_quiz tests}"
 style = [
+  "ruff format --check {args:.}",
   "ruff check {args:.}",
-  "black --check --diff {args:.}",
 ]
 fmt = [
-  "black {args:.}",
+  "ruff format {args:.}",
   "ruff check --fix {args:.}",
   "style",
 ]
@@ -87,12 +86,6 @@ all = [
   "style",
   "typing",
 ]
-
-[tool.black]
-target-version = ["py38"]
-line-length = 120
-skip-string-normalization = true
-extend-exclude = "scripts/*"  # TODO: this is only temporary
 
 [tool.ruff]
 target-version = "py38"
@@ -137,6 +130,8 @@ ignore = [
   "S101",
   # Ignore complexity
   "C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915",
+  # Apparently causes issues when used with the formatter
+  "ISC001",
 ]
 unfixable = [
   # Don't touch unused imports

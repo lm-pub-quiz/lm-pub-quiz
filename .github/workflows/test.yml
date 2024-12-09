@@ -29,20 +29,22 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
+      id: setup-python
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Set up pip cache
+        cache: "pip"
+    # Set up caching of hatch's virtual environment
+    - name: Set up hatch environment cache
       if: runner.os == 'Linux'
-      uses: actions/cache@v4
+      uses: "actions/cache@v4"
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
-        restore-keys: ${{ runner.os }}-pip-
+        path: .venv/
+        key: "hatch-env-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('pyproject.toml') }}"
+        restore-keys: "hatch-env-${{ steps.setup-python.outputs.python-version }}-"
+    # Install hatch and set the venv-location
     - name: Install hatch
-      run: pipx install hatch
-    - name: Print Package Versions
-      run: hatch run +py=${{ matrix.python-version }} all:pip freeze
+      run: pipx install hatch; hatch config set dirs.env.virtual ".venv"
     - name: Lint
       run: hatch run lint:all
     - name: Tests
