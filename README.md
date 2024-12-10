@@ -73,3 +73,5 @@ Then, to propose a change to the library,
 - format the code according to our formatting guidelines using `hatch run lint:fmt`,
 - check type- and style-consistency using `hatch run lint:all`, and
 - finally create a pull request describing the changes you propose.
+
+For work on the documentation, use `hatch run serve-docs` to run a local documentation server.
