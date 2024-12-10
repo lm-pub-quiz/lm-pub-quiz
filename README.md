@@ -44,15 +44,27 @@ For alternatives methods of installing the package, visit the [documentation](ht
 ```python
 from lm_pub_quiz import Dataset, Evaluator
 
-result_save_path = "<BEAR results save path>"
-model_name = "gpt2"
-
-# Load the BEAR dataset from its specific location
+<<<<<<< HEAD
+# Load the dataset
 dataset = Dataset.from_name("BEAR")
 
-# Run the BEAR evaluator and save the results
-evaluator = Evaluator.from_model(model_name, model_type="CLM", device="cuda")
-results = evaluator.evaluate_dataset(dataset, save_path=result_save_path, batch_size=32)
+# Load the model
+evaluator = Evaluator.from_model(
+    "gpt2",
+    model_type="CLM",
+)
+# Run the evaluation and save the
+results = evaluator.evaluate_dataset(
+    dataset,
+    template_index=0,
+    save_path="gpt2_results",
+    batch_size=32,
+)
+
+# results = DatasetResults.from_path("gpt2_results")
+
+print("=== Overall score ===")
+print(results.get_metrics("accuracy"))
 ```
 
 
