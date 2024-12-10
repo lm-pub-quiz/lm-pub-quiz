@@ -154,8 +154,14 @@ class Relation(RelationBase):
 
         log.debug("Loading %s (%s) from: %s", cls.__name__, relation_code, relation_path)
 
-        with open(dataset_path / "metadata_relations.json") as meta_file:
-            metadata = json.load(meta_file)[relation_code]
+        metadata_path = dataset_path / cls._metadata_file_name
+
+        with open(metadata_path) as meta_file:
+            try:
+                metadata = json.load(meta_file)[relation_code]
+            except KeyError as e:
+                msg = f"Relation '{relation_code}' (from file '{path}') not found in '{metadata_path}'."
+                raise KeyError(msg) from e
             templates = metadata.pop("templates", [])
 
         answer_space = cls.answer_space_from_metadata(metadata, id_prefix=f"{relation_code}-")
