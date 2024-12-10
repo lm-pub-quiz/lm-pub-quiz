@@ -68,6 +68,8 @@ class RelationBase(DataBase):
     _instance_table_default_format: str = "jsonl"
     _metadata_file_name: str = "metadata_relations.json"
 
+    _supported_instance_table_file_formats: tuple[InstanceTableFileFormat, ...] = ("jsonl", ("parquet", "*"))
+
     _len: Optional[int] = None
 
     def __init__(
@@ -422,7 +424,7 @@ class RelationBase(DataBase):
         return code
 
     @classmethod
-    def suffix_from_instance_format(cls, fmt: InstanceTableFileFormat = None) -> str:
+    def suffix_from_instance_table_file_format(cls, fmt: InstanceTableFileFormat = None) -> str:
         if fmt is None:
             return cls._instance_table_default_format
         elif isinstance(fmt, str):
@@ -432,7 +434,10 @@ class RelationBase(DataBase):
 
     @classmethod
     def path_for_code(cls, path: Path, relation_code: str, *, fmt: InstanceTableFileFormat = None) -> Path:
-        return path / f"{relation_code}{cls._instance_table_file_name_suffix}.{cls.suffix_from_instance_format(fmt)}"
+        return (
+            path
+            / f"{relation_code}{cls._instance_table_file_name_suffix}.{cls.suffix_from_instance_table_file_format(fmt)}"
+        )
 
     @overload
     @classmethod
@@ -462,9 +467,11 @@ class RelationBase(DataBase):
             code = re.escape(relation_code)
 
         if fmt is None:
-            suffix = ".*"
+            suffix = "|".join(
+                f"({cls.suffix_from_instance_table_file_format(f)})" for f in cls._supported_instance_table_file_formats
+            )
         else:
-            suffix = cls.suffix_from_instance_format(fmt)
+            suffix = cls.suffix_from_instance_table_file_format(fmt)
 
         pattern = re.compile(f"(?P<relation_code>{code}){cls._instance_table_file_name_suffix}.(?P<suffix>{suffix})")
 

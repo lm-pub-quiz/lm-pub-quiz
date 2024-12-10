@@ -126,17 +126,17 @@ class RelationResult(RelationBase):
             raise ValueError(msg)
 
         if metadata is None:
-            metadata_path = path_to_load.parent / "metadata_results.json"
+            metadata_path = path_to_load.parent / cls._metadata_file_name
             if metadata_path.exists():
                 with open(metadata_path) as meta_file:
                     try:
                         metadata = json.load(meta_file)[relation_code]
-                    except KeyError:
-                        log.error(
-                            "Metadata file exists, but no metadata for given result with relation code %s found.",
-                            relation_code,
+                    except KeyError as e:
+                        msg = (
+                            "Metadata file exists, but no metadata for given result with relation code "
+                            f"'{relation_code}' found."
                         )
-                        raise
+                        raise KeyError(msg) from e
             else:
                 metadata = {}
 
