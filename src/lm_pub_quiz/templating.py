@@ -1,10 +1,10 @@
 import logging
 import re
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Optional
 
 from transformers import BatchEncoding, PreTrainedTokenizer
 
-Span = Tuple[int, int]
+Span = tuple[int, int]
 
 
 log = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class Templater:
         subject: Optional[str],
         answer: Optional[str],
         capitalize: bool = True,
-    ) -> Tuple[str, Dict[str, List[Span]]]:
+    ) -> tuple[str, dict[str, list[Span]]]:
         """Replace all placeholders in the template with the respective values.
 
         Returns the final string as well as the spans of the respective elements in the final string.
@@ -42,7 +42,7 @@ class Templater:
         # initialize the string
         text: str = ""
         # initialize dictionary with final spans
-        spans: Dict[str, List[Tuple[int, int]]] = {
+        spans: dict[str, list[tuple[int, int]]] = {
             "subject": [],
             "answer": [],
         }
@@ -86,19 +86,18 @@ class Templater:
         *,
         tokenizer: PreTrainedTokenizer,
         text: str,
-        spans: Dict[str, List[Span]],
+        spans: dict[str, list[Span]],
         include_template_indices: bool = True,
         include_special_tokens: bool = True,
-    ) -> Tuple[BatchEncoding, Dict[str, List[int]]]:
-
+    ) -> tuple[BatchEncoding, dict[str, list[int]]]:
         encoded = tokenizer(text, return_length=True, add_special_tokens=include_special_tokens)
 
-        non_template_tokens: Set[int] = set()
+        non_template_tokens: set[int] = set()
 
         if include_template_indices and "template" not in spans:
             spans = {"template": [(0, len(text))], **spans}
 
-        token_indices: Dict[str, List[int]] = {k: [] for k in spans.keys()}
+        token_indices: dict[str, list[int]] = {k: [] for k in spans.keys()}
 
         for k, v in spans.items():
             for start, end in v:

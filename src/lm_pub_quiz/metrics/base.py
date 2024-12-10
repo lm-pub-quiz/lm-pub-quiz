@@ -1,20 +1,21 @@
 import logging
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Mapping, Type, Union, cast
+from collections.abc import Mapping
+from typing import Any, Union, cast
 
 import pandas as pd
 
 log = logging.getLogger(__name__)
 
 
-_registered_metric_classes: Dict[str, Type["RelationMetric"]] = {}
+_registered_metric_classes: dict[str, type["RelationMetric"]] = {}
 
 
 class MetricMetaClass(ABCMeta):
     def __new__(cls, *args, **kwargs):
         new_class = super().__new__(cls, *args, **kwargs)
 
-        new_class = cast(Type["RelationMetric"], new_class)
+        new_class = cast(type["RelationMetric"], new_class)
 
         if hasattr(new_class, "metric_name"):
             _registered_metric_classes[new_class.metric_name] = new_class
@@ -22,7 +23,7 @@ class MetricMetaClass(ABCMeta):
         return new_class
 
 
-MetricSpecification = Union[str, "RelationMetric", Type["RelationMetric"]]
+MetricSpecification = Union[str, "RelationMetric", type["RelationMetric"]]
 
 
 class RelationMetric(metaclass=MetricMetaClass):
@@ -40,7 +41,7 @@ class RelationMetric(metaclass=MetricMetaClass):
         pass
 
     @abstractmethod
-    def compute(self) -> Dict[str, Any]:
+    def compute(self) -> dict[str, Any]:
         pass
 
     def add_instances_from_table(self, instance_table: pd.DataFrame):

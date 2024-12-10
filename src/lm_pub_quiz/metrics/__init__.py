@@ -4,12 +4,12 @@ from lm_pub_quiz.metrics.confidence import ConfidenceMargin, ConfidenceScore, So
 from lm_pub_quiz.metrics.util import accumulate_metrics
 
 __all__ = [
-    "RelationMetric",
     "Accuracy",
-    "PrecisionAtK",
-    "SoftmaxBase",
     "ConfidenceMargin",
     "ConfidenceScore",
+    "PrecisionAtK",
+    "RelationMetric",
+    "SoftmaxBase",
     "UncertaintyScore",
     "accumulate_metrics",
 ]

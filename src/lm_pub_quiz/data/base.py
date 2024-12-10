@@ -5,18 +5,12 @@ import re
 import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import (
     Any,
-    Dict,
     Generic,
-    Iterable,
-    Iterator,
-    List,
-    Mapping,
     Optional,
-    Sequence,
-    Tuple,
     TypeVar,
     Union,
     cast,
@@ -35,7 +29,7 @@ class NoInstanceTableError(Exception):
     pass
 
 
-InstanceTableFileFormat = Optional[Union[str, Tuple[str, ...]]]
+InstanceTableFileFormat = Optional[Union[str, tuple[str, ...]]]
 
 
 class DataBase(ABC):
@@ -74,18 +68,19 @@ class RelationBase(DataBase):
     _instance_table_default_format: str = "jsonl"
     _metadata_file_name: str = "metadata_relations.json"
 
+    _supported_instance_table_file_formats: tuple[InstanceTableFileFormat, ...] = ("jsonl", ("parquet", "*"))
+
     _len: Optional[int] = None
 
     def __init__(
         self,
         relation_code: str,
         *,
-        lazy_options: Optional[Dict[str, Any]] = None,
+        lazy_options: Optional[dict[str, Any]] = None,
         instance_table: Optional[pd.DataFrame] = None,
         answer_space: Optional[pd.Series] = None,
-        relation_info: Optional[Dict[str, Any]] = None,
+        relation_info: Optional[dict[str, Any]] = None,
     ):
-
         self._relation_code = relation_code
         self._lazy_options = lazy_options
         self._instance_table = instance_table
@@ -145,12 +140,12 @@ class RelationBase(DataBase):
             return "single instance per answer"
 
     @overload
-    def relation_info(self, /, **kw) -> Dict[str, Any]: ...
+    def relation_info(self, /, **kw) -> dict[str, Any]: ...
 
     @overload
     def relation_info(self, key: str, /) -> Any: ...
 
-    def relation_info(self, key: Optional[str] = None, /, **kw) -> Union[None, Any, Dict[str, Any]]:
+    def relation_info(self, key: Optional[str] = None, /, **kw) -> Union[None, Any, dict[str, Any]]:
         """Get or set additional relation information."""
         if key is not None:
             if key == "cardinality" and "cardinality" not in self._relation_info:
@@ -166,12 +161,12 @@ class RelationBase(DataBase):
         return info
 
     @overload
-    def get_metadata(self) -> Dict[str, Any]: ...
+    def get_metadata(self) -> dict[str, Any]: ...
 
     @overload
     def get_metadata(self, key: str, /) -> Any: ...
 
-    def get_metadata(self, key: Optional[str] = None) -> Union[Any, Dict[str, Any]]:
+    def get_metadata(self, key: Optional[str] = None) -> Union[Any, dict[str, Any]]:
         """Get or set metadata."""
         if key is not None:
             if self._answer_space is None:
@@ -417,7 +412,6 @@ class RelationBase(DataBase):
 
     @classmethod
     def code_from_path(cls, path: Path) -> str:
-
         if not path.name.endswith(cls._instance_table_file_name_suffix):
             msg = (
                 f"Incorrect path for {cls.__name__} instance table "
@@ -430,7 +424,7 @@ class RelationBase(DataBase):
         return code
 
     @classmethod
-    def suffix_from_instance_format(cls, fmt: InstanceTableFileFormat = None) -> str:
+    def suffix_from_instance_table_file_format(cls, fmt: InstanceTableFileFormat = None) -> str:
         if fmt is None:
             return cls._instance_table_default_format
         elif isinstance(fmt, str):
@@ -440,11 +434,14 @@ class RelationBase(DataBase):
 
     @classmethod
     def path_for_code(cls, path: Path, relation_code: str, *, fmt: InstanceTableFileFormat = None) -> Path:
-        return path / f"{relation_code}{cls._instance_table_file_name_suffix}.{cls.suffix_from_instance_format(fmt)}"
+        return (
+            path
+            / f"{relation_code}{cls._instance_table_file_name_suffix}.{cls.suffix_from_instance_table_file_format(fmt)}"
+        )
 
     @overload
     @classmethod
-    def search_path(cls, path: Path, relation_code: None = None, fmt: InstanceTableFileFormat = None) -> List[Path]: ...
+    def search_path(cls, path: Path, relation_code: None = None, fmt: InstanceTableFileFormat = None) -> list[Path]: ...
 
     @overload
     @classmethod
@@ -453,7 +450,7 @@ class RelationBase(DataBase):
     @classmethod
     def search_path(
         cls, path: Path, relation_code: Optional[str] = None, fmt: InstanceTableFileFormat = None
-    ) -> Union[List[Path], Path, None]:
+    ) -> Union[list[Path], Path, None]:
         """Search path for instance files."""
 
         if relation_code is not None and fmt is not None:
@@ -470,13 +467,15 @@ class RelationBase(DataBase):
             code = re.escape(relation_code)
 
         if fmt is None:
-            suffix = ".*"
+            suffix = "|".join(
+                f"({cls.suffix_from_instance_table_file_format(f)})" for f in cls._supported_instance_table_file_formats
+            )
         else:
-            suffix = cls.suffix_from_instance_format(fmt)
+            suffix = cls.suffix_from_instance_table_file_format(fmt)
 
         pattern = re.compile(f"(?P<relation_code>{code}){cls._instance_table_file_name_suffix}.(?P<suffix>{suffix})")
 
-        matches: Dict[str, List[Path]] = defaultdict(list)
+        matches: dict[str, list[Path]] = defaultdict(list)
         for p in map(Path, os.scandir(path)):
             if p.name == cls._metadata_file_name:
                 continue
@@ -506,7 +505,7 @@ RT = TypeVar("RT", bound=RelationBase)
 class DatasetBase(DataBase, Generic[RT]):
     """Base class for a collection of relations or relations results."""
 
-    relation_data: List[RT]
+    relation_data: list[RT]
 
     def __len__(self) -> int:
         return len(self.relation_data)
@@ -565,7 +564,7 @@ class DatasetBase(DataBase, Generic[RT]):
     def joined_instance_table(self) -> pd.DataFrame:
         return pd.concat({relation.relation_code: relation.instance_table for relation in self}, names=["relation"])
 
-    def update_relation_info(self, info: Dict[str, Dict[str, Any]]):
+    def update_relation_info(self, info: dict[str, dict[str, Any]]):
         for rel in self:
             if rel.relation_code in info:
                 rel.relation_info(**info[rel.relation_code])

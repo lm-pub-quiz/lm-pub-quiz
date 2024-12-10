@@ -3,8 +3,9 @@
 import json
 import logging
 import os
+from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -17,7 +18,7 @@ from lm_pub_quiz.util import PathLike, cache_base_path
 log = logging.getLogger(__name__)
 
 
-KNOWN_DATASET_URLS: Dict[str, Tuple[str, Union[str, Callable]]] = {
+KNOWN_DATASET_URLS: dict[str, tuple[str, Union[str, Callable]]] = {
     "bear": (
         "https://github.com/lm-pub-quiz/BEAR/archive/725b4e3139d0a5fdf914b0419ba744273dddc689.zip",
         "BEAR-725b4e3139d0a5fdf914b0419ba744273dddc689/BEAR",
@@ -51,11 +52,11 @@ class Relation(RelationBase):
         self,
         relation_code: str,
         *,
-        templates: List[str],
+        templates: list[str],
         answer_space: Optional[pd.Series],
         instance_table: Optional[pd.DataFrame],
-        lazy_options: Optional[Dict[str, Any]],
-        relation_info: Optional[Dict[str, Any]] = None,
+        lazy_options: Optional[dict[str, Any]],
+        relation_info: Optional[dict[str, Any]] = None,
     ):
         if instance_table is None and lazy_options is None:
             msg = "Either instance_table of lazy_options must be specified"
@@ -153,8 +154,14 @@ class Relation(RelationBase):
 
         log.debug("Loading %s (%s) from: %s", cls.__name__, relation_code, relation_path)
 
-        with open(dataset_path / "metadata_relations.json") as meta_file:
-            metadata = json.load(meta_file)[relation_code]
+        metadata_path = dataset_path / cls._metadata_file_name
+
+        with open(metadata_path) as meta_file:
+            try:
+                metadata = json.load(meta_file)[relation_code]
+            except KeyError as e:
+                msg = f"Relation '{relation_code}' (from file '{path}') not found in '{metadata_path}'."
+                raise KeyError(msg) from e
             templates = metadata.pop("templates", [])
 
         answer_space = cls.answer_space_from_metadata(metadata, id_prefix=f"{relation_code}-")
@@ -243,7 +250,7 @@ class Dataset(DatasetBase[Relation]):
         load_from_path: Class method to load a dataset from a specified path.
     """
 
-    def __init__(self, relations: List[Relation], path: PathLike, name: Optional[str] = None):
+    def __init__(self, relations: list[Relation], path: PathLike, name: Optional[str] = None):
         self.relation_data = relations
         self.path = path
         self.name = name
@@ -396,7 +403,7 @@ class Dataset(DatasetBase[Relation]):
         dataset_name: Optional[str] = None,
         keep_answer_space: bool = False,
     ):
-        relations: List[Relation] = []
+        relations: list[Relation] = []
 
         for key, value in indices.items():
             # filter the relation
