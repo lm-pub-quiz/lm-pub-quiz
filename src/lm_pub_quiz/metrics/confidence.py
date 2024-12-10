@@ -1,4 +1,5 @@
-from typing import Any, Dict, List, Mapping, Optional
+from collections.abc import Mapping
+from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -16,10 +17,10 @@ class SoftmaxBase(BasicMetric):
     def reset(self):
         super().reset()
         self.softmax: Optional[pd.Series] = None
-        self.correct_mask: List = []
+        self.correct_mask: list = []
 
     @staticmethod
-    def _get_softmax_probability(pll_scores: List[float]) -> np.array:
+    def _get_softmax_probability(pll_scores: list[float]) -> np.array:
         exp_scores = np.exp(pll_scores)
         softmax_scores = exp_scores / np.sum(exp_scores)
         return softmax_scores
@@ -44,7 +45,7 @@ class SoftmaxBase(BasicMetric):
         self.correct_mask.append(correct)
         self.softmax = self._stack_vector(self.softmax, softmax_scores)
 
-    def compute(self) -> Dict[str, Any]:
+    def compute(self) -> dict[str, Any]:
         super().compute()
 
         if self.softmax is None:
@@ -72,7 +73,7 @@ class ConfidenceMargin(SoftmaxBase):
 
     metric_name = "margin_of_confidence"
 
-    def compute(self) -> Dict[str, Any]:
+    def compute(self) -> dict[str, Any]:
         super().compute()
         confidence_margin = self.softmax_sorted[:, 0] - self.softmax_sorted[:, 1]
         return {
@@ -96,7 +97,7 @@ class ConfidenceScore(SoftmaxBase):
 
     metric_name = "confidence_score"
 
-    def compute(self) -> Dict[str, Any]:
+    def compute(self) -> dict[str, Any]:
         super().compute()
         correct = self.softmax_sorted[:, 0][self.correct_mask].mean(axis=0) if sum(self.correct_mask) else None  # type: ignore
         incorrect = self.softmax_sorted[:, 0][~self.correct_mask].mean(axis=0) if sum(~self.correct_mask) else None  # type: ignore
@@ -119,13 +120,13 @@ class UncertaintyScore(SoftmaxBase):
 
     def reset(self):
         super().reset()
-        self.correct_answer: List = []
+        self.correct_answer: list = []
 
     def add_instance(self, row: Mapping):
         super().add_instance(row)
         self.correct_answer.append(row["answer_idx"])
 
-    def compute(self) -> Dict[str, Any]:
+    def compute(self) -> dict[str, Any]:
         super().compute()
 
         self.correct_answer = np.array(self.correct_answer)
@@ -154,7 +155,7 @@ class BrierScore(UncertaintyScore):
 
     metric_name = "brier_score"
 
-    def compute(self) -> Dict[str, Any]:
+    def compute(self) -> dict[str, Any]:
         super().compute()
         y_true, y_pred_probs = self.correct_answer, self.softmax
 

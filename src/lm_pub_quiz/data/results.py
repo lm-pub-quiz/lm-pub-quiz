@@ -3,18 +3,14 @@
 import json
 import logging
 import warnings
+from collections.abc import Iterable, Mapping, Sequence
 from copy import deepcopy
 from pathlib import Path
 from typing import (
     Any,
     Callable,
     ClassVar,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
     Optional,
-    Sequence,
     Union,
     cast,
     overload,
@@ -35,7 +31,7 @@ class RelationResult(RelationBase):
     _instance_table_file_name_suffix = "_results"
     _metadata_file_name: str = "metadata_results.json"
 
-    _default_reductions: ClassVar[Dict[str, Callable[[List[float]], float]]] = {
+    _default_reductions: ClassVar[dict[str, Callable[[list[float]], float]]] = {
         "sum": cast(Callable[[Iterable[float]], float], np.sum),
         "mean": cast(Callable[[Iterable[float]], float], np.mean),
     }
@@ -44,12 +40,12 @@ class RelationResult(RelationBase):
         self,
         relation_code: str,
         *,
-        metadata: Dict[str, Any],
-        metric_values: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any],
+        metric_values: Optional[dict[str, Any]] = None,
         instance_table: Optional[pd.DataFrame] = None,
         answer_space: Optional[pd.Series] = None,
-        lazy_options: Optional[Dict[str, Any]] = None,
-        relation_info: Optional[Dict[str, Any]] = None,
+        lazy_options: Optional[dict[str, Any]] = None,
+        relation_info: Optional[dict[str, Any]] = None,
     ):
         super().__init__(
             relation_code,
@@ -59,7 +55,7 @@ class RelationResult(RelationBase):
             relation_info=relation_info,
         )
         self._metadata = metadata
-        self.metric_values: Dict[str, Any] = metric_values or {}
+        self.metric_values: dict[str, Any] = metric_values or {}
 
     def get_metadata(self, key: Optional[str] = None) -> Any:
         if key == "metric_values":
@@ -90,7 +86,7 @@ class RelationResult(RelationBase):
         path: PathLike,
         *,
         relation_code: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: Optional[dict[str, Any]] = None,
         lazy: bool = True,
         fmt: InstanceTableFileFormat = None,
     ) -> "RelationResult":
@@ -301,7 +297,7 @@ class RelationResult(RelationBase):
                     return [values[i] for i in kept_indices]
 
                 columns = ["tokens", "pll_scores", "sub_indices", "obj_indices", "template_indices"]
-                instance_table[columns] = instance_table[columns].applymap(_filter_indices)
+                instance_table[columns] = instance_table[columns].map(_filter_indices)
 
             else:
 
@@ -424,7 +420,7 @@ class RelationResult(RelationBase):
 class DatasetResults(DatasetBase[RelationResult]):
     """Container for relation results."""
 
-    def __init__(self, results: Optional[List[RelationResult]] = None):
+    def __init__(self, results: Optional[list[RelationResult]] = None):
         self.relation_data = results or []
 
     def append(self, result: RelationResult) -> None:
@@ -507,7 +503,7 @@ class DatasetResults(DatasetBase[RelationResult]):
             return self.__class__([rel.activated() for rel in self])
 
     @staticmethod
-    def _construct_metrics_dict(metrics: Iterable[str], relation: RelationResult) -> Dict[str, float]:
+    def _construct_metrics_dict(metrics: Iterable[str], relation: RelationResult) -> dict[str, float]:
         d = {}
         for m in metrics:
             metric_value = relation.get_metric(m)
@@ -571,7 +567,7 @@ class DatasetResults(DatasetBase[RelationResult]):
         keep_answer_space: bool = False,
         dataset_name: Optional[str] = None,
     ):
-        relations: List[RelationResult] = []
+        relations: list[RelationResult] = []
         for key, value in indices.items():
             rel = self[key].filter_subset(value, keep_answer_space=keep_answer_space, dataset_name=dataset_name)
             if save_path is not None:
@@ -590,7 +586,7 @@ class DatasetResults(DatasetBase[RelationResult]):
         reduction_name: Optional[str] = None,
         pass_indices: bool = False,
     ) -> Self:
-        relations: List[RelationResult] = []
+        relations: list[RelationResult] = []
 
         for rel in self:
             new_rel = rel.reduced(reduction=reduction, reduction_name=reduction_name, pass_indices=pass_indices)
@@ -601,15 +597,15 @@ class DatasetResults(DatasetBase[RelationResult]):
         return self.__class__(relations)
 
     @overload
-    def get_metadata(self, key: None = None) -> Dict[str, Any]: ...
+    def get_metadata(self, key: None = None) -> dict[str, Any]: ...
 
     @overload
     def get_metadata(self, key: str) -> Any: ...
 
     @overload
-    def get_metadata(self, key: List[str]) -> Dict[str, Any]: ...
+    def get_metadata(self, key: list[str]) -> dict[str, Any]: ...
 
-    def get_metadata(self, key: Optional[Union[str, List[str]]] = None):
+    def get_metadata(self, key: Optional[Union[str, list[str]]] = None):
         """Return metadata from the relations. If no keys are passed, all consistent values are returned."""
 
         intersection: Any = None

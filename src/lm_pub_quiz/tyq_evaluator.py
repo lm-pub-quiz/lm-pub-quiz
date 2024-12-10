@@ -1,5 +1,6 @@
 import logging
-from typing import Iterable, List, Optional, Union, cast
+from collections.abc import Iterable
+from typing import Optional, Union, cast
 
 import torch
 import torch.nn.functional as torch_func
@@ -107,7 +108,7 @@ class TyQEvaluator(BaseEvaluator):
             all_log_probs = torch_func.log_softmax(logits, dim=-1).cpu()
 
         # read out the mean log probs
-        scores: List[float] = []
+        scores: list[float] = []
 
         for length, token_ids in zip(encoded_answers.length, encoded_answers.input_ids):
             sentence_id: int = required_lens.index(length)
