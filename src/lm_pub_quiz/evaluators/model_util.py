@@ -20,16 +20,26 @@ class ModelMixin(BaseMixin):
     _mlm_keywords: Tuple[str, ...] = ("bert",)
     _clm_keywords: Tuple[str, ...] = ("opt", "gpt", "llama", "bloom", "google/gemma", "mistral")
 
+    model_name: str
+    model: PreTrainedModel
+    tokenizer: PreTrainedTokenizerFast
+    device: torch.device
+
     def __init__(
         self,
         *,
         model: PreTrainedModel,
         tokenizer: PreTrainedTokenizerFast,
         device: Union[torch.device, int, str, None],
+        model_name: Optional[str] = None,
         **kw,
     ):
         super().__init__(**kw)
-        self.model_name: str = self._get_model_name(model)
+
+        if model_name is None:
+            self.model_name = self._get_model_name(model)
+        else:
+            self.model_name = model_name
 
         self.model = model
         self.tokenizer = tokenizer
@@ -145,12 +155,14 @@ class ModelMixin(BaseMixin):
         model_kw: Optional[Dict[str, Any]] = None,
         **kw,
     ) -> Self:
-
         device = cls._get_device(device)
 
         model_kw = model_kw or {}
         if "device" not in model_kw:
             model_kw["device"] = device
+
+        if isinstance(model, str) and "model_name" not in kw:
+            kw["model_name"] = model
 
         model = cls._get_model(model=model, model_type=model_type, **model_kw)
         tokenizer = cls._get_tokenizer(model=model, tokenizer=kw.pop("tokenizer", None))

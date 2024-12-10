@@ -49,7 +49,6 @@ class MaskedLMScorer(PLLScorerBase):
         scoring_masks: Optional[Sequence[ScoringMask]] = None,
         batch_size: int = 1,
     ) -> List[List[float]]:
-
         if scoring_masks is None:
             # If no scoring mask is given, all non-special tokens are scored
             scoring_masks = [(~mask.bool()).tolist() for mask in batched_statements["special_tokens_mask"]]
@@ -180,7 +179,6 @@ class CausalLMScorer(PLLScorerBase):
         scoring_masks: Optional[Sequence[ScoringMask]] = None,
         batch_size: int = 1,
     ) -> List[List[float]]:
-
         scores: List[List[float]] = []
 
         if scoring_masks is None:
