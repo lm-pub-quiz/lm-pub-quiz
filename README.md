@@ -44,12 +44,11 @@ For alternatives methods of installing the package, visit the [documentation](ht
 ```python
 from lm_pub_quiz import Dataset, Evaluator
 
-dataset_path = "<BEAR data path, e.g. ./transformer-knowledge-probe/data/BEAR>"
 result_save_path = "<BEAR results save path>"
 model_name = "gpt2"
 
 # Load the BEAR dataset from its specific location
-dataset = Dataset.from_path(dataset_path)
+dataset = Dataset.from_name("BEAR")
 
 # Run the BEAR evaluator and save the results
 evaluator = Evaluator.from_model(model_name, model_type="CLM", device="cuda")
