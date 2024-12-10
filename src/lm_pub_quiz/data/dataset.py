@@ -13,7 +13,8 @@ from typing_extensions import Self
 
 from lm_pub_quiz.data.base import DatasetBase, InstanceTableFileFormat, RelationBase
 from lm_pub_quiz.data.util import download_tmp_file, extract_archive_member, natural_sort
-from lm_pub_quiz.util import PathLike, cache_base_path
+from lm_pub_quiz.types import PathLike
+from lm_pub_quiz.util import cache_base_path
 
 log = logging.getLogger(__name__)
 
@@ -106,7 +107,7 @@ class Relation(RelationBase):
         relation_code: Optional[str] = None,
         lazy: bool = True,
         fmt: InstanceTableFileFormat = None,
-    ) -> "Relation":
+    ) -> Self:
         """
         Loads a relation from a JSONL file and associated metadata.
 
@@ -166,12 +167,6 @@ class Relation(RelationBase):
 
         answer_space = cls.answer_space_from_metadata(metadata, id_prefix=f"{relation_code}-")
 
-        if len(metadata) > 0:
-            log.info(
-                "Found additional metadata thats is going to be ignored: %s",
-                ", ".join(f"{m}" for m in metadata.keys()),
-            )
-
         if lazy:
             instance_table = None
             lazy_options = {
@@ -188,6 +183,7 @@ class Relation(RelationBase):
             templates=templates,
             instance_table=instance_table,
             lazy_options=lazy_options,
+            relation_info=metadata,
         )
 
     def copy(self, **kw):
@@ -271,7 +267,7 @@ class Dataset(DatasetBase[Relation]):
         fmt: InstanceTableFileFormat = None,
         relation_info: Optional[PathLike] = None,
         **kwargs,
-    ) -> "Dataset":
+    ) -> Self:
         """
         Loads a multiple choice dataset from a specified directory path.
 
@@ -328,7 +324,7 @@ class Dataset(DatasetBase[Relation]):
         chunk_size: int = 10 * 1024,
         relation_info: Optional[PathLike] = None,
         **kwargs,
-    ) -> "Dataset":
+    ) -> Self:
         """
         Loads a dataset from the cache (if available) or the url which is specified in the internal dataset table.
 
@@ -402,7 +398,7 @@ class Dataset(DatasetBase[Relation]):
         fmt: InstanceTableFileFormat = None,
         dataset_name: Optional[str] = None,
         keep_answer_space: bool = False,
-    ):
+    ) -> Self:
         relations: list[Relation] = []
 
         for key, value in indices.items():

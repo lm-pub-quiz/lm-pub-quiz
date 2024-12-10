@@ -22,7 +22,8 @@ from typing_extensions import Literal, Self
 
 from lm_pub_quiz.data.base import DatasetBase, InstanceTableFileFormat, NoInstanceTableError, RelationBase
 from lm_pub_quiz.metrics import RelationMetric, accumulate_metrics
-from lm_pub_quiz.util import PathLike, parse_dumped_raw_results
+from lm_pub_quiz.types import PathLike
+from lm_pub_quiz.util import parse_dumped_raw_results
 
 log = logging.getLogger(__name__)
 

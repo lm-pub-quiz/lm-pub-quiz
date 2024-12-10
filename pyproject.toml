@@ -7,13 +7,11 @@ dependencies = [
   "torch",
   "datasets",
   "transformers>=4.38",
-  "minicons>0.2.22",
   "accelerate>0.25.0",
   "hydra-core",
   "pandas",
   "numpy<2.0.0",
   "seaborn",
-  "cordage",
   "scikit-learn",
 ]
 dynamic = ["version"]

@@ -44,6 +44,7 @@ For alternatives methods of installing the package, visit the [documentation](ht
 ```python
 from lm_pub_quiz import Dataset, Evaluator
 
+<<<<<<< HEAD
 # Load the dataset
 dataset = Dataset.from_name("BEAR")
 
@@ -64,7 +65,6 @@ results = evaluator.evaluate_dataset(
 
 print("=== Overall score ===")
 print(results.get_metrics("accuracy"))
-
 ```
 
 
