@@ -12,7 +12,6 @@ dependencies = [
   "pandas",
   "numpy<2.0.0",
   "seaborn",
-  "cordage",
   "scikit-learn",
 ]
 dynamic = ["version"]
