@@ -2,20 +2,14 @@
 
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Iterator, Sequence
 from datetime import datetime, timezone
 from itertools import islice
 from typing import (
     Any,
     Callable,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
     Literal,
     Optional,
-    Sequence,
-    Tuple,
-    Type,
     Union,
     cast,
     overload,
@@ -49,8 +43,8 @@ MultiMetricSpecification = Union[MetricSpecification, Sequence[MetricSpecificati
 class BaseEvaluator(ABC):
     default_reduction = "sum"
 
-    _mlm_keywords: Tuple[str, ...] = ("bert",)
-    _clm_keywords: Tuple[str, ...] = ("opt", "gpt", "llama", "bloom", "google/gemma", "mistral")
+    _mlm_keywords: tuple[str, ...] = ("bert",)
+    _clm_keywords: tuple[str, ...] = ("opt", "gpt", "llama", "bloom", "google/gemma", "mistral")
 
     def __init__(
         self,
@@ -119,9 +113,9 @@ class BaseEvaluator(ABC):
 
         template = relation.templates[template_index]
 
-        evaluated_instances: List[Dict] = []
+        evaluated_instances: list[dict] = []
 
-        metrics: List[RelationMetric] = []
+        metrics: list[RelationMetric] = []
         if metric is not None:
             if isinstance(metric, (str, RelationMetric)) or (
                 isinstance(metric, type) and issubclass(metric, RelationMetric)
@@ -227,7 +221,7 @@ class BaseEvaluator(ABC):
 
         return dataset_results
 
-    def get_result_metadata(self, **kw) -> Dict[str, Any]:
+    def get_result_metadata(self, **kw) -> dict[str, Any]:
         metadata = {}
 
         if "dataset" in kw:
@@ -255,7 +249,7 @@ class BaseEvaluator(ABC):
             return model.base_model_prefix
 
     @staticmethod
-    def print_ranking(answers: Iterable[str], scores: List[float]) -> None:
+    def print_ranking(answers: Iterable[str], scores: list[float]) -> None:
         data = zip(answers, scores)
         sorted_data = sorted(data, key=lambda x: x[1], reverse=False)
         max_str_length = max([len(item[0]) for item in sorted_data])
@@ -284,7 +278,7 @@ class BaseEvaluator(ABC):
             return tokenizer
 
     @staticmethod
-    def _chunks(sentences: Iterable[str], batch_size: int) -> Iterator[List[str]]:
+    def _chunks(sentences: Iterable[str], batch_size: int) -> Iterator[list[str]]:
         """Yield successive n-sized chunks from list."""
 
         if batch_size > 0:
@@ -335,7 +329,7 @@ class BaseEvaluator(ABC):
         return_prefix: Literal[False] = False,
         return_suffix: Literal[False] = False,
         include_special_tokens: bool = True,
-    ) -> Tuple[str, Dict[str, List[int]]]: ...
+    ) -> tuple[str, dict[str, list[int]]]: ...
 
     # Return the prefix and the stimulus
     @overload
@@ -350,7 +344,7 @@ class BaseEvaluator(ABC):
         return_prefix: Literal[True],
         return_suffix: Literal[False] = False,
         include_special_tokens: bool = True,
-    ) -> Tuple[str, str]: ...
+    ) -> tuple[str, str]: ...
 
     # Return the prefix, stimulus, and suffix
     @overload
@@ -365,7 +359,7 @@ class BaseEvaluator(ABC):
         return_prefix: Literal[True],
         return_suffix: Literal[True],
         include_special_tokens: bool = True,
-    ) -> Tuple[str, str, str]: ...
+    ) -> tuple[str, str, str]: ...
 
     def fill_template(
         self,
@@ -378,7 +372,7 @@ class BaseEvaluator(ABC):
         return_prefix: bool = False,
         return_suffix: bool = False,
         include_special_tokens: bool = True,
-    ) -> Union[str, Tuple[str, Dict[str, List[int]]], Tuple[str, str], Tuple[str, str, str]]:
+    ) -> Union[str, tuple[str, dict[str, list[int]]], tuple[str, str], tuple[str, str, str]]:
         """Create a sentence/text based on a template and an anwser.
 
         Parameters:
@@ -446,7 +440,7 @@ class Evaluator(BaseEvaluator):
             msg = "Cannot print ranking if reduction is `None`."
             raise ValueError(msg)
 
-        results: List = []
+        results: list = []
         for answer in self._chunks(answers, batch_size):
             results += self.score_answers(
                 template=template,
@@ -463,18 +457,18 @@ class Evaluator(BaseEvaluator):
     @overload
     @abstractmethod
     def score_answers(
-        self, *, template: str, answers: List[str], reduction: None, subject: Optional[str] = None
+        self, *, template: str, answers: list[str], reduction: None, subject: Optional[str] = None
     ) -> EachTokenReturnFormat: ...
 
     @overload
     @abstractmethod
     def score_answers(
-        self, *, template: str, answers: List[str], reduction: str, subject: Optional[str] = None
+        self, *, template: str, answers: list[str], reduction: str, subject: Optional[str] = None
     ) -> ReducedReturnFormat: ...
 
     @abstractmethod
     def score_answers(
-        self, *, template: str, answers: List[str], reduction: Optional[str], subject: Optional[str] = None
+        self, *, template: str, answers: list[str], reduction: Optional[str], subject: Optional[str] = None
     ) -> Union[ReducedReturnFormat, EachTokenReturnFormat]:
         """Score an answer given a template.
 
@@ -491,7 +485,7 @@ class Evaluator(BaseEvaluator):
             model_type = cls._infer_type_from_name(model_str)
             log.debug("Inferred type of model `%s`: %s", model_str, model_type)
 
-        evaluator_class: Type[Evaluator]
+        evaluator_class: type[Evaluator]
         if model_type == "MLM":
             evaluator_class = MaskedLMEvaluator
         elif model_type == "CLM":
@@ -546,16 +540,16 @@ class MaskedLMEvaluator(Evaluator):
 
     @overload
     def score_answers(
-        self, *, template: str, answers: List[str], reduction: None, subject: Optional[str] = None
+        self, *, template: str, answers: list[str], reduction: None, subject: Optional[str] = None
     ) -> EachTokenReturnFormat: ...
 
     @overload
     def score_answers(
-        self, *, template: str, answers: List[str], reduction: str, subject: Optional[str] = None
+        self, *, template: str, answers: list[str], reduction: str, subject: Optional[str] = None
     ) -> ReducedReturnFormat: ...
 
     def score_answers(
-        self, *, template: str, answers: List[str], reduction: Optional[str], subject: Optional[str] = None
+        self, *, template: str, answers: list[str], reduction: Optional[str], subject: Optional[str] = None
     ) -> Union[ReducedReturnFormat, EachTokenReturnFormat]:
         """Calculates sequence scores using the Masked Language Model.
 
@@ -616,7 +610,7 @@ class MaskedLMEvaluator(Evaluator):
                 )
             ]
 
-    def get_result_metadata(self, **kw) -> Dict[str, Any]:
+    def get_result_metadata(self, **kw) -> dict[str, Any]:
         return {"pll_metric": self.pll_metric, **super().get_result_metadata(**kw)}
 
 
@@ -638,16 +632,16 @@ class CausalLMEvaluator(Evaluator):
 
     @overload
     def score_answers(
-        self, *, template: str, answers: List[str], reduction: None, subject: Optional[str] = None
+        self, *, template: str, answers: list[str], reduction: None, subject: Optional[str] = None
     ) -> EachTokenReturnFormat: ...
 
     @overload
     def score_answers(
-        self, *, template: str, answers: List[str], reduction: str, subject: Optional[str] = None
+        self, *, template: str, answers: list[str], reduction: str, subject: Optional[str] = None
     ) -> ReducedReturnFormat: ...
 
     def score_answers(
-        self, *, template: str, answers: List[str], reduction: Optional[str], subject: Optional[str] = None
+        self, *, template: str, answers: list[str], reduction: Optional[str], subject: Optional[str] = None
     ) -> Union[EachTokenReturnFormat, ReducedReturnFormat]:
         """Calculates sequence scores using the Casual Language Model.
 

@@ -77,7 +77,7 @@ def test_callback(request, tmp_path):
         args=training_args,
         train_dataset=mlm_train_dataset,
         eval_dataset=mlm_eval_dataset,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
         data_collator=data_collator,
         callbacks=[logging_callback],
     )

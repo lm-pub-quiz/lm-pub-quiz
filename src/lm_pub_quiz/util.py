@@ -1,18 +1,18 @@
 import os
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Union
 
 PathLike = Union[str, os.PathLike]
-ReducedReturnFormat = List[float]
-EachTokenReturnFormat = List[Tuple[List[Tuple[str, float]], Dict[str, List[int]]]]
-SegmentedResultFormat = Tuple[
-    Tuple[List[str], ...], Tuple[List[float], ...], Tuple[List[int], ...], Tuple[List[int], ...], Tuple[List[int], ...]
+ReducedReturnFormat = list[float]
+EachTokenReturnFormat = list[tuple[list[tuple[str, float]], dict[str, list[int]]]]
+SegmentedResultFormat = tuple[
+    tuple[list[str], ...], tuple[list[float], ...], tuple[list[int], ...], tuple[list[int], ...], tuple[list[int], ...]
 ]
 
 cache_base_path = Path(os.getenv("LM_PUB_QUIZ_CACHE_ROOT", Path(Path.home(), ".lm-pub-quiz")))
 
 
-def sort_scores(scores: List[float]) -> List[Tuple[int, float]]:
+def sort_scores(scores: list[float]) -> list[tuple[int, float]]:
     """Sort (psudo) log likelihood scores (descending)."""
     indexed_list = list(enumerate(scores))
     indexed_list.sort(key=lambda x: x[1], reverse=True)

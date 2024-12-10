@@ -1,5 +1,6 @@
 import warnings
-from typing import Any, Dict, List, Mapping, Optional, cast
+from collections.abc import Mapping
+from typing import Any, Optional, cast
 
 import numpy as np
 
@@ -29,7 +30,7 @@ class PrecisionAtK(BasicMetric):
 
     def add_instance(self, row: Mapping):
         super().add_instance(row)
-        ranked_indices, _ = zip(*sort_scores(cast(List[float], row["pll_scores"])))
+        ranked_indices, _ = zip(*sort_scores(cast(list[float], row["pll_scores"])))
 
         if self.num_correct_at_k is None:
             # Initialize the array
@@ -67,5 +68,5 @@ class Accuracy(BasicMetric):
         if row["answer_idx"] == row["pll_scores"].index(max(row["pll_scores"])):
             self.num_correct += 1
 
-    def compute(self) -> Dict[str, Any]:
+    def compute(self) -> dict[str, Any]:
         return {**super().compute(), "accuracy": self.num_correct / self.support}
