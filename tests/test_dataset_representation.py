@@ -89,3 +89,9 @@ def test_dataset_subset_filtering(request):
     assert tuple(subset[1].instance_table.index.values) == tuple(range(4))
 
     assert list(subset[1].answer_space) == ["the lion", "the kid", "the caterpillar"]
+
+
+def test_dataset_with_additional_files(request):
+    dataset: Dataset = Dataset.from_path(request.path.parent / "test_data" / "dummy_dataset_with_additional_files")
+
+    assert len(dataset) == 1
