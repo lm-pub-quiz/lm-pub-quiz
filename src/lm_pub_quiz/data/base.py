@@ -20,7 +20,7 @@ from typing import (
 import pandas as pd
 from typing_extensions import Self
 
-from lm_pub_quiz.util import PathLike
+from lm_pub_quiz.types import PathLike
 
 log = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class DataBase(ABC):
 
     @classmethod
     @abstractmethod
-    def from_path(cls, path: PathLike, *, lazy: bool = True, fmt: InstanceTableFileFormat = None):
+    def from_path(cls, path: PathLike, *, lazy: bool = True, fmt: InstanceTableFileFormat = None) -> "DataBase":
         """Load data from the given path.
 
         If `lazy`, only the metadata is loaded and the instances are loaded once they are accessed.
@@ -132,9 +132,8 @@ class RelationBase(DataBase):
     def __str__(self) -> str:
         return f"{self.__class__.__name__} `{self.relation_code}`"
 
-    @property
-    def _derived_cardinality(self) -> str:
-        if self.instance_table.duplicated("obj_id").any():
+    def _derive_cardinality(self, instance_table: pd.DataFrame) -> str:
+        if instance_table.duplicated("obj_id").any():
             return "multiple instances per answer"
         else:
             return "single instance per answer"
@@ -149,7 +148,7 @@ class RelationBase(DataBase):
         """Get or set additional relation information."""
         if key is not None:
             if key == "cardinality" and "cardinality" not in self._relation_info:
-                return self._derived_cardinality
+                return self._derive_cardinality(self.instance_table)
             else:
                 return self._relation_info[key]
         elif len(kw) > 0:
@@ -157,7 +156,7 @@ class RelationBase(DataBase):
 
         info = self._relation_info.copy()
         if "cardinality" not in info:
-            info["cardinality"] = self._derived_cardinality
+            info["cardinality"] = self._derive_cardinality(self.instance_table)
         return info
 
     @overload
@@ -262,6 +261,7 @@ class RelationBase(DataBase):
                 raise NoInstanceTableError(msg)
 
             instance_table = self.load_instance_table(answer_space=self._answer_space, **self._lazy_options)
+            self.relation_info(cardinality=self._derive_cardinality(instance_table))
 
             if self._answer_space is None:
                 # store answer_space
@@ -344,7 +344,7 @@ class RelationBase(DataBase):
         if fmt == ("jsonl",):
             instance_table.to_json(path, orient="records", lines=True)
 
-        elif fmt[0] == "parquet" and len(fmt) <= 2:  # noqa: PLR2004
+        elif 0 < len(fmt) <= 2 and fmt[0] == "parquet":  # noqa: PLR2004
             compression: Optional[str]
 
             if len(fmt) == 1:
@@ -366,9 +366,9 @@ class RelationBase(DataBase):
     def has_instance_table(self) -> bool:
         pass
 
-    def save(self, save_path: PathLike, fmt: InstanceTableFileFormat = None) -> Optional[Path]:
+    def save(self, path: PathLike, fmt: InstanceTableFileFormat = None) -> Optional[Path]:
         """Save results to a file and export meta_data"""
-        save_path = Path(save_path)
+        save_path = Path(path)
         save_path.mkdir(parents=True, exist_ok=True)
 
         log.debug("Saving %s result to: %s", self, save_path)
@@ -546,7 +546,7 @@ class DatasetBase(DataBase, Generic[RT]):
         save_path: Optional[PathLike] = None,
         keep_answer_space: bool = False,
         dataset_name: Optional[str] = None,
-    ):
+    ) -> Self:
         pass
 
     @property

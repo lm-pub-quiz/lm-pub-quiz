@@ -1,13 +1,7 @@
 import os
 from pathlib import Path
-from typing import Union
 
-PathLike = Union[str, os.PathLike]
-ReducedReturnFormat = list[float]
-EachTokenReturnFormat = list[tuple[list[tuple[str, float]], dict[str, list[int]]]]
-SegmentedResultFormat = tuple[
-    tuple[list[str], ...], tuple[list[float], ...], tuple[list[int], ...], tuple[list[int], ...], tuple[list[int], ...]
-]
+from lm_pub_quiz.types import EachTokenReturnFormat, SegmentedResultFormat
 
 cache_base_path = Path(os.getenv("LM_PUB_QUIZ_CACHE_ROOT", Path(Path.home(), ".lm-pub-quiz")))
 
