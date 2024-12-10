@@ -1,5 +1,6 @@
 import logging
-from typing import Iterable, List, Optional
+from collections.abc import Iterable
+from typing import Optional
 
 import torch
 import torch.nn.functional as torch_func
@@ -69,7 +70,7 @@ class TyQEvaluator(BaseEvaluator):
 
         assert all(len(masked) == length for length, masked in zip(required_lens, masked_indices))
 
-        all_log_probs: List[torch.Tensor] = []
+        all_log_probs: list[torch.Tensor] = []
 
         # process the sentences using the model
         with torch.no_grad():
@@ -83,7 +84,7 @@ class TyQEvaluator(BaseEvaluator):
                     all_log_probs.append(log_probs)
 
         # read out the mean log probs
-        scores: List[float] = []
+        scores: list[float] = []
         for length, token_ids in zip(encoded_answers.length, encoded_answers.input_ids):
             sentence_id: int = required_lens.index(length)
 

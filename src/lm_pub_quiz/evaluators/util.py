@@ -1,4 +1,5 @@
-from typing import Dict, Generator, List, Optional, TypeVar
+from collections.abc import Generator
+from typing import Optional, TypeVar
 
 import torch
 from transformers import BatchEncoding
@@ -9,7 +10,7 @@ class BaseMixin:
         pass
 
 
-DataCollection = TypeVar("DataCollection", Dict, List, torch.Tensor, BatchEncoding)
+DataCollection = TypeVar("DataCollection", dict, list, torch.Tensor, BatchEncoding)
 
 
 def iter_batches(data_collection: DataCollection, batch_size: int) -> Generator[DataCollection, None, None]:

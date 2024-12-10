@@ -1,5 +1,6 @@
 from abc import abstractmethod
-from typing import List, Optional, Sequence
+from collections.abc import Sequence
+from typing import Optional
 
 import torch
 from transformers import BatchEncoding
@@ -19,7 +20,7 @@ class PLLScorerBase(ModelMixin):
         *,
         scoring_masks: Optional[Sequence[ScoringMask]],
         batch_size: int = 1,
-    ) -> List[List[float]]:
+    ) -> list[list[float]]:
         """Compute the PLL score for the tokens (determined by the scoring mask) in a statements.
 
         This function must be implemented by child-classes for each model-type.
@@ -48,14 +49,14 @@ class MaskedLMScorer(PLLScorerBase):
         *,
         scoring_masks: Optional[Sequence[ScoringMask]] = None,
         batch_size: int = 1,
-    ) -> List[List[float]]:
+    ) -> list[list[float]]:
         if scoring_masks is None:
             # If no scoring mask is given, all non-special tokens are scored
             scoring_masks = [(~mask.bool()).tolist() for mask in batched_statements["special_tokens_mask"]]
 
         extended_batch = self.create_masked_batch(batched_statements, scoring_masks)
 
-        token_scores: List[List[float]] = [[] for _ in range(batched_statements["input_ids"].size(0))]
+        token_scores: list[list[float]] = [[] for _ in range(batched_statements["input_ids"].size(0))]
 
         # Split up the larger batch based on the batch size
         for minibatch in iter_batches(extended_batch.to(self.device), batch_size=batch_size):
@@ -84,7 +85,7 @@ class MaskedLMScorer(PLLScorerBase):
 
         return token_scores
 
-    def mask_to_indices(self, scoring_masks: Sequence[ScoringMask]) -> List[torch.Tensor]:
+    def mask_to_indices(self, scoring_masks: Sequence[ScoringMask]) -> list[torch.Tensor]:
         """Transform the scoring mask to a list of indices."""
         mask_indices = []
         # Replace the relevant tokens by the pad token
@@ -178,8 +179,8 @@ class CausalLMScorer(PLLScorerBase):
         *,
         scoring_masks: Optional[Sequence[ScoringMask]] = None,
         batch_size: int = 1,
-    ) -> List[List[float]]:
-        scores: List[List[float]] = []
+    ) -> list[list[float]]:
+        scores: list[list[float]] = []
 
         if scoring_masks is None:
             # If no scoring mask is given, all non-special tokens are scored

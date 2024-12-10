@@ -4,8 +4,8 @@ from lm_pub_quiz.data.results import DatasetResults, RelationResult
 
 __all__ = [
     "Dataset",
-    "Relation",
-    "NoInstanceTableError",
     "DatasetResults",
+    "NoInstanceTableError",
+    "Relation",
     "RelationResult",
 ]

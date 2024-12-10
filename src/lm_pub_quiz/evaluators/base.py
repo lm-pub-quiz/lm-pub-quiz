@@ -2,18 +2,12 @@
 
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Sequence
 from datetime import datetime, timezone
 from typing import (
     Any,
     Callable,
-    Dict,
-    Iterable,
-    List,
     Optional,
-    Sequence,
-    Set,
-    Tuple,
-    Type,
     Union,
     cast,
     overload,
@@ -101,9 +95,9 @@ class BaseEvaluator(Templater, ModelMixin, ABC):
         )
         template = relation.templates[template_index]
 
-        evaluated_instances: List[Dict] = []
+        evaluated_instances: list[dict] = []
 
-        metrics: List[RelationMetric] = []
+        metrics: list[RelationMetric] = []
         if metric is not None:
             if isinstance(metric, (str, RelationMetric)) or (
                 isinstance(metric, type) and issubclass(metric, RelationMetric)
@@ -215,7 +209,7 @@ class BaseEvaluator(Templater, ModelMixin, ABC):
 
         return dataset_results
 
-    def get_result_metadata(self, **kw) -> Dict[str, Any]:
+    def get_result_metadata(self, **kw) -> dict[str, Any]:
         metadata = {
             "lm_pub_quiz_version": __version__,
         }
@@ -230,7 +224,7 @@ class BaseEvaluator(Templater, ModelMixin, ABC):
         return metadata
 
     @staticmethod
-    def print_ranking(answers: Iterable[str], scores: List[float]) -> None:
+    def print_ranking(answers: Iterable[str], scores: list[float]) -> None:
         data = zip(answers, scores)
         sorted_data = sorted(data, key=lambda x: x[1], reverse=False)
         max_str_length = max([len(item[0]) for item in sorted_data])
@@ -274,7 +268,7 @@ class Evaluator(BaseEvaluator, PLLScorerBase):
             msg = "Cannot print ranking if reduction is `None`."
             raise ValueError(msg)
 
-        results: List = self.score_answers(
+        results: list = self.score_answers(
             template=template,
             answers=answers,
             reduction=reduction,
@@ -322,10 +316,10 @@ class Evaluator(BaseEvaluator, PLLScorerBase):
 
         Parameters:
             template str: The template to use (should contain a `[Y]` marker).
-            answers List[str]: List of answers to calculate score for.
+            answers list[str]: List of answers to calculate score for.
 
         Returns:
-            List[float]: List of suprisals scores per sequence
+            list[float]: List of suprisals scores per sequence
         """
         statements: Sequence[str]
         span_roles: Sequence[SpanRoles]
@@ -349,14 +343,14 @@ class Evaluator(BaseEvaluator, PLLScorerBase):
             span_roles=span_roles,
         )
 
-        token_scores: List[List[float]] = self.score_statements(
+        token_scores: list[list[float]] = self.score_statements(
             batch, scoring_masks=scoring_masks, batch_size=batch_size
         )
 
         if reduction is None:
             token_roles = self.derive_token_roles(batch=batch, span_roles=span_roles, scoring_masks=scoring_masks)
 
-            scored_tokens: List[List[ScoredToken]]
+            scored_tokens: list[list[ScoredToken]]
 
             scored_tokens = [
                 list(zip(tokens, token_scores)) for tokens, token_scores in zip(self.decode_tokens(batch), token_scores)
@@ -371,7 +365,7 @@ class Evaluator(BaseEvaluator, PLLScorerBase):
     @abstractmethod
     def encode(
         self, statements: Sequence[str], span_roles: Sequence[SpanRoles]
-    ) -> Tuple[BatchEncoding, Sequence[ScoringMask]]:
+    ) -> tuple[BatchEncoding, Sequence[ScoringMask]]:
         """Encode the statements using the tokenizer and create an appropriate scoring mask.
 
         In case the conditional scores need to be created, set the scoring mask accordingly.
@@ -379,7 +373,7 @@ class Evaluator(BaseEvaluator, PLLScorerBase):
 
     def decode_tokens(
         self, batch: BatchEncoding, scoring_masks: Optional[Sequence[ScoringMask]] = None
-    ) -> List[List[str]]:
+    ) -> list[list[str]]:
         if scoring_masks is None:
             return [self.tokenizer.convert_ids_to_tokens(input_ids) for input_ids in batch["input_ids"]]
         else:
@@ -394,8 +388,8 @@ class Evaluator(BaseEvaluator, PLLScorerBase):
         """Derive which tokens belong to the subject, answer, and template."""
         token_roles = []
 
-        non_template_tokens: Set[int]
-        token_indices: Dict[str, List[int]]
+        non_template_tokens: set[int]
+        token_indices: dict[str, list[int]]
 
         for statement_index, spans in enumerate(span_roles):
             non_template_tokens = set()
@@ -437,7 +431,7 @@ class Evaluator(BaseEvaluator, PLLScorerBase):
 
             if scoring_masks is not None:
                 i = 0
-                remapped: List[int] = []
+                remapped: list[int] = []
                 for m in scoring_masks[statement_index]:
                     if m:
                         remapped.append(i)
@@ -462,7 +456,7 @@ class Evaluator(BaseEvaluator, PLLScorerBase):
                 else:
                     model_type = cls._infer_type_from_object(model)
 
-            evaluator_class: Type[Evaluator]
+            evaluator_class: type[Evaluator]
             if model_type == "MLM":
                 evaluator_class = MaskedLMEvaluator
             elif model_type == "CLM":
@@ -491,12 +485,12 @@ class Evaluator(BaseEvaluator, PLLScorerBase):
 
 
 class MaskedLMEvaluator(MaskedLMScorer, Evaluator):
-    def get_result_metadata(self, **kw) -> Dict[str, Any]:
+    def get_result_metadata(self, **kw) -> dict[str, Any]:
         return {"pll_metric": self.pll_metric, **super().get_result_metadata(**kw)}
 
     def encode(
         self, statements: Sequence[str], span_roles: Sequence[SpanRoles]
-    ) -> Tuple[BatchEncoding, Sequence[ScoringMask]]:
+    ) -> tuple[BatchEncoding, Sequence[ScoringMask]]:
         """Encode the statements using the tokenizer and create an appropriate scoring mask.
 
         In case the conditional scores need to be created, set the scoring mask accordingly.
@@ -532,7 +526,7 @@ class MaskedLMEvaluator(MaskedLMScorer, Evaluator):
 class CausalLMEvaluator(CausalLMScorer, Evaluator):
     def encode(
         self, statements: Sequence[str], span_roles: Sequence[SpanRoles]
-    ) -> Tuple[BatchEncoding, Sequence[ScoringMask]]:
+    ) -> tuple[BatchEncoding, Sequence[ScoringMask]]:
         """Encode the statements using the tokenizer and create an appropriate scoring mask.
 
         In case the conditional scores need to be created, set the scoring mask accordingly.

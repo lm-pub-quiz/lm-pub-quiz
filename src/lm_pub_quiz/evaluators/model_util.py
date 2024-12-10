@@ -1,8 +1,9 @@
 import logging
-from typing import Any, Dict, Literal, Optional, Tuple, Type, Union
+from typing import Any, Literal, Optional, Union
 
 import torch
 from transformers import (
+    AutoModel,
     AutoModelForCausalLM,
     AutoModelForMaskedLM,
     AutoTokenizer,
@@ -17,8 +18,8 @@ log = logging.getLogger(__name__)
 
 
 class ModelMixin(BaseMixin):
-    _mlm_keywords: Tuple[str, ...] = ("bert",)
-    _clm_keywords: Tuple[str, ...] = ("opt", "gpt", "llama", "bloom", "google/gemma", "mistral")
+    _mlm_keywords: tuple[str, ...] = ("bert",)
+    _clm_keywords: tuple[str, ...] = ("opt", "gpt", "llama", "bloom", "google/gemma", "mistral")
 
     model_name: str
     model: PreTrainedModel
@@ -81,7 +82,7 @@ class ModelMixin(BaseMixin):
             model_type = cls._infer_type_from_name(model)
             log.debug("Inferred type of model `%s`: %s", model, model_type)
 
-        model_class: Type
+        model_class: type[AutoModel]
 
         if model_type == "MLM":
             model_class = AutoModelForMaskedLM
@@ -152,7 +153,7 @@ class ModelMixin(BaseMixin):
         *,
         model_type: Optional[str] = None,
         device: Union[torch.device, None, str, int] = None,
-        model_kw: Optional[Dict[str, Any]] = None,
+        model_kw: Optional[dict[str, Any]] = None,
         **kw,
     ) -> Self:
         device = cls._get_device(device)

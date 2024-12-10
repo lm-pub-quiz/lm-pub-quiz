@@ -1,5 +1,4 @@
 from collections import namedtuple
-from typing import Dict
 
 import pytest
 from transformers import AutoModelForCausalLM, AutoModelForMaskedLM, AutoTokenizer
@@ -14,7 +13,7 @@ ModelData = namedtuple("ModelData", ("model", "tokenizer", "name_or_path", "mode
 
 
 @pytest.fixture(scope="session")
-def model_cache() -> Dict[str, ModelData]:
+def model_cache() -> dict[str, ModelData]:
     """Prepare the models used during testing.
 
     Since the scope is "session", the models are loaded only once.
@@ -22,7 +21,7 @@ def model_cache() -> Dict[str, ModelData]:
     as other test-cases rely on them.
     """
 
-    cache: Dict[str, ModelData] = {}
+    cache: dict[str, ModelData] = {}
 
     for key, (name_or_path, model_type) in TEST_MODELS.items():
         if model_type == "MLM":

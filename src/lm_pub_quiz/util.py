@@ -1,13 +1,12 @@
 import os
 from pathlib import Path
-from typing import List, Tuple
 
 from lm_pub_quiz.types import EachTokenReturnFormat, SegmentedResultFormat
 
 cache_base_path = Path(os.getenv("LM_PUB_QUIZ_CACHE_ROOT", Path(Path.home(), ".lm-pub-quiz")))
 
 
-def sort_scores(scores: List[float]) -> List[Tuple[int, float]]:
+def sort_scores(scores: list[float]) -> list[tuple[int, float]]:
     """Sort (psudo) log likelihood scores (descending)."""
     indexed_list = list(enumerate(scores))
     indexed_list.sort(key=lambda x: x[1], reverse=True)

@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import List, Optional, Tuple
+from typing import Optional
 
 from lm_pub_quiz.evaluators.util import BaseMixin
 from lm_pub_quiz.types import Span, SpanRoles
@@ -34,7 +34,7 @@ class Templater(BaseMixin):
         template: str,
         subject: Optional[str],
         answer: Optional[str],
-    ) -> Tuple[str, SpanRoles]:
+    ) -> tuple[str, SpanRoles]:
         """Replace all placeholders in the template with the respective values.
 
         Returns the final string as well as the spans of the respective elements in the final string.
@@ -57,7 +57,7 @@ class Templater(BaseMixin):
             key = match.group()
 
             value: Optional[str]
-            span_list: List[Span]
+            span_list: list[Span]
 
             if key == self._subject_placeholder:
                 value = subject
