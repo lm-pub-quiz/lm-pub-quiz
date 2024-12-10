@@ -65,7 +65,7 @@ print(results.get_metrics("accuracy"))
 ## Contributing
 We welcome any questions, comments, or even PRs to this project to improve the package.
 
-We use [hatch](https://hatch.pypa.io) to manage this project. For the most comfortable development experience, please first install hatch using `pip` or `pipx`.
+We use [hatch](https://hatch.pypa.io) to manage this project. For the most comfortable development experience, please first install hatch using [`pip`](https://hatch.pypa.io/latest/install/#pipx) or [`pipx`](https://hatch.pypa.io/latest/install/#pipx).
 
 Then, to propose a change to the library,
 
