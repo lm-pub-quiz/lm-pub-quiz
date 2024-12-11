@@ -10,7 +10,7 @@ from lm_pub_quiz.evaluators.util import iter_batches
 from lm_pub_quiz.types import ScoringMask
 
 
-class PLLScorerBase(ModelMixin):
+class PLLScoringBaseMixin(ModelMixin):
     """This class is used retrieve PLL scores for tokens or the complete statement."""
 
     @abstractmethod
@@ -27,7 +27,7 @@ class PLLScorerBase(ModelMixin):
         """
 
 
-class MaskedLMScorer(PLLScorerBase):
+class MaskedLMScoringMixin(PLLScoringBaseMixin):
     def __init__(self, *, pll_metric: str = "within_word_l2r", **kw) -> None:
         if pll_metric not in ("original", "within_word_l2r"):
             msg = f"PLL strategy {pll_metric} not know."
@@ -169,7 +169,7 @@ class MaskedLMScorer(PLLScorerBase):
         return BatchEncoding(extended_batch)
 
 
-class CausalLMScorer(PLLScorerBase):
+class CausalLMScoringMixin(PLLScoringBaseMixin):
     def default_scoring_mask(self, batched_statements: BatchEncoding) -> Sequence[ScoringMask]:
         return [(~mask.bool()).tolist()[1:] for mask in batched_statements["special_tokens_mask"]]
 
