@@ -44,7 +44,9 @@ dependencies = [
   "pytest",
   "mkdocs",
   "mkdocs-material",
-  "mkdocstrings[python]",
+  "mkdocstrings[python]>=0.18",
+  "mkdocs-section-index>=0.3",
+  "black",
 ]
 [tool.hatch.envs.default.scripts]
 test = "pytest {args:tests}"

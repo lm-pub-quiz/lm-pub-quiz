@@ -6,16 +6,59 @@ theme:
   features:
     - content.code.copy
     - content.action.edit
+    - header.autohide
+  user_color_mode_toggle: True
   icon:
     repo: fontawesome/brands/git-alt
 nav:
   - index.md
   - example.md
+  - trainer_integration.md
   - data_files.md
-  - api.md
+  - development.md
+  - API Reference:
+    - api.md
+    - api/evaluator.md
+    - api/dataset.md
+    - api/result.md
+    - api/base_classes.md
 plugins:
   - search
-  - mkdocstrings
+  - section-index
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [src]
+          import:
+            - https://huggingface.co/docs/transformers/main/en/objects.inv
+            - https://pandas.pydata.org/docs/objects.inv
+          options:
+            docstring_options:
+              ignore_init_summary: true
+              trim_doctest_flags: true
+            docstring_style: google
+            docstring_section_style: table
+            filters: ["!^_"]
+            heading_level: 2
+            inherited_members: true
+            merge_init_into_class: true
+            parameter_headings: true
+            relative_crossrefs: true
+            scoped_crossrefs: true
+            separate_signature: true
+            show_bases: false
+            show_root_heading: true
+            show_root_full_path: false
+            show_signature_annotations: true
+            show_source: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            signature_crossrefs: true
+            summary: true
+            unwrap_annotated: true
+            find_stubs_package: true
+
 markdown_extensions:
   - tables
   - pymdownx.highlight:
@@ -25,6 +68,10 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.blocks.caption
+  - admonition
+  - toc:
+      permalink: "#"
 repo_url: https://github.com/lm-pub-quiz/lm-pub-quiz
 repo_name: lm-pub-quiz/lm-pub-quiz
 edit_uri: edit/main/docs/
