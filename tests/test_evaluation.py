@@ -3,10 +3,9 @@ import logging
 import numpy as np
 import pytest
 
-from lm_pub_quiz import Dataset, DatasetResults, Evaluator, RelationResult
+from lm_pub_quiz import CausalLMEvaluator, Dataset, DatasetResults, Evaluator, MaskedLMEvaluator, RelationResult
 from lm_pub_quiz.__about__ import __version__
 from lm_pub_quiz.data import NoInstanceTableError
-from lm_pub_quiz.evaluators.base import CausalLMEvaluator, MaskedLMEvaluator
 
 log = logging.getLogger(__name__)
 

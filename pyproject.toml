@@ -8,10 +8,8 @@ dependencies = [
   "datasets",
   "transformers>=4.38",
   "accelerate>0.25.0",
-  "hydra-core",
   "pandas",
-  "numpy<2.0.0",
-  "seaborn",
+  "numpy",
   "scikit-learn",
 ]
 dynamic = ["version"]
@@ -44,7 +42,9 @@ dependencies = [
   "pytest",
   "mkdocs",
   "mkdocs-material",
-  "mkdocstrings[python]",
+  "mkdocstrings[python]>=0.18",
+  "mkdocs-section-index>=0.3",
+  "black",
 ]
 [tool.hatch.envs.default.scripts]
 test = "pytest {args:tests}"

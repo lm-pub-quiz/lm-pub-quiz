@@ -89,6 +89,7 @@ class RelationBase(DataBase):
 
     @property
     def relation_code(self) -> str:
+        """The identifier of the relation."""
         return self._relation_code
 
     def copy(self, **kw):
@@ -145,7 +146,20 @@ class RelationBase(DataBase):
     def relation_info(self, key: str, /) -> Any: ...
 
     def relation_info(self, key: Optional[str] = None, /, **kw) -> Union[None, Any, dict[str, Any]]:
-        """Get or set additional relation information."""
+        """Get or set additional relation information.
+
+        Use `relation.relation_info(<field name>=<new value>)` to set fields in the relation info dictionary.
+        If a single field is selected, the respective value is returned. Otherwise the complete dictionary is
+        returned.
+
+        Parameters:
+            key: The field to retrieve.
+            **kw: The fields not modify.
+
+        Returns:
+            If a field is selected, the respective value is returned, otherwise, the complete info dictionary is
+            returned.
+        """
         if key is not None:
             if key == "cardinality" and "cardinality" not in self._relation_info:
                 return self._derive_cardinality(self.instance_table)
@@ -166,7 +180,14 @@ class RelationBase(DataBase):
     def get_metadata(self, key: str, /) -> Any: ...
 
     def get_metadata(self, key: Optional[str] = None) -> Union[Any, dict[str, Any]]:
-        """Get or set metadata."""
+        """Get or set metadata.
+
+        Parameters:
+            key: The metadata to retrieve. If not field is specified, the complete dictionary is returned.
+
+        Returns:
+            Either the selected field or the complete dictionary.
+        """
         if key is not None:
             if self._answer_space is None:
                 msg = f"Key '{key}' not in metadata (no answer space in metadata)."
@@ -244,6 +265,7 @@ class RelationBase(DataBase):
 
     @property
     def answer_space(self) -> pd.Series:
+        """The answer space of the relation."""
         if self._answer_space is None:
             # invoke file loading to get answer space
             _ = self.instance_table
@@ -252,6 +274,7 @@ class RelationBase(DataBase):
 
     @property
     def instance_table(self) -> pd.DataFrame:
+        """A `pandas.DataFrame` containing all items in the relation."""
         if self._instance_table is None:
             if self._lazy_options is None:
                 msg = (

@@ -1,5 +1,6 @@
-# Integration with Huggingface's Trainer
-The lm_pub_quiz package allows for easy integration of the BEAR probe with the Huggingface Trainer. This way models can be continuously evaluated throughout training.
+# Integration with Hugging Face's Trainer
+
+LM Pub Quiz allows for easy integration of the BEAR probe with the Hugging Face Trainer. This way models can be continuously evaluated throughout training.
 
 ## LM Pub Quiz Callback
 Here is an example of how to set up the Trainer Callback needed for integration.

@@ -47,6 +47,31 @@ class ModelMixin(BaseMixin):
         self.device = self._get_device(device)
 
     @classmethod
+    def from_model(
+        cls,
+        model: Union[str, PreTrainedModel],
+        *,
+        model_type: Optional[str] = None,
+        device: Union[torch.device, None, str, int] = None,
+        model_kw: Optional[dict[str, Any]] = None,
+        **kw,
+    ) -> Self:
+        """Return an object with a loaded model and tokenizer."""
+        device = cls._get_device(device)
+
+        model_kw = model_kw or {}
+        if "device" not in model_kw:
+            model_kw["device"] = device
+
+        if isinstance(model, str) and "model_name" not in kw:
+            kw["model_name"] = model
+
+        model = cls._get_model(model=model, model_type=model_type, **model_kw)
+        tokenizer = cls._get_tokenizer(model=model, tokenizer=kw.pop("tokenizer", None))
+
+        return cls(model=model, tokenizer=tokenizer, model_type=model_type, device=device, **kw)
+
+    @classmethod
     def _get_device(cls, device_input: Union[torch.device, int, str, None]) -> torch.device:
         if device_input is None:
             try:
@@ -145,27 +170,3 @@ class ModelMixin(BaseMixin):
     def _infer_type_from_object(cls, model: PreTrainedModel):
         """Infer the type of model (MLM or CLM) based on model object."""
         return cls._infer_type_from_name(model.config.model_type)
-
-    @classmethod
-    def from_model(
-        cls,
-        model: Union[str, PreTrainedModel],
-        *,
-        model_type: Optional[str] = None,
-        device: Union[torch.device, None, str, int] = None,
-        model_kw: Optional[dict[str, Any]] = None,
-        **kw,
-    ) -> Self:
-        device = cls._get_device(device)
-
-        model_kw = model_kw or {}
-        if "device" not in model_kw:
-            model_kw["device"] = device
-
-        if isinstance(model, str) and "model_name" not in kw:
-            kw["model_name"] = model
-
-        model = cls._get_model(model=model, model_type=model_type, **model_kw)
-        tokenizer = cls._get_tokenizer(model=model, tokenizer=kw.pop("tokenizer", None))
-
-        return cls(model=model, tokenizer=tokenizer, model_type=model_type, device=device, **kw)

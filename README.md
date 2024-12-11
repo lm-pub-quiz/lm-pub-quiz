@@ -31,20 +31,14 @@ You can install the package via *pip*:
 pip install lm-pub-quiz
 ```
 
-or clone the repository and install the package using the `-e` flag to make changes to the source code:
-
-```shell
-pip install -e lm-pub-quiz  # Modify the path to the repository if necessary
-```
-
 For alternatives methods of installing the package, visit the [documentation](https://lm-pub-quiz.github.com/lm-pub-quiz).
+
 
 ### Example Usage
 
 ```python
 from lm_pub_quiz import Dataset, Evaluator
 
-<<<<<<< HEAD
 # Load the dataset
 dataset = Dataset.from_name("BEAR")
 
@@ -53,6 +47,7 @@ evaluator = Evaluator.from_model(
     "gpt2",
     model_type="CLM",
 )
+
 # Run the evaluation and save the
 results = evaluator.evaluate_dataset(
     dataset,
@@ -61,6 +56,7 @@ results = evaluator.evaluate_dataset(
     batch_size=32,
 )
 
+# If the results are analyzed in a different session, they can be loaded from the file system
 # results = DatasetResults.from_path("gpt2_results")
 
 print("=== Overall score ===")
@@ -69,8 +65,15 @@ print(results.get_metrics("accuracy"))
 
 
 ## Contributing
-We welcome any questions, comments, or event PRs to this project to improve the package.
+We welcome any questions, comments, or even PRs to this project to improve the package.
 
-We use [hatch](https://hatch.pypa.io) to manage this project.
-To run the test cases, run `hatch run test` or `hatch run all:test` (to test on multiple python versions).
-In order to check the formatting and correct typing, run `hatch run lint:all`.
+We use [hatch](https://hatch.pypa.io) to manage this project. For the most comfortable development experience, please first install hatch using [`pip`](https://hatch.pypa.io/latest/install/#pipx) or [`pipx`](https://hatch.pypa.io/latest/install/#pipx).
+
+Then, to propose a change to the library,
+
+- test your code locally using `hatch run all:test`
+- format the code according to our formatting guidelines using `hatch run lint:fmt`,
+- check type- and style-consistency using `hatch run lint:all`, and
+- finally create a pull request describing the changes you propose.
+
+For work on the documentation, use `hatch run serve-docs` to run a local documentation server.
