@@ -1,6 +1,8 @@
 # Example Workflow
 In this short guide we will go through a brief workflow example, in which we run the BEAR probe on the gpt2 model and look at some results using the python api.
 
+For additional examples, see the [`examples/`](https://github.com/lm-pub-quiz/lm-pub-quiz/tree/main/examples) directory.
+
 ## Run BEAR probe on a given model
 First we run the BEAR probe on the given model and save its results to our file system.
 

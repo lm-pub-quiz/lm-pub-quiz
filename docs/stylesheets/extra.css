@@ -1,3 +1,15 @@
+@font-face {
+    font-family: nauert;
+    src: url("https://lm-pub-quiz.github.io/media/fonts/NauertRegular.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: polya;
+    src: url("https://lm-pub-quiz.github.io/media/fonts/polya-regular.regular.otf") format("opentype");
+}
+
+
+
 :root {
   --md-primary-fg-color:        #003366;
   --md-primary-fg-color--light: #0077ee;
@@ -32,3 +44,18 @@ a.external:hover::after,
 a.autorefs-external:hover::after {
   background-color: var(--md-accent-fg-color);
 }
+
+header nav a.title-logo-lm-pq {
+  padding: 0.5rem;
+} 
+
+header nav a.title-logo-lm-pq span.title-lm {
+  font-family: polya;
+  font-weight: normal;
+  font-size: 2.6rem;
+}
+
+header nav a.title-logo-lm-pq span.title-pq {
+  font-family: nauert;
+  font-weight: normal;
+  font-size: .9rem;

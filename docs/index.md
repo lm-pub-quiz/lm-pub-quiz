@@ -1,6 +1,6 @@
 # Getting started
 
-This library implements a knowledge probing approach which uses LM's inherent ability to estimate the log-likelihood of any given textual statement.
+LM Pub Quiz implements a knowledge probing approach which uses LM's inherent ability to estimate the log-likelihood of any given textual statement.
 For more information visit the [LM Pub Quiz website](https://lm-pub-quiz.github.io/).
 
 ![Illustration of how LM Pub Quiz evaluates LMs: Answers are ranked by the (pseudo) log-likelihoods of the textual statements derived from all of the answer options.](https://lm-pub-quiz.github.io/media/bear_evaluation_final.svg)

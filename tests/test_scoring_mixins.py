@@ -1,12 +1,12 @@
 import pytest
 
-from lm_pub_quiz.evaluators.scorers import MaskedLMScorer
+from lm_pub_quiz.evaluators.scoring_mixins import MaskedLMScoringMixin
 
 
 def test_within_word_l2r(distilbert):
     model, tokenizer = distilbert
 
-    scorer = MaskedLMScorer.from_model("distilbert-base-cased")
+    scorer = MaskedLMScoringMixin.from_model("distilbert-base-cased")
 
     batch = scorer.tokenizer(
         ["The traveler lost the souvenir."],
@@ -37,7 +37,7 @@ def test_within_word_l2r(distilbert):
 def test_original(distilbert):
     model, tokenizer = distilbert
 
-    scorer = MaskedLMScorer.from_model("distilbert-base-cased", pll_metric="original")
+    scorer = MaskedLMScoringMixin.from_model("distilbert-base-cased", pll_metric="original")
 
     batch = scorer.tokenizer(
         ["The traveler lost the souvenir."],

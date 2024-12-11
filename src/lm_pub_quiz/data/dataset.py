@@ -224,6 +224,12 @@ class Relation(RelationBase):
 class Dataset(DatasetBase[Relation]):
     """
     A collection of relations forming a multiple choice dataset.
+
+    Usage:
+        The prefferred way to load the BEAR knowledge probe is to load it by name:
+
+        >>> from lm_pub_quiz import Dataset
+        >>> dataset = Dataset.from_name("BEAR")
     """
 
     def __init__(self, relations: list[Relation], path: PathLike, name: Optional[str] = None):
