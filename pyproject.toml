@@ -8,10 +8,8 @@ dependencies = [
   "datasets",
   "transformers>=4.38",
   "accelerate>0.25.0",
-  "hydra-core",
   "pandas",
   "numpy",
-  "seaborn",
   "scikit-learn",
 ]
 dynamic = ["version"]
