@@ -47,6 +47,7 @@ evaluator = Evaluator.from_model(
     "gpt2",
     model_type="CLM",
 )
+
 # Run the evaluation and save the
 results = evaluator.evaluate_dataset(
     dataset,
@@ -55,6 +56,7 @@ results = evaluator.evaluate_dataset(
     batch_size=32,
 )
 
+# If the results are analyzed in a different session, they can be loaded from the file system
 # results = DatasetResults.from_path("gpt2_results")
 
 print("=== Overall score ===")
