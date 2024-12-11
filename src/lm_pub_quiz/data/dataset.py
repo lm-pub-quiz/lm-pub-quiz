@@ -34,19 +34,6 @@ KNOWN_DATASET_URLS: dict[str, tuple[str, Union[str, Callable]]] = {
 class Relation(RelationBase):
     """
     Represents a relation within a dataset, including its code, answer space, templates, and an instance table.
-
-    Attributes:
-        relation_code (str): A unique code identifying the relation.
-        answer_space (List[str]): A list of possible answers for this relation.
-        templates (List[str]): Templates for generating instances of this relation.
-        instance_table (pd.DataFrame): A pandas DataFrame containing instances of the relation.
-
-    Methods:
-        __str__: Returns a string representation showing the first five instances in the relation.
-        __repr__: Returns a string representation of the relation code.
-        __len__: Returns the number of instances in the relation.
-        subsample: Randomly samples a subset of instances from the relation.
-        load_from_file: Class method to create a Relation instance from a JSONL file.
     """
 
     def __init__(
@@ -237,13 +224,6 @@ class Relation(RelationBase):
 class Dataset(DatasetBase[Relation]):
     """
     A collection of relations forming a multiple choice dataset.
-
-    Attributes:
-        relations (List[Relation]): A list of Relation instances in the dataset.
-        dataset_name (str, optional): The name of the dataset.
-
-    Methods:
-        load_from_path: Class method to load a dataset from a specified path.
     """
 
     def __init__(self, relations: list[Relation], path: PathLike, name: Optional[str] = None):
