@@ -31,7 +31,7 @@ You can install the package via *pip*:
 pip install lm-pub-quiz
 ```
 
-For alternatives methods of installing the package, visit the [documentation](https://lm-pub-quiz.github.com/lm-pub-quiz).
+For alternatives methods of installing the package, visit the [documentation](https://lm-pub-quiz.github.io/lm-pub-quiz).
 
 
 ### Example Usage
