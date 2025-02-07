@@ -21,11 +21,11 @@ def test_single_template_index(request, distilbert):
     )
 
     df = results.joined_instance_table()
-    df["predicted_answer_idx"] = df["pll_scores"].apply(np.argmax)
+    df["predicted_answer_index"] = df["pll_scores"].apply(np.argmax)
 
-    assert df["template_idx"].unique() == [0]
+    assert (df["template_index"].unique() == [0]).all()
 
-    assert (df["predicted_answer_idx"] == [0, 1, 2, 0, 0, 1, 1, 2, 2]).all()
+    assert (df["predicted_answer_index"] == [0, 1, 2, 0, 0, 1, 1, 2, 2]).all()
 
 
 def test_list_of_templates(request, distilbert):
@@ -43,7 +43,7 @@ def test_list_of_templates(request, distilbert):
 
     df = results.joined_instance_table()
 
-    assert df["template_idx"].unique() == [0, 1]
+    assert (df["template_index"].unique() == [0, 1]).all()
 
 
 def test_all_templates(request, distilbert, tmp_path):
@@ -63,4 +63,6 @@ def test_all_templates(request, distilbert, tmp_path):
     results = DatasetResults.from_path(tmp_path)
     df = results.joined_instance_table()
 
-    assert df["template_idx"].unique() == [0, 1, 2]
+    assert (df["template_index"].unique() == [0, 1, 2]).all()
+
+    assert len(df) == 2 * 3 + 3 * 6
