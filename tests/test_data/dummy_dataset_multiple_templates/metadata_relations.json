@@ -1,0 +1,17 @@
+{
+  "example_1": {
+    "name": "lost",
+    "templates": [
+      "[X] lost [Y].",
+      "[Y] was lost by [X]."
+    ]
+  },
+  "example_2": {
+    "name": "eaten by",
+    "templates": [
+      "[Y] eats [X].",
+      "[Y] consumes [X].",
+      "[X] is often eaten by [Y]."
+    ]
+  }
+}

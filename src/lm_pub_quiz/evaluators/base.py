@@ -42,7 +42,7 @@ class BaseEvaluator(Templater, ModelMixin, ABC):
     def evaluate_dataset(
         self,
         dataset: Dataset,
-        template_index: int = 0,
+        template_index: Union[int, Sequence[int], None] = None,
         *,
         batch_size: int = 1,
         subsample: Optional[int] = None,
@@ -96,7 +96,7 @@ class BaseEvaluator(Templater, ModelMixin, ABC):
     def evaluate_relation(
         self,
         relation: Relation,
-        template_index: int = 0,
+        template_index: Union[int, Sequence[int], None] = None,
         *,
         batch_size: int = 1,
         subsample: Optional[int] = None,
@@ -123,7 +123,10 @@ class BaseEvaluator(Templater, ModelMixin, ABC):
             },
             relation_info=relation.relation_info(),
         )
-        template = relation.templates[template_index]
+        if template_index is None:
+            template_index = list(range(len(relation.templates)))
+        elif isinstance(template_index, int):
+            template_index = [template_index]
 
         evaluated_instances: list[dict] = []
 
@@ -139,39 +142,50 @@ class BaseEvaluator(Templater, ModelMixin, ABC):
                 m_obj.reset()
                 metrics.append(m_obj)
 
-        for _, r in tqdm(
+        for instance_index, r in tqdm(
             instances.iterrows(),
             total=len(instances),
             desc=f"Relation {relation.relation_code}",
         ):
-            row = r.to_dict()
+            for t_index in template_index:
+                row = r.to_dict()
+                row["template_index"] = t_index
+                row["instance_index"] = instance_index
+                template = relation.templates[t_index]
 
-            pll_scores = self.evaluate_instance(
-                template=template,
-                answers=relation.answer_space.tolist(),
-                subject=str(row["sub_label"]),
-                reduction=reduction,
-                batch_size=batch_size,
-            )
-
-            if reduction is None:
-                row["tokens"], row["pll_scores"], row["sub_indices"], row["obj_indices"], row["template_indices"] = (
-                    parse_dumped_raw_results(cast(EachTokenReturnFormat, pll_scores))
+                pll_scores = self.evaluate_instance(
+                    template=template,
+                    answers=relation.answer_space.tolist(),
+                    subject=str(row["sub_label"]),
+                    reduction=reduction,
+                    batch_size=batch_size,
                 )
-            else:
-                row["pll_scores"] = pll_scores
 
-            # update metrics with the row
-            for m in metrics:
-                m.add_instance(row)
+                if reduction is None:
+                    (
+                        row["tokens"],
+                        row["pll_scores"],
+                        row["sub_indices"],
+                        row["obj_indices"],
+                        row["template_indices"],
+                    ) = parse_dumped_raw_results(cast(EachTokenReturnFormat, pll_scores))
+                else:
+                    row["pll_scores"] = pll_scores
 
-            if create_instance_table:
-                # add row to resulting
-                evaluated_instances.append(row)
+                # update metrics with the row
+                for m in metrics:
+                    m.add_instance(row)
+
+                if create_instance_table:
+                    # add row to resulting
+                    evaluated_instances.append(row)
 
         log.debug("Creating instance table")
         if create_instance_table:
-            relation_result._instance_table = pd.DataFrame(evaluated_instances, index=instances.index)
+            relation_result._instance_table = pd.DataFrame(
+                evaluated_instances,
+            )
+            relation_result._instance_table.set_index(["instance_index", "template_index"])
 
         for m in metrics:
             relation_result.metric_values.update(m.compute())
