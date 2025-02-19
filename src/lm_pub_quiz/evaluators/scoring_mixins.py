@@ -29,7 +29,7 @@ class PLLScoringBaseMixin(ModelMixin):
 
 class MaskedLMScoringMixin(PLLScoringBaseMixin):
     def __init__(self, *, pll_metric: str = "within_word_l2r", **kw) -> None:
-        if pll_metric not in ("original", "within_word_l2r"):
+        if pll_metric not in ("original", "within_word_l2r", "sentence-l2r", "answer-l2r+word-l2r"):
             msg = f"PLL strategy {pll_metric} not know."
             raise ValueError(msg)
 
@@ -159,7 +159,11 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
                             # Assuming a word cannot be nested in another, different word means that all remaining
                             # tokens belong to other words as well
                             break
-
+            elif self.pll_metric == "sentence-l2r":
+                # TODO: implement sentence-l2r where the whole rest of the batch needs to be masked after the current token
+                raise NotImplementedError("The sentence-l2r scoring method is still not implemented.")
+            elif self.pll_metric == "answer-l2r+word-l2r":
+                raise NotImplementedError("The answer-l2r+word-l2r scoring method is still not implemented.")
             else:
                 msg = f"PLL strategy {self.pll_metric} not implemented."
                 raise NotImplementedError(msg)
