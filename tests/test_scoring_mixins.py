@@ -1,5 +1,6 @@
 import pytest
 
+from lm_pub_quiz import Evaluator
 from lm_pub_quiz.evaluators.scoring_mixins import MaskedLMScoringMixin
 
 def test_answer_l2r_word_l2r(distilbert):
