@@ -1,4 +1,3 @@
-import logging
 from abc import abstractmethod
 from collections.abc import Sequence
 from typing import Optional
