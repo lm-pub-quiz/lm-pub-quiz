@@ -98,7 +98,12 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
 
         return mask_indices
 
-    def create_masked_batch(self, batch: BatchEncoding, scoring_masks: Sequence[ScoringMask], token_roles = None,) -> BatchEncoding:
+    def create_masked_batch(
+        self,
+        batch: BatchEncoding,
+        scoring_masks: Sequence[ScoringMask],
+        token_roles=None,
+    ) -> BatchEncoding:
         """Extend the existing batch and mask the relevant tokens based on the scoring mask."""
         mask_indices = self.mask_to_indices(scoring_masks)
 
@@ -169,12 +174,13 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
                 for i, token_index in enumerate(token_indices):
                     start = int(token_index.item())
                     # Mask every token from the current token index to the end of the sequence.
-                    extended_batch["input_ids"][statement_offset + i, start:seq_len-1] = self.mask_token
+                    extended_batch["input_ids"][statement_offset + i, start : seq_len - 1] = self.mask_token
 
             elif self.pll_metric == "answer_l2r+word_l2r":
-                # TODO: same as within_word_l2r, but you need to add the indecies like in test_token_scores_within_word_l2r
-                # so if the current word is inside the index area, than mask everything as if it were one word and else do the same thin as test_token_scores_within_word_l2r
-
+                # TODO: same as within_word_l2r, but you need to add the indecies like in
+                #  test_token_scores_within_word_l2r so if the current word is inside the index area,
+                #  than mask everything as if it were one word and else do the same
+                #  thing as test_token_scores_within_word_l2r
 
                 if token_roles is None:
                     raise ValueError(token_roles)
@@ -188,9 +194,10 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
                     if current_token_index in target_token_ids:
                         for selected_answer_index in target_token_ids:
                             if selected_answer_index >= current_token_index:
-                                extended_batch["input_ids"][statement_offset + i, selected_answer_index] = self.mask_token
+                                extended_batch["input_ids"][statement_offset + i, selected_answer_index] = (
+                                    self.mask_token
+                                )
                     else:
-
                         current_word = word_ids[int(token_index.item())]
 
                         extended_batch["input_ids"][statement_offset + i, token_index] = self.mask_token
@@ -209,7 +216,6 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
                                 break
 
             # raise NotImplementedError("The answer-l2r+word-l2r scoring method is still not implemented.")
-
 
             else:
                 msg = f"PLL strategy {self.pll_metric} not implemented."
@@ -233,7 +239,8 @@ class CausalLMScoringMixin(PLLScoringBaseMixin):
         token_roles = None,
     ) -> list[list[float]]:
         scores: list[list[float]] = []
-
+        if token_roles is not None:
+            raise ValueError
         if scoring_masks is None:
             # If no scoring mask is given, all non-special tokens are scored
             scoring_masks = self.default_scoring_mask(batched_statements)
