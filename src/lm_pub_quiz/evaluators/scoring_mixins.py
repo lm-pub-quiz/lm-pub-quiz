@@ -162,8 +162,6 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
                             # Assuming a word cannot be nested in another, different word means that all remaining
                             # tokens belong to other words as well
                             break
-            elif self.pll_metric == "answer-l2r+word-l2r":
-                raise NotImplementedError("The answer-l2r+word-l2r scoring method is still not implemented.")
 
             elif self.pll_metric == "sentence_l2r":
                 # For each pass, mask all tokens from the current token onward.
@@ -172,6 +170,46 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
                     start = int(token_index.item())
                     # Mask every token from the current token index to the end of the sequence.
                     extended_batch["input_ids"][statement_offset + i, start:seq_len-1] = self.mask_token
+
+            elif self.pll_metric == "answer_l2r+word_l2r":
+                # TODO: same as within_word_l2r, but you need to add the indecies like in test_token_scores_within_word_l2r
+                # so if the current word is inside the index area, than mask everything as if it were one word and else do the same thin as test_token_scores_within_word_l2r
+
+
+                if token_roles is None:
+                    raise ValueError(token_roles)
+
+                word_ids = batch.word_ids(statemet_index)
+
+                # Mask each token and the remaineder of the same word
+                for i, token_index in enumerate(token_indices):
+                    current_token_index = int(token_index.item())
+                    target_token_ids = [x + 1 for x in token_roles[statemet_index]["answer"]]
+                    if current_token_index in target_token_ids:
+                        for selected_answer_index in target_token_ids:
+                            if selected_answer_index >= current_token_index:
+                                extended_batch["input_ids"][statement_offset + i, selected_answer_index] = self.mask_token
+                    else:
+
+                        current_word = word_ids[int(token_index.item())]
+
+                        extended_batch["input_ids"][statement_offset + i, token_index] = self.mask_token
+
+                        if current_word is None:
+                            continue
+
+                        # Go over all other tokens which are masked
+                        for token_to_the_right in token_indices[i + 1 :]:
+                            # and mask them if they are part of the same word
+                            if word_ids[token_to_the_right] == current_word:
+                                extended_batch["input_ids"][statement_offset + i, token_to_the_right] = self.mask_token
+                            else:
+                                # Assuming a word cannot be nested in another, different word means that all remaining
+                                # tokens belong to other words as well
+                                break
+
+            # raise NotImplementedError("The answer-l2r+word-l2r scoring method is still not implemented.")
+
 
             else:
                 msg = f"PLL strategy {self.pll_metric} not implemented."
