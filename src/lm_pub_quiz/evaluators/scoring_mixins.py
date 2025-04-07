@@ -1,3 +1,4 @@
+import logging
 from abc import abstractmethod
 from collections.abc import Sequence
 from typing import Optional
@@ -20,6 +21,7 @@ class PLLScoringBaseMixin(ModelMixin):
         *,
         scoring_masks: Optional[Sequence[ScoringMask]],
         batch_size: int = 1,
+        token_roles = None,
     ) -> list[list[float]]:
         """Compute the PLL score for the tokens (determined by the scoring mask) in a statements.
 
@@ -49,12 +51,13 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
         *,
         scoring_masks: Optional[Sequence[ScoringMask]] = None,
         batch_size: int = 1,
+        token_roles = None,
     ) -> list[list[float]]:
         if scoring_masks is None:
             # If no scoring mask is given, all non-special tokens are scored
             scoring_masks = [(~mask.bool()).tolist() for mask in batched_statements["special_tokens_mask"]]
 
-        extended_batch = self.create_masked_batch(batched_statements, scoring_masks)
+        extended_batch = self.create_masked_batch(batched_statements, scoring_masks, token_roles)
 
         token_scores: list[list[float]] = [[] for _ in range(batched_statements["input_ids"].size(0))]
 
@@ -95,7 +98,7 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
 
         return mask_indices
 
-    def create_masked_batch(self, batch: BatchEncoding, scoring_masks: Sequence[ScoringMask]) -> BatchEncoding:
+    def create_masked_batch(self, batch: BatchEncoding, scoring_masks: Sequence[ScoringMask], token_roles = None,) -> BatchEncoding:
         """Extend the existing batch and mask the relevant tokens based on the scoring mask."""
         mask_indices = self.mask_to_indices(scoring_masks)
 
@@ -161,6 +164,15 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
                             break
             elif self.pll_metric == "answer-l2r+word-l2r":
                 raise NotImplementedError("The answer-l2r+word-l2r scoring method is still not implemented.")
+
+            elif self.pll_metric == "sentence_l2r":
+                # For each pass, mask all tokens from the current token onward.
+                seq_len = extended_batch["input_ids"].size(1)
+                for i, token_index in enumerate(token_indices):
+                    start = int(token_index.item())
+                    # Mask every token from the current token index to the end of the sequence.
+                    extended_batch["input_ids"][statement_offset + i, start:seq_len-1] = self.mask_token
+
             else:
                 msg = f"PLL strategy {self.pll_metric} not implemented."
                 raise NotImplementedError(msg)
@@ -180,6 +192,7 @@ class CausalLMScoringMixin(PLLScoringBaseMixin):
         *,
         scoring_masks: Optional[Sequence[ScoringMask]] = None,
         batch_size: int = 1,
+        token_roles = None,
     ) -> list[list[float]]:
         scores: list[list[float]] = []
 
