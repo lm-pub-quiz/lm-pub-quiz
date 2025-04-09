@@ -9,6 +9,12 @@ from lm_pub_quiz.evaluators.model_util import ModelMixin
 from lm_pub_quiz.evaluators.util import iter_batches
 from lm_pub_quiz.types import ScoringMask
 
+def move_to_device(batch, device):
+    for k, v in batch.items():
+        if isinstance(v, torch.Tensor):
+            batch[k] = v.to(device)
+    return batch
+
 
 class PLLScoringBaseMixin(ModelMixin):
     """This class is used retrieve PLL scores for tokens or the complete statement."""
@@ -62,7 +68,9 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
 
         # Split up the larger batch based on the batch size
         for minibatch in iter_batches(extended_batch.to(self.device), batch_size=batch_size):
-            minibatch.to(self.device)
+
+            # Move minibatch to the same device
+            minibatch = move_to_device(minibatch,self.device)
 
             masked_indices = minibatch.pop("masked_indices")
             statement_indices = minibatch.pop("statement_index")
