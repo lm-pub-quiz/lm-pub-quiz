@@ -79,7 +79,7 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
             batch_logits = batch_logits[torch.arange(batch_logits.size(0)), masked_indices].contiguous()
 
             batch_preds = torch.nn.functional.log_softmax(batch_logits, -1)
-            batch_scores = batch_preds[torch.arange(batch_labels.size(0)), batch_labels].to("cpu")
+            batch_scores = batch_preds[torch.arange(batch_labels.size(0)), batch_labels].to(self.device)
 
             # Retrieve the score for each of the tokens
             for statement_index, score in zip(statement_indices, batch_scores):
@@ -214,7 +214,6 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
                                 # tokens belong to other words as well
                                 break
 
-            # raise NotImplementedError("The answer-l2r+word-l2r scoring method is still not implemented.")
 
             else:
                 msg = f"PLL strategy {self.pll_metric} not implemented."
@@ -238,8 +237,7 @@ class CausalLMScoringMixin(PLLScoringBaseMixin):
         token_roles = None,
     ) -> list[list[float]]:
         scores: list[list[float]] = []
-        if token_roles is not None:
-            raise ValueError
+
         if scoring_masks is None:
             # If no scoring mask is given, all non-special tokens are scored
             scoring_masks = self.default_scoring_mask(batched_statements)
@@ -268,6 +266,6 @@ class CausalLMScoringMixin(PLLScoringBaseMixin):
 
                 preds = torch.nn.functional.log_softmax(logits, -1)
 
-                scores.append(preds[torch.arange(labels.size(0)), labels].to("cpu").tolist())
+                scores.append(preds[torch.arange(labels.size(0)), labels].to(self.device).tolist())
 
         return scores
