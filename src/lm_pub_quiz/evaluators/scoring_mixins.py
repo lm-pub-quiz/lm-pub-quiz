@@ -132,6 +132,9 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
             # Passes within the extended_batch which belong to the current statement
             extended_batch_indices = torch.arange(statement_offset, statement_offset + n, device=self.device)
 
+            extended_batch_indices = extended_batch_indices.to(self.device)
+            token_indices = token_indices.to(self.device)
+
             extended_batch["labels"][extended_batch_indices] = extended_batch["input_ids"][
                 extended_batch_indices, token_indices
             ]
