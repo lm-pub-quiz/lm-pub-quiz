@@ -142,6 +142,7 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
 
             extended_batch_indices = extended_batch_indices.to(self.device)
             token_indices = token_indices.to(self.device)
+            extended_batch = move_to_device(extended_batch, self.device)
 
             extended_batch["labels"][extended_batch_indices] = extended_batch["input_ids"][
                 extended_batch_indices, token_indices
