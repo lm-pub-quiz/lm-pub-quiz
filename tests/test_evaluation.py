@@ -53,6 +53,30 @@ def test_reduction_functionality(model_key, model_cache):
         )
 
 
+@pytest.mark.parametrize("model_key", ("distilbert", "distilgpt", "opt"))
+def test_posthoc_reduction(request, model_key, model_cache):
+    model = model_cache[model_key]
+
+    # Instantiate from existing model
+    evaluator = Evaluator.from_model(model.model, tokenizer=model.tokenizer)
+
+    dataset = Dataset.from_path(request.path.parent / "test_data" / "dummy_dataset")
+
+    non_reduced_results = evaluator.evaluate_dataset(dataset, reduction=None)
+    sum_reduced_results = evaluator.evaluate_dataset(dataset, reduction="sum")
+    mean_reduced_results = evaluator.evaluate_dataset(dataset, reduction="mean")
+
+    assert (
+        sum_reduced_results.joined_instance_table()["pll_scores"].explode()
+        == non_reduced_results.reduced("sum").joined_instance_table()["pll_scores"].explode()
+    ).all()
+
+    assert (
+        mean_reduced_results.joined_instance_table()["pll_scores"].explode()
+        == non_reduced_results.reduced("mean").joined_instance_table()["pll_scores"].explode()
+    ).all()
+
+
 @pytest.mark.parametrize(
     "model_name, model_type",
     [
@@ -373,6 +397,21 @@ def test_evaluation_with_relation_info(request, distilbert):
 
     model, tokenizer = distilbert
     evaluator = Evaluator.from_model(model, tokenizer=tokenizer)
+
+    results = evaluator.evaluate_dataset(dataset, batch_size=16, reduction="sum")
+
+    assert results[0].relation_info("domains") == ["a", "b", "c"]
+
+
+def test_with_gpt2(request):
+    """Test whether the deprecated representation of the results can still be loaded."""
+
+    dataset = Dataset.from_path(
+        request.path.parent / "test_data" / "dummy_dataset",
+        relation_info=request.path.parent / "test_data" / "dummy_relation_info.json",
+    )
+
+    evaluator = Evaluator.from_model("gpt2")
 
     results = evaluator.evaluate_dataset(dataset, batch_size=16, reduction="sum")
 
