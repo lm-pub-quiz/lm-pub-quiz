@@ -13,6 +13,9 @@ from lm_pub_quiz.types import ScoringMask
 class PLLScoringBaseMixin(ModelMixin):
     """This class is used retrieve PLL scores for tokens or the complete statement."""
 
+    def default_scoring_mask(self, batched_statements: BatchEncoding) -> Sequence[ScoringMask]:
+        return [(~mask.bool()).tolist() for mask in batched_statements["special_tokens_mask"]]
+
     @abstractmethod
     def score_statements(
         self,
@@ -52,7 +55,7 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
     ) -> list[list[float]]:
         if scoring_masks is None:
             # If no scoring mask is given, all non-special tokens are scored
-            scoring_masks = [(~mask.bool()).tolist() for mask in batched_statements["special_tokens_mask"]]
+            scoring_masks = self.default_scoring_mask(batched_statements)
 
         extended_batch = self.create_masked_batch(batched_statements, scoring_masks)
 
@@ -170,9 +173,6 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
 
 
 class CausalLMScoringMixin(PLLScoringBaseMixin):
-    def default_scoring_mask(self, batched_statements: BatchEncoding) -> Sequence[ScoringMask]:
-        return [(~mask.bool()).tolist()[1:] for mask in batched_statements["special_tokens_mask"]]
-
     def score_statements(
         self,
         batched_statements: BatchEncoding,
@@ -205,8 +205,8 @@ class CausalLMScoringMixin(PLLScoringBaseMixin):
                     logits = batch_logits[i, :].contiguous()
                     labels = batch_labels[i, :].contiguous()
                 else:
-                    logits = batch_logits[i, mask].contiguous()
-                    labels = batch_labels[i, mask].contiguous()
+                    logits = batch_logits[i, mask[1:]].contiguous()
+                    labels = batch_labels[i, mask[1:]].contiguous()
 
                 preds = torch.nn.functional.log_softmax(logits, -1)
 

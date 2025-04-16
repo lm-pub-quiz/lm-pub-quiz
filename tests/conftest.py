@@ -6,6 +6,7 @@ from transformers import AutoModelForCausalLM, AutoModelForMaskedLM, AutoTokeniz
 TEST_MODELS = {
     "distilbert": ("distilbert-base-cased", "MLM"),
     "distilgpt": ("distilgpt2", "CLM"),
+    "opt": ("facebook/opt-125m", "CLM"),
 }
 
 
