@@ -3,6 +3,7 @@
 import logging
 from abc import abstractmethod
 from collections.abc import Sequence
+from contextlib import contextmanager
 from typing import (
     Any,
     Callable,
@@ -211,7 +212,10 @@ class Evaluator(BaseEvaluator, PLLScoringBaseMixin):
         span_roles: Sequence[SpanRoles],
         scoring_masks: Optional[Sequence[ScoringMask]],
     ) -> Sequence[TokenRoles]:
-        """Derive which tokens belong to the subject, answer, and template."""
+        """Derive which tokens belong to the subject, answer, and template.
+
+        If the scoring mask is given, the token indices refer to the resulting scores.
+        """
         token_roles = []
 
         non_template_tokens: set[int]
@@ -220,6 +224,7 @@ class Evaluator(BaseEvaluator, PLLScoringBaseMixin):
         for statement_index, spans in enumerate(span_roles):
             non_template_tokens = set()
 
+            # For the statement, determine which tokens belong to each role
             token_indices = {k: [] for k in spans.keys()}
 
             for k, v in spans.items():
@@ -256,6 +261,8 @@ class Evaluator(BaseEvaluator, PLLScoringBaseMixin):
             ]
 
             if scoring_masks is not None:
+                # Remap the token indices to the index of actually scored tokens
+                # (for retrieval of token log-likihodds)
                 i = 0
                 remapped: list[int] = []
                 for m in scoring_masks[statement_index]:
@@ -336,6 +343,13 @@ class MaskedLMEvaluator(MaskedLMScoringMixin, Evaluator):
 
 
 class CausalLMEvaluator(CausalLMScoringMixin, Evaluator):
+    @contextmanager
+    def add_bos_token(self):
+        _add_bos_token = self.tokenizer.add_bos_token
+        self.tokenizer.add_bos_token = True
+        yield
+        self.tokenizer.add_bos_token = _add_bos_token
+
     def encode(
         self, statements: Sequence[str], span_roles: Sequence[SpanRoles]
     ) -> tuple[BatchEncoding, Sequence[ScoringMask]]:
@@ -343,14 +357,16 @@ class CausalLMEvaluator(CausalLMScoringMixin, Evaluator):
 
         In case the conditional scores need to be created, set the scoring mask accordingly.
         """
-        batch = self.tokenizer(
-            list(statements),
-            return_tensors="pt",
-            padding=True,
-            return_special_tokens_mask=True,
-            return_length=True,
-            return_attention_mask=True,
-        )
+        with self.add_bos_token():
+            batch = self.tokenizer(
+                list(statements),
+                return_tensors="pt",
+                padding=True,
+                add_special_tokens=True,
+                return_special_tokens_mask=True,
+                return_length=True,
+                return_attention_mask=True,
+            )
 
         scoring_masks = self.default_scoring_mask(batch)
 
