@@ -51,7 +51,6 @@ evaluator = Evaluator.from_model(
 # Run the evaluation and save the
 results = evaluator.evaluate_dataset(
     dataset,
-    template_index=0,
     save_path="gpt2_results",
     batch_size=32,
 )
