@@ -93,4 +93,4 @@ def test_result_accumulation_with_relation_info_from_path(request):
 def test_precision_at_k(request):
     results = DatasetResults.from_path(request.path.parent / "test_data" / "new_style_results_with_mistakes")
 
-    assert results.get_metrics("precision_at_k") == [6/9, 7/9, 9/9]
+    assert results.get_metrics("precision_at_k") == [6 / 9, 7 / 9, 9 / 9]

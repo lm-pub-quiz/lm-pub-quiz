@@ -10,13 +10,5 @@ def _accumulate(values: pd.Series, support: pd.Series):
         return np.average(values, weights=support)
 
 
-
 def accumulate_metrics(group: pd.DataFrame):
-    return pd.Series(
-        {
-            k: (
-                v.sum() if k == "support" else _accumulate(v, group["support"])
-            )
-            for k, v in group.items()
-        }
-    )
+    return pd.Series({k: (v.sum() if k == "support" else _accumulate(v, group["support"])) for k, v in group.items()})
