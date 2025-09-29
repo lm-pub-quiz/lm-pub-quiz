@@ -9,12 +9,6 @@ from lm_pub_quiz.evaluators.model_util import ModelMixin
 from lm_pub_quiz.evaluators.util import iter_batches
 from lm_pub_quiz.types import ScoringMask
 
-def move_to_device(batch, device):
-    for k, v in batch.items():
-        if isinstance(v, torch.Tensor):
-            batch[k] = v.to(device)
-    return batch
-
 
 class PLLScoringBaseMixin(ModelMixin):
     """This class is used retrieve PLL scores for tokens or the complete statement."""
@@ -70,11 +64,7 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
         token_scores: list[list[float]] = [[] for _ in range(batched_statements["input_ids"].size(0))]
 
         # Split up the larger batch based on the batch size
-        for minibatch in iter_batches(extended_batch.to(self.device), batch_size=batch_size):
-
-            # Move minibatch to the same device
-            minibatch = move_to_device(minibatch,self.device)
-
+        for minibatch in iter_batches(extended_batch, batch_size=batch_size):
             masked_indices = minibatch.pop("masked_indices")
             statement_indices = minibatch.pop("statement_index")
             batch_labels = minibatch.pop("labels")
@@ -83,14 +73,14 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
             with torch.no_grad():
                 minibatch.pop("special_tokens_mask")
                 minibatch.pop("length")
-                model_output = self.model(**minibatch)
+                model_output = self.model(**minibatch.to(self.device))
 
             # Shift so that tokens < n predict n
             batch_logits = model_output.logits
             batch_logits = batch_logits[torch.arange(batch_logits.size(0)), masked_indices].contiguous()
 
             batch_preds = torch.nn.functional.log_softmax(batch_logits, -1)
-            batch_scores = batch_preds[torch.arange(batch_labels.size(0)), batch_labels].to(self.device)
+            batch_scores = batch_preds[torch.arange(batch_labels.size(0)), batch_labels].cpu()
 
             # Retrieve the score for each of the tokens
             for statement_index, score in zip(statement_indices, batch_scores):
@@ -104,7 +94,7 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
         # Replace the relevant tokens by the pad token
         for mask in scoring_masks:
             (indices,) = torch.where(torch.tensor(mask))
-            mask_indices.append(indices.to(self.device))
+            mask_indices.append(indices)
 
         return mask_indices
 
@@ -124,13 +114,13 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
 
         # Prepare tensors holding relevant information
         extended_batch["labels"] = torch.full(
-            (extended_batch["input_ids"].size(0),), -1, dtype=torch.long, device=self.device
+            (extended_batch["input_ids"].size(0),), -1, dtype=torch.long,
         )
         extended_batch["masked_indices"] = torch.full(
-            (extended_batch["input_ids"].size(0),), -1, dtype=torch.long, device=self.device
+            (extended_batch["input_ids"].size(0),), -1, dtype=torch.long,
         )
         extended_batch["statement_index"] = torch.full(
-            (extended_batch["input_ids"].size(0),), -1, dtype=torch.long, device=self.device
+            (extended_batch["input_ids"].size(0),), -1, dtype=torch.long,
         )
 
         ### Apply the masking strategy ###
@@ -141,11 +131,7 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
             n = token_indices.size(0)
 
             # Passes within the extended_batch which belong to the current statement
-            extended_batch_indices = torch.arange(statement_offset, statement_offset + n, device=self.device)
-
-            extended_batch_indices = extended_batch_indices.to(self.device)
-            token_indices = token_indices.to(self.device)
-            extended_batch = move_to_device(extended_batch, self.device)
+            extended_batch_indices = torch.arange(statement_offset, statement_offset + n)
 
             extended_batch["labels"][extended_batch_indices] = extended_batch["input_ids"][
                 extended_batch_indices, token_indices
@@ -278,6 +264,6 @@ class CausalLMScoringMixin(PLLScoringBaseMixin):
 
                 preds = torch.nn.functional.log_softmax(logits, -1)
 
-                scores.append(preds[torch.arange(labels.size(0)), labels].to(self.device).tolist())
+                scores.append(preds[torch.arange(labels.size(0)), labels].cpu().tolist())
 
         return scores
