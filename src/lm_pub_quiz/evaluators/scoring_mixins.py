@@ -7,7 +7,7 @@ from transformers import BatchEncoding
 
 from lm_pub_quiz.evaluators.model_util import ModelMixin
 from lm_pub_quiz.evaluators.util import iter_batches
-from lm_pub_quiz.types import ScoringMask
+from lm_pub_quiz.types import ScoringMask, TokenRoles
 
 
 class PLLScoringBaseMixin(ModelMixin):
@@ -23,7 +23,7 @@ class PLLScoringBaseMixin(ModelMixin):
         *,
         scoring_masks: Optional[Sequence[ScoringMask]],
         batch_size: int = 1,
-        token_roles = None,
+        token_roles: Optional[Sequence[TokenRoles]] = None,
     ) -> list[list[float]]:
         """Compute the PLL score for the tokens (determined by the scoring mask) in a statements.
 
@@ -53,7 +53,7 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
         *,
         scoring_masks: Optional[Sequence[ScoringMask]] = None,
         batch_size: int = 1,
-        token_roles = None,
+        token_roles: Optional[Sequence[TokenRoles]] = None,
     ) -> list[list[float]]:
         if scoring_masks is None:
             # If no scoring mask is given, all non-special tokens are scored
@@ -215,7 +215,6 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
                                 # tokens belong to other words as well
                                 break
 
-
             else:
                 msg = f"PLL strategy {self.pll_metric} not implemented."
                 raise NotImplementedError(msg)
@@ -232,7 +231,7 @@ class CausalLMScoringMixin(PLLScoringBaseMixin):
         *,
         scoring_masks: Optional[Sequence[ScoringMask]] = None,
         batch_size: int = 1,
-        token_roles = None,
+        token_roles: Optional[Sequence[TokenRoles]] = None,  # noqa: ARG002
     ) -> list[list[float]]:
         scores: list[list[float]] = []
 
