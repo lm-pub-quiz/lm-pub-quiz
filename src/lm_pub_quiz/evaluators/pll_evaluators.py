@@ -178,16 +178,17 @@ class Evaluator(BaseEvaluator, PLLScoringBaseMixin):
             statements=statements,
             span_roles=span_roles,
         )
-        token_scores: list[list[float]]
-        if reduction is None:
-            token_scores = self.score_statements(
-                batch,
-                scoring_masks=scoring_masks,
-                batch_size=batch_size,
-                token_roles=self._derive_token_roles(batch=batch, span_roles=span_roles, scoring_masks=scoring_masks),
-            )
-            token_roles = self._derive_token_roles(batch=batch, span_roles=span_roles, scoring_masks=scoring_masks)
 
+        token_roles = self._derive_token_roles(batch=batch, span_roles=span_roles, scoring_masks=scoring_masks)
+
+        token_scores: list[list[float]] = self.score_statements(
+            batch,
+            scoring_masks=scoring_masks,
+            batch_size=batch_size,
+            token_roles=token_roles,
+        )
+
+        if reduction is None:
             scored_tokens: list[list[ScoredToken]]
 
             scored_tokens = [
@@ -197,12 +198,6 @@ class Evaluator(BaseEvaluator, PLLScoringBaseMixin):
             return list(zip(scored_tokens, token_roles))
 
         else:
-            token_scores = self.score_statements(
-                batch,
-                scoring_masks=scoring_masks,
-                batch_size=batch_size,
-                token_roles=None,
-            )
             reduction_func = self._get_reduction_function(reduction)
             return [reduction_func(s) for s in token_scores]
 
