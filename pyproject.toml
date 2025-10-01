@@ -69,7 +69,7 @@ python = ["3.9", "3.10", "3.11", "3.12", "3.13"]
 detached = true
 dependencies = [
   "mypy>=1.8.0",
-  "ruff>=0.8.1",
+  "ruff>=0.13.2",
 ]
 [tool.hatch.envs.lint.scripts]
 typing = "mypy --install-types --non-interactive {args:src/lm_pub_quiz tests}"

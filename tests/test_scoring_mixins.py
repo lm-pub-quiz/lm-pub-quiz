@@ -83,7 +83,7 @@ def test_answer_l2r_word_l2r(distilbert):
 def test_sentence_l2r(distilbert):
     model, tokenizer = distilbert
 
-    evaluator = Evaluator.from_model("distilbert-base-cased", pll_metric="sentence_l2r")
+    evaluator = Evaluator.from_model(model, tokenizer=tokenizer, pll_metric="sentence_l2r")
 
     assert isinstance(evaluator, MaskedLMEvaluator)
 
@@ -133,7 +133,7 @@ def test_sentence_l2r(distilbert):
 def test_within_word_l2r(distilbert):
     model, tokenizer = distilbert
 
-    scorer = MaskedLMScoringMixin.from_model("distilbert-base-cased")
+    scorer = MaskedLMScoringMixin.from_model(model, tokenizer=tokenizer)
 
     batch = scorer.tokenizer(
         ["The traveler lost the souvenir."],
@@ -164,7 +164,7 @@ def test_within_word_l2r(distilbert):
 def test_original(distilbert):
     model, tokenizer = distilbert
 
-    scorer = Evaluator.from_model("distilbert-base-cased", pll_metric="original")
+    scorer = Evaluator.from_model(model, tokenizer=tokenizer, pll_metric="original")
 
     batch = scorer.tokenizer(
         ["The traveler lost the souvenir."],
