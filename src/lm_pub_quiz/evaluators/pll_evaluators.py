@@ -191,8 +191,13 @@ class Evaluator(BaseEvaluator, PLLScoringBaseMixin):
         if reduction is None:
             scored_tokens: list[list[ScoredToken]]
 
+            decoded_tokens = [
+                [token for token, m in zip(tokens, mask) if m]
+                for tokens, mask in zip(self.decode_tokens(batch), scoring_masks)
+            ]
+
             scored_tokens = [
-                list(zip(tokens, token_scores)) for tokens, token_scores in zip(self.decode_tokens(batch), token_scores)
+                list(zip(tokens, token_scores)) for tokens, token_scores in zip(decoded_tokens, token_scores)
             ]
 
             return list(zip(scored_tokens, token_roles))

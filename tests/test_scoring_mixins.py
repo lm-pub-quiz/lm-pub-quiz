@@ -5,13 +5,20 @@ from lm_pub_quiz.evaluators.scoring_mixins import MaskedLMScoringMixin
 
 
 def test_answer_l2r_word_l2r(distilbert):
+    ### TODO: Test for tokenizer without the [CLS]-token
+
     model, tokenizer = distilbert
     evaluator = Evaluator.from_model(model, tokenizer=tokenizer, pll_metric="answer_l2r+word_l2r")
 
+    subject = "traveler"
+    template = "The [X] lost the [Y]."
+    answers = ["bet", "souvenir", "Hitchhiker's Guide to the Galaxy"]
+
     result, indices = zip(
         *evaluator.score_answers(
-            template="The traveler lost the [Y].",
-            answers=["bet", "souvenir", "Hitchhiker's Guide to the Galaxy"],
+            template=template,
+            answers=answers,
+            subject=subject,
             reduction=None,
         )
     )
@@ -32,9 +39,43 @@ def test_answer_l2r_word_l2r(distilbert):
         result[2][i][1] for i in range(5, 15)
     )  # bet > so (pll instead of surprisal)
 
-    # TODO: add test for correct masking here
 
-    # TODO: add test for correct scoring here
+    statements, span_roles = zip(
+        *(
+            evaluator.replace_placeholders(
+                template=template,
+                subject=subject,
+                answer=a,
+            )
+            for a in answers
+        )
+    )
+
+    batch, scoring_masks = evaluator.encode(
+        statements=statements,
+        span_roles=span_roles,
+    )
+
+    extended_batch =  evaluator.create_masked_batch(
+        batch,
+        scoring_masks,
+        token_roles=indices,
+    )
+
+    assert extended_batch["input_ids"].size(0) == 7 + 9 + 16
+    assert extended_batch["input_ids"].size(1) == 16 + 2
+
+    i = 7 + 9 + 6  # Third answer, second token of the answer
+
+    # First token (5 + offset of one due to the [CLS]-token) was already queried: Not masked
+    assert extended_batch["input_ids"][i][5 + 1] != evaluator.mask_token
+
+    # The token itself as well as the following tokens (within the answer) are masked
+    assert (extended_batch["input_ids"][i][6 + 1 : 15 + 1] == evaluator.mask_token).all()
+
+    # The remaining tokens should not be masked
+    assert (extended_batch["input_ids"][i][15 + 1:] != evaluator.mask_token).all()
+
 
 
 def test_sentence_l2r(distilbert):
