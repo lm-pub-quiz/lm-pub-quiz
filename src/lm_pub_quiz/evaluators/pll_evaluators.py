@@ -1,6 +1,7 @@
 """MultipleChoiceEvaluator"""
 
 import logging
+import warnings
 from abc import abstractmethod
 from collections.abc import Sequence
 from contextlib import contextmanager
@@ -179,13 +180,13 @@ class Evaluator(BaseEvaluator, PLLScoringBaseMixin):
             span_roles=span_roles,
         )
 
-        token_roles = self._derive_token_roles(batch=batch, span_roles=span_roles, scoring_masks=scoring_masks)
+        token_roles_internal = self._derive_token_roles_internal(batch=batch, span_roles=span_roles)
 
         token_scores: list[list[float]] = self.score_statements(
             batch,
             scoring_masks=scoring_masks,
             batch_size=batch_size,
-            token_roles=token_roles,
+            token_roles_internal=token_roles_internal,
         )
 
         if reduction is None:
@@ -200,7 +201,12 @@ class Evaluator(BaseEvaluator, PLLScoringBaseMixin):
                 list(zip(tokens, token_scores)) for tokens, token_scores in zip(decoded_tokens, token_scores)
             ]
 
-            return list(zip(scored_tokens, token_roles))
+            token_roles_output = self._remap_token_roles(
+                token_roles_internal=token_roles_internal,
+                scoring_masks=scoring_masks,
+            )
+
+            return list(zip(scored_tokens, token_roles_output))
 
         else:
             reduction_func = self._get_reduction_function(reduction)
@@ -216,24 +222,49 @@ class Evaluator(BaseEvaluator, PLLScoringBaseMixin):
 
     def _derive_token_roles(
         self,
+        *,
         batch: BatchEncoding,
         span_roles: Sequence[SpanRoles],
         scoring_masks: Optional[Sequence[ScoringMask]],
+        output_indices: bool,
+    ) -> Sequence[TokenRoles]:
+        warnings.warn(
+            "We recommennd using the more explicit functions `_derive_token_roles_internal` and `_remap_token_roles`.",
+            stacklevel=2,
+        )
+
+        token_roles = self._derive_token_roles_internal(
+            batch=batch,
+            span_roles=span_roles,
+        )
+
+        if not output_indices:
+            return token_roles
+        elif scoring_masks is None:
+            msg = "Cannot remap token roles if the scoring masks are not set."
+            raise ValueError(msg)
+        else:
+            return self._remap_token_roles(token_roles_internal=token_roles, scoring_masks=scoring_masks)
+
+    def _derive_token_roles_internal(
+        self,
+        batch: BatchEncoding,
+        span_roles: Sequence[SpanRoles],
     ) -> Sequence[TokenRoles]:
         """Derive which tokens belong to the subject, answer, and template.
 
         If the scoring mask is given, the token indices refer to the resulting scores.
         """
-        token_roles = []
+        token_roles: list[TokenRoles] = []
 
         non_template_tokens: set[int]
-        token_indices: dict[str, list[int]]
+        roles: dict[str, list[int]]
 
         for statement_index, spans in enumerate(span_roles):
             non_template_tokens = set()
 
             # For the statement, determine which tokens belong to each role
-            token_indices = {k: [] for k in spans.keys()}
+            roles = {k: [] for k in spans.keys()}
 
             for k, v in spans.items():
                 for start, end in v:
@@ -259,34 +290,37 @@ class Evaluator(BaseEvaluator, PLLScoringBaseMixin):
 
                     tokens = range(first_affected_token, last_affected_token + 1)
 
-                    token_indices[k].extend(tokens)
+                    roles[k].extend(tokens)
 
                     if k != "template":
                         non_template_tokens.update(tokens)
 
-            token_indices["template"] = [
-                i for i in range(batch.length[statement_index]) if i not in non_template_tokens
-            ]
+            roles["template"] = [i for i in range(batch.length[statement_index]) if i not in non_template_tokens]
+            token_roles.append(roles)
 
-            if scoring_masks is not None:
-                # Remap the token indices to the index of actually scored tokens
-                # (for retrieval of token log-likihodds)
-                i = 0
-                remapped: list[int] = []
-                for m in scoring_masks[statement_index]:
-                    if m:
-                        remapped.append(i)
-                        i += 1
-                    else:
-                        remapped.append(-1)
-
-                token_indices = {
-                    k: [remapped[i] for i in v if scoring_masks[statement_index][i] if remapped[i] > 0]
-                    for k, v in token_indices.items()
-                }
-
-            token_roles.append(token_indices)
         return token_roles
+
+    def _remap_token_roles(
+        self, *, token_roles_internal: Sequence[TokenRoles], scoring_masks: Sequence[ScoringMask]
+    ) -> Sequence[TokenRoles]:
+        token_roles_output = []
+
+        for statement_index, (roles, mask) in enumerate(zip(token_roles_internal, scoring_masks)):
+            # Remap the token indices to the index of actually scored tokens
+            # (for retrieval of token log-likihodds)
+            i = 0
+            remapped: list[int] = []
+            for m in scoring_masks[statement_index]:
+                if m:
+                    remapped.append(i)
+                    i += 1
+                else:
+                    remapped.append(-1)
+
+            token_indices = {k: [remapped[i] for i in v if mask[i] if remapped[i] > 0] for k, v in roles.items()}
+
+            token_roles_output.append(token_indices)
+        return token_roles_output
 
     @classmethod
     def _get_reduction_function(cls, reduction: str) -> Callable:
@@ -332,7 +366,7 @@ class MaskedLMEvaluator(MaskedLMScoringMixin, Evaluator):
         )
 
         if self.conditional_score:
-            token_roles = self._derive_token_roles(batch, span_roles, scoring_masks=None)
+            token_roles = self._derive_token_roles_internal(batch, span_roles)
 
             scoring_masks = []
 
@@ -379,7 +413,7 @@ class CausalLMEvaluator(CausalLMScoringMixin, Evaluator):
         scoring_masks = self.default_scoring_mask(batch)
 
         if self.conditional_score:
-            token_roles = self._derive_token_roles(batch, span_roles, scoring_masks=None)
+            token_roles = self._derive_token_roles_internal(batch, span_roles)
 
             for i, roles in enumerate(token_roles):
                 # In autoregressive models, we can exclude everything leading up to the first part of the answer

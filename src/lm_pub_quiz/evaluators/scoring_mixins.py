@@ -23,7 +23,7 @@ class PLLScoringBaseMixin(ModelMixin):
         *,
         scoring_masks: Optional[Sequence[ScoringMask]],
         batch_size: int = 1,
-        token_roles: Optional[Sequence[TokenRoles]] = None,
+        token_roles_internal: Optional[Sequence[TokenRoles]] = None,
     ) -> list[list[float]]:
         """Compute the PLL score for the tokens (determined by the scoring mask) in a statements.
 
@@ -53,13 +53,13 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
         *,
         scoring_masks: Optional[Sequence[ScoringMask]] = None,
         batch_size: int = 1,
-        token_roles: Optional[Sequence[TokenRoles]] = None,
+        token_roles_internal: Optional[Sequence[TokenRoles]] = None,
     ) -> list[list[float]]:
         if scoring_masks is None:
             # If no scoring mask is given, all non-special tokens are scored
             scoring_masks = self.default_scoring_mask(batched_statements)
 
-        extended_batch = self.create_masked_batch(batched_statements, scoring_masks, token_roles)
+        extended_batch = self.create_masked_batch(batched_statements, scoring_masks, token_roles_internal)
 
         token_scores: list[list[float]] = [[] for _ in range(batched_statements["input_ids"].size(0))]
 
@@ -102,7 +102,7 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
         self,
         batch: BatchEncoding,
         scoring_masks: Sequence[ScoringMask],
-        token_roles=None,
+        token_roles_internal: Optional[Sequence[TokenRoles]] = None,
     ) -> BatchEncoding:
         """Extend the existing batch and mask the relevant tokens based on the scoring mask."""
         mask_indices = self.mask_to_indices(scoring_masks)
@@ -114,13 +114,19 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
 
         # Prepare tensors holding relevant information
         extended_batch["labels"] = torch.full(
-            (extended_batch["input_ids"].size(0),), -1, dtype=torch.long,
+            (extended_batch["input_ids"].size(0),),
+            -1,
+            dtype=torch.long,
         )
         extended_batch["masked_indices"] = torch.full(
-            (extended_batch["input_ids"].size(0),), -1, dtype=torch.long,
+            (extended_batch["input_ids"].size(0),),
+            -1,
+            dtype=torch.long,
         )
         extended_batch["statement_index"] = torch.full(
-            (extended_batch["input_ids"].size(0),), -1, dtype=torch.long,
+            (extended_batch["input_ids"].size(0),),
+            -1,
+            dtype=torch.long,
         )
 
         ### Apply the masking strategy ###
@@ -173,18 +179,19 @@ class MaskedLMScoringMixin(PLLScoringBaseMixin):
                 for i, token_index in enumerate(token_indices):
                     start = int(token_index.item())
                     # Mask every token from the current token index to the end of the sequence.
-                    extended_batch["input_ids"][statement_offset + i, start : ] = self.mask_token
+                    extended_batch["input_ids"][statement_offset + i, start:] = self.mask_token
 
             elif self.pll_metric == "answer_l2r+word_l2r":
-                if token_roles is None:
-                    raise ValueError(token_roles)
+                if token_roles_internal is None:
+                    msg = "'answer_l2r+word_l2r' requires the token roles to be set."
+                    raise ValueError(token_roles_internal)
 
                 word_ids = batch.word_ids(statement_index)
 
                 for i, token_index in enumerate(token_indices):
                     current_token_index = int(token_index.item())
 
-                    answer_token_indices = [x + 1 for x in token_roles[statement_index]["answer"]]
+                    answer_token_indices = token_roles_internal[statement_index]["answer"]
                     if current_token_index in answer_token_indices:
                         # Mask the remaining tokens of the answer
                         for selected_answer_index in answer_token_indices:
@@ -227,7 +234,7 @@ class CausalLMScoringMixin(PLLScoringBaseMixin):
         *,
         scoring_masks: Optional[Sequence[ScoringMask]] = None,
         batch_size: int = 1,
-        token_roles: Optional[Sequence[TokenRoles]] = None,  # noqa: ARG002
+        token_roles_internal: Optional[Sequence[TokenRoles]] = None,  # noqa: ARG002
     ) -> list[list[float]]:
         scores: list[list[float]] = []
 
