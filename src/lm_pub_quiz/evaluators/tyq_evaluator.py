@@ -80,7 +80,7 @@ class TyQEvaluator(BaseEvaluator):
             ):
                 logits = self.model(**batch).logits
                 for logit, mask in zip(logits, masks):
-                    log_probs = torch_func.log_softmax(logit[mask], dim=-1).cpu()
+                    log_probs = torch_func.log_softmax(logit[mask], dim=-1).to(self.device)
                     all_log_probs.append(log_probs)
 
         # read out the mean log probs

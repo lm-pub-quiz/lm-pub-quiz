@@ -343,13 +343,21 @@ def test_token_scores_within_word_l2r(distilbert):
 
     assert len(result) == 2
 
+    assert result[0][0][0] == "The"
+    assert result[0][-1][0] == "."
+
     assert len(result[0]) == 7  # The travel ##er lost the bet .
     assert len(result[1]) == 9  # The travel ##er lost the so ##uve ##nir .
 
     assert result[0][5][1] > sum(result[1][i][1] for i in range(5, 8))  # bet > so (pll instead of surprisal)
 
     assert indices[0]["answer"] == [5]
+    assert result[0][5][0] == "bet"
+
     assert indices[1]["answer"] == [5, 6, 7]
+    assert result[1][5][0] == "so"
+    assert result[1][6][0] == "##uve"
+    assert result[1][7][0] == "##nir"
 
 
 def test_token_scores_original(distilbert):
