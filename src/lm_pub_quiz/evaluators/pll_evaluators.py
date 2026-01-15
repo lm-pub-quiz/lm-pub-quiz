@@ -47,10 +47,17 @@ class Evaluator(BaseEvaluator, PLLScoringBaseMixin):
         self,
         *,
         conditional_score: bool = False,
+        ensure_bos_token_added: bool = True,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.conditional_score = conditional_score
+
+        self.ensure_bos_token_added = ensure_bos_token_added
+        self._bos_token_warning_issued = False
+
+    def get_result_metadata(self, **kw) -> dict[str, Any]:
+        return {"ensure_bos_token_added": self.ensure_bos_token_added, **super().get_result_metadata(**kw)}
 
     @classmethod
     def from_model(cls, model: Union[str, PreTrainedModel], model_type: Optional[str] = None, **kw) -> "Evaluator":
@@ -409,6 +416,35 @@ class CausalLMEvaluator(CausalLMScoringMixin, Evaluator):
                 return_length=True,
                 return_attention_mask=True,
             )
+            if batch["input_ids"][0, 0] != self.tokenizer.bos_token_id:
+                if self.ensure_bos_token_added:
+                    # Issue a warning
+                    if not self._bos_token_warning_issued:
+                        self._bos_token_warning_issued = True
+                        log.warning(
+                            "The tokenizer did not add a BOS-token, even with `add_bos_token=True`. "
+                            "A BOS token was added manually, to prevent this (and keep the default behavior of the "
+                            "tokenizer), set `ensure_bos_token_added=False`."
+                        )
+
+                    # Add the bos token manually
+                    statements = [self.tokenizer.bos_token + s for s in statements]
+                    batch = self.tokenizer(
+                        list(statements),
+                        return_tensors="pt",
+                        padding=True,
+                        add_special_tokens=True,
+                        return_special_tokens_mask=True,
+                        return_length=True,
+                        return_attention_mask=True,
+                    )
+                    batch["special_tokens_mask"][:, 0] = 1
+                elif not self._bos_token_warning_issued:
+                    self._bos_token_warning_issued = True
+                    log.info(
+                        "The tokenizer did not add a BOS-token, even with `add_bos_token=True`. "
+                        "To add the BOS token manually in this case, set `ensure_bos_token_added=True`."
+                    )
 
         scoring_masks = self.default_scoring_mask(batch)
 
