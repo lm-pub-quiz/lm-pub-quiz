@@ -32,6 +32,7 @@ jobs:
       id: setup-python
       uses: actions/setup-python@v5
       with:
+        # No cache needed, since packages are managed in the hatch virtual environment
         python-version: ${{ matrix.python-version }}
 
     # Set up caching of hatch's virtual environment
