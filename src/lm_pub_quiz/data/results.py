@@ -22,7 +22,7 @@ from typing_extensions import Literal, Self
 
 from lm_pub_quiz.data.base import DatasetBase, InstanceTableFileFormat, NoInstanceTableError, RelationBase
 from lm_pub_quiz.metrics import RelationMetric, accumulate_metrics
-from lm_pub_quiz.types import PathLike
+from lm_pub_quiz.types import PathLike, ReductionFunction
 from lm_pub_quiz.util import parse_dumped_raw_results
 
 log = logging.getLogger(__name__)
@@ -32,9 +32,9 @@ class RelationResult(RelationBase):
     _instance_table_file_name_suffix = "_results"
     _metadata_file_name: str = "metadata_results.json"
 
-    _default_reductions: ClassVar[dict[str, Callable[[list[float]], float]]] = {
-        "sum": cast(Callable[[Iterable[float]], float], np.sum),
-        "mean": cast(Callable[[Iterable[float]], float], np.mean),
+    _default_reductions: ClassVar[dict[str, ReductionFunction]] = {
+        "sum": cast(ReductionFunction, np.sum),
+        "mean": cast(ReductionFunction, np.mean),
     }
 
     def __init__(
@@ -181,7 +181,7 @@ class RelationResult(RelationBase):
 
     def reduced(
         self,
-        reduction: Union[str, Callable] = "sum",
+        reduction: Union[str, ReductionFunction] = "sum",
         *,
         reduction_name: Optional[str] = None,
         pass_indices: bool = False,
@@ -194,10 +194,10 @@ class RelationResult(RelationBase):
             if isinstance(reduction, str):
                 reduction_name = reduction
             else:
-                reduction_name = reduction.__name__
+                reduction_name = getattr(reduction, "__name__", "[unkown reduction function]")
 
         if isinstance(reduction, str):
-            reduction_func: Callable = self._default_reductions[reduction]
+            reduction_func: ReductionFunction = self._default_reductions[reduction]
         else:
             reduction_func = reduction
 

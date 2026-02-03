@@ -47,6 +47,8 @@ jobs:
     - name: Install hatch
       run: pipx install hatch; hatch config set dirs.env.virtual ".venv"
     - name: Lint
-      run: hatch run lint:all
+      run: hatch run lint:fmt
+    - name: Type Checking
+      run: hatch run lint:typing-github
     - name: Tests
       run: hatch run +py=${{ matrix.python-version }} all:test

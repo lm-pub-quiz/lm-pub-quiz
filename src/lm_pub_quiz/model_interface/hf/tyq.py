@@ -1,52 +1,31 @@
+# ruff: noqa
+# type: ignore
 import logging
-from collections.abc import Iterable
-from typing import Optional
+from collections.abc import Iterable, Iterator, Sequence
+from typing import Optional, Union
 
 import torch
 import torch.nn.functional as torch_func
 
-from lm_pub_quiz.evaluators.base import BaseEvaluator, ReducedReturnFormat
-from lm_pub_quiz.evaluators.util import iter_batches
+from lm_pub_quiz.model_interface.hf import HFModelInterface
+from lm_pub_quiz.types import ItemScores, ItemTokenScoresAndRoles, TextRoles
+from lm_pub_quiz.util import iter_batches
 
 log = logging.getLogger(__name__)
 
 
-class TyQEvaluator(BaseEvaluator):
+class TyQModelInterface(HFModelInterface):
     _reduction_warned = False
     default_reduction = "tyq"
 
-    def evaluate_instance(
+    def score_statement_options(
         self,
         *,
-        template: str,
-        answers: Iterable[str],
-        reduction: Optional[str] = "tyq",
-        batch_size: int = 1,
-        subject: Optional[str] = None,
-        print_ranking: bool = False,
-    ) -> ReducedReturnFormat:
-        if "[Y]" not in template:
-            msg = 'Provided sentence is missing a placeholder ("[Y]") used for answers.'
-            raise ValueError(msg)
-
-        if reduction != "tyq" and not self._reduction_warned:
-            log.warning("Reduction other than 'tyq' are being ignored ('%s' set).", str(reduction))
-
-        results = self.score_answers(
-            template=template,
-            answers=answers,
-            subject=subject,
-            batch_size=batch_size,
-        )
-
-        if print_ranking:
-            self.print_ranking(answers, results)
-
-        return results
-
-    def score_answers(
-        self, *, template: str, answers: Iterable[str], subject: Optional[str], batch_size: int = 1
-    ) -> ReducedReturnFormat:
+        statements: Iterable[Sequence[str]],
+        roles: Optional[Iterable[Sequence[TextRoles]]] = None,
+        **kw,
+    ) -> Iterator[Union[ItemTokenScoresAndRoles, ItemScores]]:
+        pass
         # tokenize the answers
         encoded_answers = self.tokenizer(list(answers), return_length=True, padding=False)
 

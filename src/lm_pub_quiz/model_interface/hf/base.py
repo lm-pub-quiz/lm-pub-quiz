@@ -1,3 +1,4 @@
+import inspect
 import logging
 from typing import Any, Literal, Optional, Union
 
@@ -12,12 +13,13 @@ from transformers import (
 )
 from typing_extensions import Self
 
-from lm_pub_quiz.evaluators.util import BaseMixin
+from lm_pub_quiz.model_interface import hf
+from lm_pub_quiz.model_interface.base import ModelInterface
 
 log = logging.getLogger(__name__)
 
 
-class ModelMixin(BaseMixin):
+class HFModelInterface(ModelInterface):
     _mlm_keywords: tuple[str, ...] = ("bert",)
     _clm_keywords: tuple[str, ...] = ("opt", "gpt", "llama", "bloom", "google/gemma", "mistral")
 
@@ -30,46 +32,63 @@ class ModelMixin(BaseMixin):
         self,
         *,
         model: PreTrainedModel,
-        tokenizer: PreTrainedTokenizerFast,
-        device: Union[torch.device, int, str, None],
+        model_type: Optional[str] = None,
         model_name: Optional[str] = None,
+        model_kw: Optional[dict[str, Any]] = None,
+        tokenizer: Optional[PreTrainedTokenizerFast] = None,
+        device: Union[torch.device, int, str, None] = None,
+        batch_size: int = 1,
         **kw,
     ):
         super().__init__(**kw)
-
-        if model_name is None:
-            self.model_name = self._get_model_name(model)
-        else:
-            self.model_name = model_name
-
-        self.model = model
-        self.tokenizer = tokenizer
-        self.device = self._get_device(device)
-
-    @classmethod
-    def from_model(
-        cls,
-        model: Union[str, PreTrainedModel],
-        *,
-        model_type: Optional[str] = None,
-        device: Union[torch.device, None, str, int] = None,
-        model_kw: Optional[dict[str, Any]] = None,
-        **kw,
-    ) -> Self:
-        """Return an object with a loaded model and tokenizer."""
-        device = cls._get_device(device)
 
         model_kw = model_kw or {}
         if "device" not in model_kw:
             model_kw["device"] = device
 
-        if isinstance(model, str) and "model_name" not in kw:
-            kw["model_name"] = model
+        self.model_name = model_name or self._get_model_name(model)
+        self.model = self._get_model(model=model, model_type=model_type, **model_kw)
+        self.tokenizer = self._get_tokenizer(model=model, tokenizer=tokenizer)
+        self.device = self._get_device(device)
+        self.batch_size = batch_size
 
-        model = cls._get_model(model=model, model_type=model_type, **model_kw)
-        tokenizer = cls._get_tokenizer(model=model, tokenizer=kw.pop("tokenizer", None))
+    @classmethod
+    def from_model(
+        cls,
+        model: Union[str, PreTrainedModel],
+        model_type: Optional[str] = None,
+        **kw,
+    ) -> Self:
+        """Create an interface for the given model.
 
-        return cls(model=model, tokenizer=tokenizer, model_type=model_type, device=device, **kw)
+        In some cases, the model type can be derived from the model itself. To ensure
+        the right type is chosen, it's recommended to set `model_type` manually.
+
+        Parameters:
+            model str | PreTrainedModel: The model to evaluate.
+            model_type str | None: The type of model (determines the scoring scheme to be used).
+
+        Returns:
+            HFPLLModelInterface: The evaluator instance suitable for the model.
+        """
+
+        if not inspect.isabstract(cls):
+            return cls(model=model, model_type=model_type, **kw)
+
+        if model_type is None:
+            model_type = cls._infer_model_type(model)
+
+        interface_class: type[HFModelInterface]
+
+        if model_type == "MLM":
+            interface_class = hf.MLMInterface
+        elif model_type == "CLM":
+            interface_class = hf.CLMInterface
+        else:
+            msg = f"The model type {model_type} is not implemented."
+            raise ValueError(msg)
+
+        return interface_class.from_model(model=model, model_type=model_type, **kw)  # type: ignore (currently not handled correctly?)
 
     @classmethod
     def _get_device(cls, device_input: Union[torch.device, int, str, None]) -> torch.device:
@@ -104,7 +123,7 @@ class ModelMixin(BaseMixin):
             return model
 
         if model_type is None:
-            model_type = cls._infer_type_from_name(model)
+            model_type = cls._infer_model_type(model)
             log.debug("Inferred type of model `%s`: %s", model, model_type)
 
         model_class: type[AutoModel]
@@ -154,19 +173,17 @@ class ModelMixin(BaseMixin):
         return tokenizer
 
     @classmethod
-    def _infer_type_from_name(cls, model: str) -> Literal["MLM", "CLM"]:
+    def _infer_model_type(cls, model: str) -> Literal["MLM", "CLM"]:
         """Infer the type of model (MLM or CLM) based on the model name."""
 
-        if any(k in model.lower() for k in cls._mlm_keywords):
-            return "MLM"
-        elif any(k in model.lower() for k in cls._clm_keywords):
-            return "CLM"
+        if isinstance(model, str):
+            if any(k in model.lower() for k in cls._mlm_keywords):
+                return "MLM"
+            elif any(k in model.lower() for k in cls._clm_keywords):
+                return "CLM"
+            else:
+                msg = f"Cannot infer model type from the `model_name_or_path`: '{model}'."
+                log.error(msg)
+                raise ValueError(msg)
         else:
-            msg = f"Cannot infer model type from the `model_name_or_path`: '{model}'."
-            log.error(msg)
-            raise ValueError(msg)
-
-    @classmethod
-    def _infer_type_from_object(cls, model: PreTrainedModel):
-        """Infer the type of model (MLM or CLM) based on model object."""
-        return cls._infer_type_from_name(model.config.model_type)
+            return cls._infer_model_type(model.config.model_type)

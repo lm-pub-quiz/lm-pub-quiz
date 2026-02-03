@@ -3,18 +3,22 @@
 import json
 import logging
 import os
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import Any, Callable, Optional, Union
 
 import numpy as np
 import pandas as pd
+from tqdm.auto import tqdm
 from typing_extensions import Self
 
-from lm_pub_quiz.data.base import DatasetBase, InstanceTableFileFormat, RelationBase
+from lm_pub_quiz.data.base import DatasetBase, InstanceTableFileFormat, Item, RelationBase
 from lm_pub_quiz.data.util import download_tmp_file, extract_archive_member, natural_sort
 from lm_pub_quiz.types import PathLike
 from lm_pub_quiz.util import cache_base_path
+
+tqdm.pandas()
+
 
 log = logging.getLogger(__name__)
 
@@ -140,6 +144,8 @@ class Relation(RelationBase):
             msg = "A path to a directory was passed but no relation was specified."
             raise ValueError(msg)
 
+        assert relation_code is not None
+
         log.debug("Loading %s (%s) from: %s", cls.__name__, relation_code, relation_path)
 
         metadata_path = dataset_path / cls._metadata_file_name
@@ -173,12 +179,12 @@ class Relation(RelationBase):
             relation_info=metadata,
         )
 
-    def copy(self, **kw):
+    def copy(self, *, relation_code: Optional[str] = None, **kw):
         kw = {
             "templates": self.templates.copy(),
             **kw,
         }
-        return super().copy(**kw)
+        return super().copy(relation_code=relation_code, **kw)
 
     def filter_subset(
         self,
@@ -219,6 +225,33 @@ class Relation(RelationBase):
             answer_indices = pd.Series(np.arange(len(answer_space)), index=answer_space.index, name="answer_idx")
             instance_table = instance_table.join(answer_indices, on="obj_id")
         return instance_table
+
+    def get_items(
+        self,
+        *,
+        template_index: Union[int, list[int], None] = None,
+        subsample: Optional[int] = None,
+        use_tqdm: bool = True,
+    ) -> Iterator[Item]:
+        df = self.instance_table if subsample is None else self.subsample(subsample)
+
+        if template_index is None:
+            template_index = list(range(len(self.templates)))
+        elif isinstance(template_index, int):
+            template_index = [template_index]
+
+        instances = (
+            Item.from_kw(
+                **row.to_dict(), template=self.templates[t_index], template_index=t_index, instance_index=instance_index
+            )
+            for instance_index, row in df.iterrows()
+            for t_index in template_index
+        )
+
+        if use_tqdm:
+            return tqdm(instances, total=len(df) * len(template_index), desc=f"Relation {self.relation_code}")
+        else:
+            return instances
 
 
 class Dataset(DatasetBase[Relation]):
