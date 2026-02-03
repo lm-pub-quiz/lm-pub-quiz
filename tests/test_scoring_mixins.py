@@ -1,7 +1,9 @@
 import pytest
 
-from lm_pub_quiz import Evaluator, MaskedLMEvaluator
-from lm_pub_quiz.evaluators.scoring_mixins import MaskedLMScoringMixin
+from lm_pub_quiz import Evaluator
+from lm_pub_quiz.model_interface.hf import MLMInterface
+from lm_pub_quiz.model_interface.hf.util import derive_token_roles_internal
+from lm_pub_quiz.types import TokenScoresAndRoles
 
 
 def test_answer_l2r_word_l2r(distilbert):
@@ -10,7 +12,7 @@ def test_answer_l2r_word_l2r(distilbert):
     model, tokenizer = distilbert
     evaluator = Evaluator.from_model(model, tokenizer=tokenizer, pll_metric="answer_l2r+word_l2r")
 
-    assert isinstance(evaluator, MaskedLMEvaluator)
+    assert isinstance(evaluator.model_interface, MLMInterface)
 
     subject = "traveler"
     template = "The [X] lost the [Y]."
@@ -41,7 +43,7 @@ def test_answer_l2r_word_l2r(distilbert):
         result[2][i][1] for i in range(5, 15)
     )  # bet > so (pll instead of surprisal)
 
-    statements, span_roles = zip(
+    statements, text_roles = zip(
         *(
             evaluator.replace_placeholders(
                 template=template,
@@ -54,10 +56,10 @@ def test_answer_l2r_word_l2r(distilbert):
 
     batch, scoring_masks = evaluator.encode(
         statements=statements,
-        span_roles=span_roles,
+        text_roles=text_roles,
     )
 
-    token_roles_internal = evaluator._derive_token_roles_internal(batch=batch, span_roles=span_roles)
+    token_roles_internal = derive_token_roles_internal(batch=batch, text_roles=text_roles)
 
     extended_batch = evaluator.create_masked_batch(
         batch,
@@ -85,13 +87,13 @@ def test_sentence_l2r(distilbert):
 
     evaluator = Evaluator.from_model(model, tokenizer=tokenizer, pll_metric="sentence_l2r")
 
-    assert isinstance(evaluator, MaskedLMEvaluator)
+    assert isinstance(evaluator.model_interface, MLMInterface)
 
     statements = ["The traveler lost the souvenir."]
 
     batch, scoring_masks = evaluator.encode(
         statements=statements,
-        span_roles=None,  # type: ignore[arg-type]
+        text_roles=None,
     )
 
     extended_batch = evaluator.create_masked_batch(
@@ -133,17 +135,11 @@ def test_sentence_l2r(distilbert):
 def test_within_word_l2r(distilbert):
     model, tokenizer = distilbert
 
-    scorer = MaskedLMScoringMixin.from_model(model, tokenizer=tokenizer)
+    model_interface = MLMInterface.from_model(model, tokenizer=tokenizer)
 
-    batch = scorer.tokenizer(
-        ["The traveler lost the souvenir."],
-        return_tensors="pt",
-        padding=True,
-        return_special_tokens_mask=True,
-        return_length=True,
-    )
+    statements = ["The traveler lost the souvenir."]
 
-    scores = scorer.score_statements(batch, scoring_masks=None)[0]
+    scores: TokenScoresAndRoles = next(iter(model_interface.score_statements(statements=statements, reduction=None)))
 
     reference_scores = [
         -3.260617733001709,
@@ -164,17 +160,11 @@ def test_within_word_l2r(distilbert):
 def test_original(distilbert):
     model, tokenizer = distilbert
 
-    scorer = Evaluator.from_model(model, tokenizer=tokenizer, pll_metric="original")
+    model_interface = MLMInterface.from_model(model, tokenizer=tokenizer, pll_metric="original")
 
-    batch = scorer.tokenizer(
-        ["The traveler lost the souvenir."],
-        return_tensors="pt",
-        padding=True,
-        return_special_tokens_mask=True,
-        return_length=True,
-    )
+    statements = ["The traveler lost the souvenir."]
 
-    scores = scorer.score_statements(batch, scoring_masks=None)[0]
+    scores: TokenScoresAndRoles = next(iter(model_interface.score_statements(statements=statements, reduction=None)))
 
     reference_scores = [
         -3.260617733001709,

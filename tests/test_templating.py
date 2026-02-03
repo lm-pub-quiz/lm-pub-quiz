@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from lm_pub_quiz.evaluators.templating_util import Templater
+from lm_pub_quiz.templating import Templater
 
 log = logging.getLogger(__name__)
 

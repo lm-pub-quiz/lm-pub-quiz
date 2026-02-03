@@ -1,7 +1,7 @@
 import logging
 
-from lm_pub_quiz import Dataset, DatasetResults, RelationResult
-from lm_pub_quiz.evaluators.tyq_evaluator import TyQEvaluator
+from lm_pub_quiz import Dataset, DatasetResults, Evaluator, RelationResult
+from lm_pub_quiz.model_interface.hf.tyq import TyQModelInterface
 
 log = logging.getLogger(__name__)
 
@@ -10,7 +10,10 @@ def test_tyq_evaluator(distilbert, request, tmp_path):
     dataset = Dataset.from_path(request.path.parent / "test_data" / "dummy_dataset")
 
     model, tokenizer = distilbert
-    evaluator = TyQEvaluator.from_model(model, tokenizer=tokenizer)
+
+    model_interface = TyQModelInterface.from_model(model, tokenizer=tokenizer)
+
+    evaluator = Evaluator(model_interface=model_interface)
 
     results = evaluator.evaluate_dataset(dataset)
     assert isinstance(results, DatasetResults)
@@ -49,6 +52,9 @@ def test_reduction_functionality(distilbert):
     model, tokenizer = distilbert
 
     # Instantiate from existing model
-    evaluator: TyQEvaluator = TyQEvaluator.from_model(model, tokenizer=tokenizer)
 
-    _ = evaluator.evaluate_instance(template="The traveler lost the [Y]", answers=["souvenir", "bet"])
+    model_interface = TyQModelInterface.from_model(model, tokenizer=tokenizer)
+
+    evaluator = Evaluator(model_interface=model_interface)
+
+    _ = evaluator.evaluate_item(template="The traveler lost the [Y]", answers=["souvenir", "bet"])
