@@ -1,4 +1,4 @@
-# Data Files
+# Structure of the Data Files
 
 A project dataset comprises a series of `.jsonl` files and a single `.json` metadata file. These files collectively encapsulate relational knowledge relations. **TREx** dataset is included for demonstration purposes.
 

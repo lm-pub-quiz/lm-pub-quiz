@@ -7,11 +7,14 @@ from transformers import BatchEncoding
 
 from lm_pub_quiz.evaluators.model_util import ModelMixin
 from lm_pub_quiz.evaluators.util import iter_batches
-from lm_pub_quiz.types import ScoringMask
+from lm_pub_quiz.types import ScoringMask, TokenRoles
 
 
-class PLLScorerBase(ModelMixin):
+class PLLScoringBaseMixin(ModelMixin):
     """This class is used retrieve PLL scores for tokens or the complete statement."""
+
+    def default_scoring_mask(self, batched_statements: BatchEncoding) -> Sequence[ScoringMask]:
+        return [(~mask.bool()).tolist() for mask in batched_statements["special_tokens_mask"]]
 
     @abstractmethod
     def score_statements(
@@ -20,6 +23,7 @@ class PLLScorerBase(ModelMixin):
         *,
         scoring_masks: Optional[Sequence[ScoringMask]],
         batch_size: int = 1,
+        token_roles_internal: Optional[Sequence[TokenRoles]] = None,
     ) -> list[list[float]]:
         """Compute the PLL score for the tokens (determined by the scoring mask) in a statements.
 
@@ -27,9 +31,9 @@ class PLLScorerBase(ModelMixin):
         """
 
 
-class MaskedLMScorer(PLLScorerBase):
+class MaskedLMScoringMixin(PLLScoringBaseMixin):
     def __init__(self, *, pll_metric: str = "within_word_l2r", **kw) -> None:
-        if pll_metric not in ("original", "within_word_l2r"):
+        if pll_metric not in ("original", "within_word_l2r", "sentence_l2r", "answer_l2r+word_l2r"):
             msg = f"PLL strategy {pll_metric} not know."
             raise ValueError(msg)
 
@@ -49,19 +53,18 @@ class MaskedLMScorer(PLLScorerBase):
         *,
         scoring_masks: Optional[Sequence[ScoringMask]] = None,
         batch_size: int = 1,
+        token_roles_internal: Optional[Sequence[TokenRoles]] = None,
     ) -> list[list[float]]:
         if scoring_masks is None:
             # If no scoring mask is given, all non-special tokens are scored
-            scoring_masks = [(~mask.bool()).tolist() for mask in batched_statements["special_tokens_mask"]]
+            scoring_masks = self.default_scoring_mask(batched_statements)
 
-        extended_batch = self.create_masked_batch(batched_statements, scoring_masks)
+        extended_batch = self.create_masked_batch(batched_statements, scoring_masks, token_roles_internal)
 
         token_scores: list[list[float]] = [[] for _ in range(batched_statements["input_ids"].size(0))]
 
         # Split up the larger batch based on the batch size
-        for minibatch in iter_batches(extended_batch.to(self.device), batch_size=batch_size):
-            minibatch.to(self.device)
-
+        for minibatch in iter_batches(extended_batch, batch_size=batch_size):
             masked_indices = minibatch.pop("masked_indices")
             statement_indices = minibatch.pop("statement_index")
             batch_labels = minibatch.pop("labels")
@@ -70,14 +73,14 @@ class MaskedLMScorer(PLLScorerBase):
             with torch.no_grad():
                 minibatch.pop("special_tokens_mask")
                 minibatch.pop("length")
-                model_output = self.model(**minibatch)
+                model_output = self.model(**minibatch.to(self.device))
 
             # Shift so that tokens < n predict n
             batch_logits = model_output.logits
             batch_logits = batch_logits[torch.arange(batch_logits.size(0)), masked_indices].contiguous()
 
             batch_preds = torch.nn.functional.log_softmax(batch_logits, -1)
-            batch_scores = batch_preds[torch.arange(batch_labels.size(0)), batch_labels].to("cpu")
+            batch_scores = batch_preds[torch.arange(batch_labels.size(0)), batch_labels].cpu()
 
             # Retrieve the score for each of the tokens
             for statement_index, score in zip(statement_indices, batch_scores):
@@ -91,11 +94,16 @@ class MaskedLMScorer(PLLScorerBase):
         # Replace the relevant tokens by the pad token
         for mask in scoring_masks:
             (indices,) = torch.where(torch.tensor(mask))
-            mask_indices.append(indices.to(self.device))
+            mask_indices.append(indices)
 
         return mask_indices
 
-    def create_masked_batch(self, batch: BatchEncoding, scoring_masks: Sequence[ScoringMask]) -> BatchEncoding:
+    def create_masked_batch(
+        self,
+        batch: BatchEncoding,
+        scoring_masks: Sequence[ScoringMask],
+        token_roles_internal: Optional[Sequence[TokenRoles]] = None,
+    ) -> BatchEncoding:
         """Extend the existing batch and mask the relevant tokens based on the scoring mask."""
         mask_indices = self.mask_to_indices(scoring_masks)
 
@@ -106,24 +114,30 @@ class MaskedLMScorer(PLLScorerBase):
 
         # Prepare tensors holding relevant information
         extended_batch["labels"] = torch.full(
-            (extended_batch["input_ids"].size(0),), -1, dtype=torch.long, device=self.device
+            (extended_batch["input_ids"].size(0),),
+            -1,
+            dtype=torch.long,
         )
         extended_batch["masked_indices"] = torch.full(
-            (extended_batch["input_ids"].size(0),), -1, dtype=torch.long, device=self.device
+            (extended_batch["input_ids"].size(0),),
+            -1,
+            dtype=torch.long,
         )
         extended_batch["statement_index"] = torch.full(
-            (extended_batch["input_ids"].size(0),), -1, dtype=torch.long, device=self.device
+            (extended_batch["input_ids"].size(0),),
+            -1,
+            dtype=torch.long,
         )
 
         ### Apply the masking strategy ###
         statement_offset = 0  # to keep track which element in large batch to modify
 
-        for statemet_index, token_indices in enumerate(mask_indices):
+        for statement_index, token_indices in enumerate(mask_indices):
             # Number of passes induced by this statement
             n = token_indices.size(0)
 
             # Passes within the extended_batch which belong to the current statement
-            extended_batch_indices = torch.arange(statement_offset, statement_offset + n, device=self.device)
+            extended_batch_indices = torch.arange(statement_offset, statement_offset + n)
 
             extended_batch["labels"][extended_batch_indices] = extended_batch["input_ids"][
                 extended_batch_indices, token_indices
@@ -131,7 +145,7 @@ class MaskedLMScorer(PLLScorerBase):
             extended_batch["masked_indices"][extended_batch_indices] = token_indices
 
             # Store the statement index for each token such that it can later be assigned more easily
-            extended_batch["statement_index"][extended_batch_indices] = statemet_index
+            extended_batch["statement_index"][extended_batch_indices] = statement_index
 
             # Mask tokens based on the selected masking-strategy
             if self.pll_metric == "original":
@@ -139,7 +153,7 @@ class MaskedLMScorer(PLLScorerBase):
                 extended_batch["input_ids"][extended_batch_indices, token_indices] = self.mask_token
 
             elif self.pll_metric == "within_word_l2r":
-                word_ids = batch.word_ids(statemet_index)
+                word_ids = batch.word_ids(statement_index)
 
                 # Mask each token and the remaineder of the same word
                 for i, token_index in enumerate(token_indices):
@@ -160,6 +174,50 @@ class MaskedLMScorer(PLLScorerBase):
                             # tokens belong to other words as well
                             break
 
+            elif self.pll_metric == "sentence_l2r":
+                # For each pass, mask all tokens from the current token onward.
+                for i, token_index in enumerate(token_indices):
+                    start = int(token_index.item())
+                    # Mask every token from the current token index to the end of the sequence.
+                    extended_batch["input_ids"][statement_offset + i, start:] = self.mask_token
+
+            elif self.pll_metric == "answer_l2r+word_l2r":
+                if token_roles_internal is None:
+                    msg = "'answer_l2r+word_l2r' requires the token roles to be set."
+                    raise ValueError(token_roles_internal)
+
+                word_ids = batch.word_ids(statement_index)
+
+                for i, token_index in enumerate(token_indices):
+                    current_token_index = int(token_index.item())
+
+                    answer_token_indices = token_roles_internal[statement_index]["answer"]
+                    if current_token_index in answer_token_indices:
+                        # Mask the remaining tokens of the answer
+                        for selected_answer_index in answer_token_indices:
+                            if selected_answer_index >= current_token_index:
+                                extended_batch["input_ids"][statement_offset + i, selected_answer_index] = (
+                                    self.mask_token
+                                )
+                    else:
+                        # Mask each token and the remaineder of the same word
+                        current_word = word_ids[int(token_index.item())]
+
+                        extended_batch["input_ids"][statement_offset + i, token_index] = self.mask_token
+
+                        if current_word is None:
+                            continue
+
+                        # Go over all other tokens which are masked
+                        for token_to_the_right in token_indices[i + 1 :]:
+                            # and mask them if they are part of the same word
+                            if word_ids[token_to_the_right] == current_word:
+                                extended_batch["input_ids"][statement_offset + i, token_to_the_right] = self.mask_token
+                            else:
+                                # Assuming a word cannot be nested in another, different word means that all remaining
+                                # tokens belong to other words as well
+                                break
+
             else:
                 msg = f"PLL strategy {self.pll_metric} not implemented."
                 raise NotImplementedError(msg)
@@ -169,16 +227,14 @@ class MaskedLMScorer(PLLScorerBase):
         return BatchEncoding(extended_batch)
 
 
-class CausalLMScorer(PLLScorerBase):
-    def default_scoring_mask(self, batched_statements: BatchEncoding) -> Sequence[ScoringMask]:
-        return [(~mask.bool()).tolist()[1:] for mask in batched_statements["special_tokens_mask"]]
-
+class CausalLMScoringMixin(PLLScoringBaseMixin):
     def score_statements(
         self,
         batched_statements: BatchEncoding,
         *,
         scoring_masks: Optional[Sequence[ScoringMask]] = None,
         batch_size: int = 1,
+        token_roles_internal: Optional[Sequence[TokenRoles]] = None,  # noqa: ARG002
     ) -> list[list[float]]:
         scores: list[list[float]] = []
 
@@ -205,11 +261,11 @@ class CausalLMScorer(PLLScorerBase):
                     logits = batch_logits[i, :].contiguous()
                     labels = batch_labels[i, :].contiguous()
                 else:
-                    logits = batch_logits[i, mask].contiguous()
-                    labels = batch_labels[i, mask].contiguous()
+                    logits = batch_logits[i, mask[1:]].contiguous()
+                    labels = batch_labels[i, mask[1:]].contiguous()
 
                 preds = torch.nn.functional.log_softmax(logits, -1)
 
-                scores.append(preds[torch.arange(labels.size(0)), labels].to("cpu").tolist())
+                scores.append(preds[torch.arange(labels.size(0)), labels].cpu().tolist())
 
         return scores

@@ -31,7 +31,7 @@ You can install the package via *pip*:
 pip install lm-pub-quiz
 ```
 
-For alternatives methods of installing the package, visit the [documentation](https://lm-pub-quiz.github.com/lm-pub-quiz).
+For alternatives methods of installing the package, visit the [documentation](https://lm-pub-quiz.github.io/lm-pub-quiz).
 
 
 ### Example Usage
@@ -47,14 +47,15 @@ evaluator = Evaluator.from_model(
     "gpt2",
     model_type="CLM",
 )
+
 # Run the evaluation and save the
 results = evaluator.evaluate_dataset(
     dataset,
-    template_index=0,
     save_path="gpt2_results",
     batch_size=32,
 )
 
+# If the results are analyzed in a different session, they can be loaded from the file system
 # results = DatasetResults.from_path("gpt2_results")
 
 print("=== Overall score ===")

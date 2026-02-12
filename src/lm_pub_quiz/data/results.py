@@ -95,10 +95,10 @@ class RelationResult(RelationBase):
         Loads the evaluated relation from a JSONL file and associated metadata.
 
         Parameters:
-            path (PathLike): The path to the relations instance table.
+            path: The path to the relations instance table.
 
         Returns:
-            RelationResult: An instance of the RelationResult class populated with data from the file.
+            An instance of the RelationResult class populated with data from the file.
 
         Raises:
             Exception: If there is an error in loading the file or processing the data.
@@ -443,10 +443,10 @@ class DatasetResults(DatasetBase[RelationResult]):
         This method scans the directory for relation files and assembles them into a DatasetResults.
 
         Parameters:
-            path (str): The directory path where the dataset is stored.
+            path: The directory path where the dataset is stored.
 
         Returns:
-            DatasetResults: An instance of DatasetResults loaded with the results from the directory.
+            An instance of DatasetResults loaded with the results from the directory.
 
         Raises:
             Exception: If there is an error in loading the dataset.

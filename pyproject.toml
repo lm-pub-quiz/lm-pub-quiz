@@ -8,10 +8,8 @@ dependencies = [
   "datasets",
   "transformers>=4.38",
   "accelerate>0.25.0",
-  "hydra-core",
   "pandas",
-  "numpy<2.0.0",
-  "seaborn",
+  "numpy",
   "scikit-learn",
 ]
 dynamic = ["version"]
@@ -23,10 +21,11 @@ authors = [
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
 ]
@@ -44,7 +43,9 @@ dependencies = [
   "pytest",
   "mkdocs",
   "mkdocs-material",
-  "mkdocstrings[python]",
+  "mkdocstrings[python]>=0.18",
+  "mkdocs-section-index>=0.3",
+  "black",
 ]
 [tool.hatch.envs.default.scripts]
 test = "pytest {args:tests}"
@@ -68,7 +69,7 @@ python = ["3.9", "3.10", "3.11", "3.12", "3.13"]
 detached = true
 dependencies = [
   "mypy>=1.8.0",
-  "ruff>=0.8.1",
+  "ruff>=0.13.2",
 ]
 [tool.hatch.envs.lint.scripts]
 typing = "mypy --install-types --non-interactive {args:src/lm_pub_quiz tests}"

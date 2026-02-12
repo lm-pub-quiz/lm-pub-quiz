@@ -37,7 +37,13 @@ class Templater(BaseMixin):
     ) -> tuple[str, SpanRoles]:
         """Replace all placeholders in the template with the respective values.
 
-        Returns the final string as well as the spans of the respective elements in the final string.
+        Parameters:
+            template: The temaplate string with appropriate placeholders.
+            subject: The subject label to fill in at the resective placeholder.
+            answer: The answer span to fill in.
+
+        Returns:
+            The final string as well as the spans of the respective elements in the final string.
         """
         # initialize the string
         text: str = ""

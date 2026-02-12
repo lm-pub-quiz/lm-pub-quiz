@@ -3,10 +3,9 @@ import logging
 import numpy as np
 import pytest
 
-from lm_pub_quiz import Dataset, DatasetResults, Evaluator, RelationResult
+from lm_pub_quiz import CausalLMEvaluator, Dataset, DatasetResults, Evaluator, MaskedLMEvaluator, RelationResult
 from lm_pub_quiz.__about__ import __version__
 from lm_pub_quiz.data import NoInstanceTableError
-from lm_pub_quiz.evaluators.base import CausalLMEvaluator, MaskedLMEvaluator
 
 log = logging.getLogger(__name__)
 
@@ -52,6 +51,30 @@ def test_reduction_functionality(model_key, model_cache):
         evaluator.evaluate_instance(
             template="The traveler lost the [Y]", answers=["souvenir", "bet"], reduction=None, print_ranking=True
         )
+
+
+@pytest.mark.parametrize("model_key", ("distilbert", "distilgpt", "opt"))
+def test_posthoc_reduction(request, model_key, model_cache):
+    model = model_cache[model_key]
+
+    # Instantiate from existing model
+    evaluator = Evaluator.from_model(model.model, tokenizer=model.tokenizer)
+
+    dataset = Dataset.from_path(request.path.parent / "test_data" / "dummy_dataset")
+
+    non_reduced_results = evaluator.evaluate_dataset(dataset, reduction=None)
+    sum_reduced_results = evaluator.evaluate_dataset(dataset, reduction="sum")
+    mean_reduced_results = evaluator.evaluate_dataset(dataset, reduction="mean")
+
+    assert (
+        sum_reduced_results.joined_instance_table()["pll_scores"].explode()
+        == non_reduced_results.reduced("sum").joined_instance_table()["pll_scores"].explode()
+    ).all()
+
+    assert (
+        mean_reduced_results.joined_instance_table()["pll_scores"].explode()
+        == non_reduced_results.reduced("mean").joined_instance_table()["pll_scores"].explode()
+    ).all()
 
 
 @pytest.mark.parametrize(
@@ -338,13 +361,21 @@ def test_token_scores_within_word_l2r(distilbert):
 
     assert len(result) == 2
 
+    assert result[0][0][0] == "The"
+    assert result[0][-1][0] == "."
+
     assert len(result[0]) == 7  # The travel ##er lost the bet .
     assert len(result[1]) == 9  # The travel ##er lost the so ##uve ##nir .
 
     assert result[0][5][1] > sum(result[1][i][1] for i in range(5, 8))  # bet > so (pll instead of surprisal)
 
     assert indices[0]["answer"] == [5]
+    assert result[0][5][0] == "bet"
+
     assert indices[1]["answer"] == [5, 6, 7]
+    assert result[1][5][0] == "so"
+    assert result[1][6][0] == "##uve"
+    assert result[1][7][0] == "##nir"
 
 
 def test_token_scores_original(distilbert):
@@ -392,6 +423,21 @@ def test_evaluation_with_relation_info(request, distilbert):
 
     model, tokenizer = distilbert
     evaluator = Evaluator.from_model(model, tokenizer=tokenizer)
+
+    results = evaluator.evaluate_dataset(dataset, batch_size=16, reduction="sum")
+
+    assert results[0].relation_info("domains") == ["a", "b", "c"]
+
+
+def test_with_gpt2(request):
+    """Test whether the deprecated representation of the results can still be loaded."""
+
+    dataset = Dataset.from_path(
+        request.path.parent / "test_data" / "dummy_dataset",
+        relation_info=request.path.parent / "test_data" / "dummy_relation_info.json",
+    )
+
+    evaluator = Evaluator.from_model("gpt2")
 
     results = evaluator.evaluate_dataset(dataset, batch_size=16, reduction="sum")
 
