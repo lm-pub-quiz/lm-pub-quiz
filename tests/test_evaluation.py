@@ -297,7 +297,7 @@ def test_dataset_conditional_evaluation(distilbert, request, tmp_path):
     dataset = Dataset.from_path(request.path.parent / "test_data" / "dummy_dataset")
 
     model, tokenizer = distilbert
-    evaluator = Evaluator.from_model(model, tokenizer=tokenizer, conditional=True)
+    evaluator = Evaluator.from_model(model, tokenizer=tokenizer, conditional_score=True)
 
     results = evaluator.evaluate_dataset(dataset, batch_size=16, reduction="sum")
     assert isinstance(results, DatasetResults)
@@ -314,6 +314,22 @@ def test_dataset_conditional_evaluation(distilbert, request, tmp_path):
 
     results = DatasetResults.from_path(tmp_path)
 
+    expected_scores = {
+        "example_1": [
+            [-14.385473609, -14.1785931587, -16.9836633205],
+            [-17.7291696072, -12.6065320969, -26.7395291328],
+            [-14.9638026953, -14.5089964867, -15.5144182444],
+        ],
+        "example_2": [
+            [-7.77769804, -11.8580713272, -8.5515202186],
+            [-8.6128005981, -11.444855928399999, -8.9699234925],
+            [-8.5640046597, -8.5682702065, -9.983974989],
+            [-8.7051823139, -10.3667740822, -8.5194358295],
+            [-11.9875342846, -13.645191431, -7.3466205974],
+            [-11.2440989017, -13.2864718437, -8.2137057148],
+        ],
+    }
+
     r: RelationResult
     for r in results:
         if r.relation_code in ("example_1", "example_2"):
@@ -323,10 +339,12 @@ def test_dataset_conditional_evaluation(distilbert, request, tmp_path):
 
             log.debug("Result for relation %s:\n%s", r.relation_code, str(instance_table))
             # all examples should be predicted correctly
-            for _, row in instance_table.iterrows():
+            for i, row in instance_table.iterrows():
                 log.info(row)
                 assert len(row["pll_scores"]) == 3
-                assert row["answer_idx"] == np.argmax(row["pll_scores"])
+
+                for actual, expected in zip(row["pll_scores"], expected_scores[r.relation_code][i]):
+                    assert actual == pytest.approx(expected)
 
             assert r.get_metadata("dataset_name") == "dummy_dataset"
             assert r.get_metadata("reduction") == "sum"
