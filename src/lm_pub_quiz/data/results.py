@@ -383,6 +383,10 @@ class RelationResult(RelationBase):
                 log.debug(answer_indices)
                 log.debug(instance_table)
 
+                assert "obj_id" in instance_table.columns, (
+                    f"`obj_id` not in columns: {', '.join(instance_table.columns)}"
+                )
+
                 instance_table = instance_table.join(answer_indices, on="obj_id")
 
                 # unsort and invert pll scores

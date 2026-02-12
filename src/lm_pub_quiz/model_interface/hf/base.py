@@ -38,9 +38,8 @@ class HFModelInterface(ModelInterface):
         tokenizer: Optional[PreTrainedTokenizerFast] = None,
         device: Union[torch.device, int, str, None] = None,
         batch_size: int = 1,
-        **kw,
     ):
-        super().__init__(**kw)
+        super().__init__()
 
         model_kw = model_kw or {}
         if "device" not in model_kw:
@@ -51,6 +50,9 @@ class HFModelInterface(ModelInterface):
         self.tokenizer = self._get_tokenizer(model=model, tokenizer=tokenizer)
         self.device = self._get_device(device)
         self.batch_size = batch_size
+
+    def get_metadata(self) -> dict[str, Any]:
+        return {"batch_size": self.batch_size, **super().get_metadata()}
 
     @classmethod
     def from_model(

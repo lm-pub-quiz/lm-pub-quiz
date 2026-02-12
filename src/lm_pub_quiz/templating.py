@@ -94,6 +94,10 @@ class Templater:
         # append the remainder of the template.
         text += template[last_match_end:]
 
+        if len(roles["answer"]) == 0:
+            msg = f"Template contains not slot for an answer: '{template}'"
+            raise ValueError(msg)
+
         if self.capitalize:
             text = self.capitalize_text(text)
 

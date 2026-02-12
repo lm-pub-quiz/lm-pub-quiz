@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Iterable, Sequence
 from typing import Any, Optional, Union
 
 from lm_pub_quiz.types import (
@@ -25,15 +25,17 @@ class ModelInterface(ABC):
     @abstractmethod
     def score_statement_options(
         self,
+        statement_options: Iterable[Sequence[str]],
         *,
-        statements: Iterable[Sequence[str]],
-        roles: Optional[Iterable[Sequence[TextRoles]]] = None,
+        text_roles: Optional[Iterable[Sequence[TextRoles]]] = None,
         **kw,
-    ) -> Iterator[Union[ItemTokenScoresAndRoles, ItemScores]]:
+    ) -> Union[Iterable[ItemTokenScoresAndRoles], Iterable[ItemScores]]:
         pass
 
-    def get_result_metadata(self) -> dict[str, Any]:
-        return {}
+    def get_metadata(self) -> dict[str, Any]:
+        return {
+            "model_name": self.model_name,
+        }
 
 
 class PLLModelInterfaceMixin:
@@ -44,26 +46,25 @@ class PLLModelInterfaceMixin:
     @abstractmethod
     def score_statements(
         self,
-        *,
         statements: Iterable[str],
-        roles: Optional[Iterable[TextRoles]] = None,
+        *,
+        text_roles: Optional[Iterable[TextRoles]] = None,
         **kw,
     ) -> Union[Iterable[StatementScore], Iterable[TokenScoresAndRoles]]:
         pass
 
     def score_statement_options(
         self,
+        statement_options: Iterable[Sequence[str]],
         *,
-        statements: Iterable[Sequence[str]],
-        roles: Optional[Iterable[Sequence[TextRoles]]] = None,
+        text_roles: Optional[Iterable[Sequence[TextRoles]]] = None,
         **kw,
     ) -> Union[Iterable[ItemScores], Iterable[ItemTokenScoresAndRoles]]:
         """Join the sets of statements, process each statement, and order the scores according to the inputs."""
 
-        if roles is None:
-            chained = ReversibleChain({"statements": statements})
+        if text_roles is None:
+            chained = ReversibleChain({"statements": statement_options})
         else:
-            chained = ReversibleChain({"statements": statements, "roles": roles})
+            chained = ReversibleChain({"statements": statement_options, "text_roles": text_roles})
 
-        scores = self.score_statements(**chained, **kw)
-        return chained.reverse(scores)
+        return chained.reverse(self.score_statements(**chained, **kw))

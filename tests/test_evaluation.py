@@ -95,7 +95,7 @@ def test_incorrect_template(distilbert):
     evaluator = Evaluator.from_model(model, tokenizer=tokenizer)
 
     with pytest.raises(ValueError):
-        evaluator.evaluate_instance(template="No object slot available", answers=["a", "b"], reduction="sum")
+        evaluator.evaluate_item(template="No object slot available", answers=["a", "b"], reduction="sum")
 
 
 @pytest.mark.parametrize("lazy", [False, True])
@@ -136,10 +136,11 @@ def test_dataset_evaluation(distilbert, request, tmp_path, lazy):
                 assert a is b, f"Identity check failed {id(a)} - {id(b)}"
 
             # all examples should be predicted correctly
-            for _, row in r.instance_table.iterrows():
-                log.info(row)
-
+            for i, row in r.instance_table.iterrows():
                 assert len(row["pll_scores"]) == 3
+
+                assert row["answer_idx"] == (i if r.relation_code == "example_1" else i // 2)
+
                 assert row["answer_idx"] == np.argmax(row["pll_scores"])
 
             assert r.get_metric("accuracy") == 1.0
@@ -294,7 +295,7 @@ def test_dataset_conditional_evaluation(distilbert, request, tmp_path):
     dataset = Dataset.from_path(request.path.parent / "test_data" / "dummy_dataset")
 
     model, tokenizer = distilbert
-    evaluator = Evaluator.from_model(model, tokenizer=tokenizer, conditional=True)
+    evaluator = Evaluator.from_model(model, tokenizer=tokenizer, conditional_score=True, pll_metric="within_word_l2r")
 
     results = evaluator.evaluate_dataset(dataset, batch_size=16, reduction="sum")
     assert isinstance(results, DatasetResults)

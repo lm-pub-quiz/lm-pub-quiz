@@ -11,12 +11,10 @@ def test_templater_without_placeholders():
     template = "Some sentence."
 
     templater = Templater()
-    sentence, spans = templater.replace_placeholders(template=template, subject="Paris", answer="France")
 
-    assert sentence == "Some sentence."
-    assert spans["subject"] == []
-    assert spans["answer"] == []
-    assert len(spans) == 2
+    # No slot for an answer
+    with pytest.raises(ValueError):
+        _ = templater.replace_placeholders(template=template, subject="Paris", answer="France")
 
 
 def test_templater_single_replacement():

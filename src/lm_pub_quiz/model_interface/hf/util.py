@@ -2,12 +2,10 @@
 
 import logging
 import warnings
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 from typing import (
     Callable,
     Optional,
-    Union,
-    overload,
 )
 
 from tqdm.auto import tqdm
@@ -30,8 +28,8 @@ log = logging.getLogger(__name__)
 def derive_token_roles(
     *,
     batch: BatchEncoding,
-    text_roles: Sequence[TextRoles],
-    scoring_masks: Optional[Iterable[ScoringMask]],
+    text_roles: list[TextRoles],
+    scoring_masks: Optional[list[ScoringMask]],
     output_indices: bool,
 ) -> Sequence[TokenRoles]:
     warnings.warn(
@@ -56,41 +54,21 @@ def derive_token_roles(
         ]
 
 
-@overload
-def derive_token_roles_internal(
-    *,
-    batch: Iterable[BatchEncoding],
-    text_roles: Iterable[Sequence[TextRoles]],
-) -> Iterable[Sequence[TokenRoles]]: ...
-
-
-@overload
 def derive_token_roles_internal(
     *,
     batch: BatchEncoding,
-    text_roles: Sequence[TextRoles],
-) -> Sequence[TokenRoles]: ...
-
-
-def derive_token_roles_internal(
-    *,
-    batch: Union[BatchEncoding, Iterable[BatchEncoding]],
-    text_roles: Union[list[TextRoles], Iterable[list[TextRoles]]],
-) -> Union[Sequence[TokenRoles], Iterable[TokenRoles]]:
+    text_roles: list[TextRoles],
+) -> list[TokenRoles]:
     """Derive which tokens belong to the subject, answer, and template.
 
     If the scoring mask is given, the token indices refer to the resulting scores.
     """
-    if isinstance(batch, BatchEncoding):
-        assert isinstance(text_roles, list)
 
-    else:
-        for b, tr in zip(batch, text_roles):
-            yield derive_token_roles_internal(batch=b, text_roles=tr)
-        return
-
-    if not len(batch) == len(text_roles):
-        msg = f"Number of statements in batch ({len(batch)}) and text roles ({len(text_roles)}) does not match."
+    if not len(batch["input_ids"]) == len(text_roles):
+        msg = (
+            f"Number of statements in batch ({len(batch['input_ids'])}) "
+            f"and text roles ({len(text_roles)}) does not match."
+        )
         raise ValueError(msg)
 
     token_roles: list[TokenRoles] = []
@@ -133,7 +111,7 @@ def derive_token_roles_internal(
                 if k != "template":
                     non_template_tokens.update(tokens)
 
-        roles["template"] = [i for i in range(batch.length[statement_index]) if i not in non_template_tokens]
+        roles["template"] = [i for i in range(len(batch["input_ids"][statement_index])) if i not in non_template_tokens]
         token_roles.append(roles)
 
     return token_roles

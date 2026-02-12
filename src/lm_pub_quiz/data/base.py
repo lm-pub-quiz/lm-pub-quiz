@@ -56,7 +56,7 @@ class Item(NamedTuple):
 
     @classmethod
     def from_kw(cls, *, template: str, answers: Sequence[str], subject: Optional[str] = None, **metadata):
-        return (cls, template, answers, subject, metadata)
+        return cls(template=template, answers=answers, subject=subject, metadata=metadata)
 
 
 class DataBase(ABC):

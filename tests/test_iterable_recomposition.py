@@ -2,9 +2,19 @@ from itertools import chain
 
 import pytest
 
-from lm_pub_quiz.util import ReversibleChain, chain_with_sizes, unchain
+from lm_pub_quiz.util import ReversibleChain, chain_with_sizes, tee_unzip, unchain
 
 TEST_INPUTS = [[[1], [2, 3], [4, 5, 6]], [[], [1], []], [[]], [[1], [2]], [[], [], [1]]]
+
+
+def test_tee_unzip():
+    original_a = [1, 2, 3]
+    original_b = [4, 5, 6]
+
+    a, b = tee_unzip(iter(zip(original_a, original_b)), 2)
+
+    assert list(a) == original_a
+    assert list(b) == original_b
 
 
 @pytest.mark.parametrize("inputs", TEST_INPUTS)
@@ -100,7 +110,7 @@ def test_chain_iter_zipped_loop(a, b, expected):
     result = (a + b for a, b in zip(chained["a"], chained["b"]))
 
     # Consume the results
-    for e, (r, inputs) in zip(expected, chained.reverse(result, yield_inputs=True)):
+    for e, (inputs, r) in zip(expected, chained.reverse(result, yield_inputs=True)):
         r_direct = [a_ + b_ for a_, b_ in zip(inputs["a"], inputs["b"])]
         assert e == r_direct
         assert e == r

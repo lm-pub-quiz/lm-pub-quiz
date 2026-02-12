@@ -7,7 +7,7 @@ from typing import Any, Literal, Union, cast, overload
 from torch import Tensor
 from transformers import BatchEncoding
 
-from lm_pub_quiz.types import ItemScores, ItemTokenScoresAndRoles, ScoredToken, T, TokenRoles, V
+from lm_pub_quiz.types import ItemScores, ItemTokenScoresAndRoles, ScoredToken, T, TokenRoles
 
 cache_base_path = Path(os.getenv("LM_PUB_QUIZ_CACHE_ROOT", Path(Path.home(), ".lm-pub-quiz")))
 
@@ -49,26 +49,9 @@ def parse_dumped_raw_results(result: Union[ItemTokenScoresAndRoles, ItemScores])
     return row
 
 
-@overload
-def iter_batches(data_collection: Iterable[V], batch_size: int) -> Iterable[Sequence[V]]: ...
-
-
-@overload
-def iter_batches(data_collection: Tensor, batch_size: int) -> Iterable[Tensor]: ...
-
-
-@overload
-def iter_batches(data_collection: BatchEncoding, batch_size: int) -> Iterable[BatchEncoding]: ...
-
-
-@overload
-def iter_batches(data_collection: dict[T, Iterable[V]], batch_size: int) -> Iterable[dict[T, Sequence[V]]]: ...
-
-
-def iter_batches(
-    data_collection: Union[Iterable[V], Tensor, BatchEncoding, dict[T, Iterable[V]]], batch_size: int
-) -> Union[Iterable[list[V]], Iterable[Tensor], Iterable[BatchEncoding], Iterable[dict[T, list[V]]]]:
+def iter_batches(data_collection: T, batch_size: int) -> Iterable[T]:
     """Yield successive n-sized chunks from tensors in provided dictionary."""
+    assert data_collection is not None
 
     if batch_size < 1:
         msg = "`batch_size` must be at least 1."
@@ -77,15 +60,21 @@ def iter_batches(
     if isinstance(data_collection, BatchEncoding):
         for batch, encodings in zip(
             iter_batches(data_collection.data, batch_size=batch_size),
-            iter_batches(data_collection.encodings, batch_size=batch_size),
+            iter_batches(
+                data_collection.encodings,
+                batch_size=batch_size,
+            )
+            if data_collection.encodings is not None
+            else itertools.repeat(None),
         ):
             yield BatchEncoding(batch, encoding=encodings)
 
-    elif isinstance(data_collection, dict):
+    elif isinstance(data_collection, Mapping):
         keys, values = data_collection.keys(), data_collection.values()
 
-        for batches in zip(iter_batches(v, batch_size=batch_size) for v in values):
-            yield dict(zip(keys, batches))
+        for batch_values in itertools.zip_longest(*(iter_batches(v, batch_size=batch_size) for v in values)):
+            assert len(keys) == len(batch_values)
+            yield dict(zip(keys, batch_values))
 
     elif isinstance(data_collection, Tensor):
         for i in range(0, data_collection.size(0), batch_size):
@@ -107,13 +96,20 @@ def chain_with_sizes(iterable: Iterable[Sequence[T]]) -> tuple[Iterator[int], It
 def unchain(iterable: Iterable[T], *, sizes: Iterable[int]) -> Iterator[Sequence[T]]:
     it: Iterator[T] = iter(iterable)
     for current_size in sizes:
-        yield [next(it) for _ in range(current_size)]
+        seq: Sequence[T] = list(itertools.islice(it, current_size))
+
+        assert len(seq) == current_size, "Iterable consumed before original shape could be reconstructed."
+
+        yield seq
 
 
 def tee_unzip(iterable: Iterable[tuple], n: int = 2) -> tuple[Iterable, ...]:
     iterators = itertools.tee(iterable, n)
 
-    return tuple((t[i] for t in iterators[i]) for i in range(n))
+    def it_select(it, i):
+        return (x[i] for x in it)
+
+    return tuple(it_select(iterators[i], i) for i in range(n))
 
 
 class ReversibleChain(Mapping[str, Iterator]):

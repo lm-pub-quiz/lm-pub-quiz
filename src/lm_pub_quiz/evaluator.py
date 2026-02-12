@@ -28,7 +28,7 @@ from lm_pub_quiz.types import (
     PathLike,
     TextRoles,
 )
-from lm_pub_quiz.util import ReversibleChain, parse_dumped_raw_results
+from lm_pub_quiz.util import parse_dumped_raw_results, tee_unzip
 
 tqdm.pandas()
 
@@ -84,34 +84,38 @@ class Evaluator:
 
         log.debug("Evaluating `%s` on `%s`", self.model_interface.model_name, dataset.name)
 
-        relations = tqdm(dataset, total=len(dataset), unit="relations", desc=f"Dataset {dataset.name}")
+        for relation in tqdm(dataset, total=len(dataset), unit="relations", desc=f"Dataset {dataset.name}"):
+            try:
+                log.info("Evaluating `%s` on %s.", self.model_interface.model_name, relation)
+                relation_result = self.evaluate_relation(
+                    relation,
+                    template_index=template_index,
+                    subsample=subsample,
+                    create_instance_table=create_instance_table,
+                    metric=metric,
+                    **kw,
+                )
+                relation_result._metadata.update(self.get_result_metadata(dataset=dataset))
 
-        relation_results = relation_result = self.evaluate_relation(
-            relations,
-            template_index=template_index,
-            subsample=subsample,
-            create_instance_table=create_instance_table,
-            metric=metric,
-            **kw,
-        )
+                if save_path is not None:
+                    log.debug("Saving")
+                    relation_result = relation_result.saved(save_path, fmt=fmt)
 
-        for relation_result in relation_results:
-            log.info(
-                "Evaluation of `%s` on %s complete.", self.model_interface.model_name, relation_result.relation_code
-            )
-            relation_result._metadata.update(self.get_result_metadata(dataset=dataset))
-
-            if save_path is not None:
-                log.debug("Saving results for relation %s.", relation_result.relation_code)
-                dataset_results.append(relation_result.saved(save_path, fmt=fmt))
-            else:
                 dataset_results.append(relation_result)
 
+            except RuntimeError as e:
+                logging.error(
+                    "Encountered RuntimeException while evaluating `%s` on %s.",
+                    self.model_interface.model_name,
+                    relation,
+                )
+                log.exception(e)
+                log.warning("Continuing execution (you may want to rerun relation %s)...", relation)
+                continue
         log.info("Completed the evaluation on dataset `%s`.", dataset.name)
 
         return dataset_results
 
-    @overload
     def evaluate_relation(
         self,
         relation: Relation,
@@ -121,118 +125,91 @@ class Evaluator:
         create_instance_table: bool = True,
         metric: Optional[MultiMetricSpecification] = None,
         **kw,
-    ) -> RelationResult: ...
+    ) -> RelationResult:
+        items = relation.get_items(subsample=subsample, template_index=template_index)
 
-    @overload
-    def evaluate_relation(
-        self,
-        relation: Iterable[Relation],
-        *,
-        template_index: Union[int, Sequence[int], None] = None,
-        subsample: Optional[int] = None,
-        create_instance_table: bool = True,
-        metric: Optional[MultiMetricSpecification] = None,
-        **kw,
-    ) -> Iterator[RelationResult]: ...
+        def f(item):
+            log.debug("Item in relation %s: %s", relation.relation_code, str(item))
+            return item
 
-    def evaluate_relation(
-        self,
-        relation: Union[Relation, Iterable[Relation]],
-        *,
-        template_index: Union[int, Sequence[int], None] = None,
-        subsample: Optional[int] = None,
-        create_instance_table: bool = True,
-        metric: Optional[MultiMetricSpecification] = None,
-        **kw,
-    ) -> Union[RelationResult, Iterator[RelationResult]]:
-        if isinstance(relation, Relation):
-            # Single relation passed: Process the relation and return single RelationResult object
-            return next(
-                self.evaluate_relation(
-                    [relation],
-                    template_index=template_index,
-                    subsample=subsample,
-                    create_instance_table=create_instance_table,
-                    metric=metric,
-                )
+        items = map(f, items)
+
+        item_iterators = itertools.tee(items, 2)
+
+        item_results = self.evaluate_item(item_iterators[0], **kw)
+
+        evaluated_items: list[dict] = []
+        # Prepare metrics
+        metrics: list[RelationMetric] = []
+        if metric is not None:
+            if isinstance(metric, (str, RelationMetric)) or (
+                isinstance(metric, type) and issubclass(metric, RelationMetric)
+            ):
+                metric = (metric,)
+
+            for m in metric:
+                m_obj: RelationMetric = RelationMetric.create_metric(m)
+                m_obj.reset()
+                metrics.append(m_obj)
+
+        for item, result in zip(item_iterators[1], item_results):
+            formatted_result = parse_dumped_raw_results(result)
+
+            log.debug(
+                "Evaluated %s\n%s",
+                str(item),
+                "\n".join(f"- {k}: {v}" for k,v in formatted_result.items())
             )
 
-        items_rel_iterator, rel_iterator = itertools.tee(iter(relation), 2)
+            row = {**formatted_result, **item.to_dict()}
 
-        chained = ReversibleChain(
-            {"items": (rel.get_items(subsample=subsample, template_index=template_index) for rel in items_rel_iterator)}
-        )
 
-        results = self.evaluate_item(iter(chained["items"]), **kw)
-
-        # Original Call
-        # pll_scores = self.evaluate_instance(
-        #    template=template,
-        #    answers=relation.answer_space.tolist(),
-        #    subject=str(row["sub_label"]),
-        #    reduction=reduction,
-        #    batch_size=batch_size,
-        # )
-
-        for instances_results, rel in zip(chained.reverse(results), rel_iterator):
-            evaluated_instances: list[dict] = []
-            # Prepare metrics
-            metrics: list[RelationMetric] = []
-            if metric is not None:
-                if isinstance(metric, (str, RelationMetric)) or (
-                    isinstance(metric, type) and issubclass(metric, RelationMetric)
-                ):
-                    metric = (metric,)
-
-                for m in metric:
-                    m_obj: RelationMetric = RelationMetric.create_metric(m)
-                    m_obj.reset()
-                    metrics.append(m_obj)
-
-            for result in instances_results:
-                row = parse_dumped_raw_results(result)
-
-                # update metrics with the row
-                for m in metrics:
-                    m.add_instance(row)
-
-                if create_instance_table:
-                    # add row to resulting
-                    evaluated_instances.append(row)
-
-            relation_result = RelationResult(
-                relation_code=rel.relation_code,
-                instance_table=None,
-                answer_space=rel.answer_space.copy(),
-                metadata={
-                    "templates": rel.templates,
-                    "template_index": template_index,
-                    "model_name_or_path": self.model_interface.model_name,
-                    "num_original_instances": len(rel),
-                    "subsampled": subsample,
-                    "time_start": datetime.now(tz=timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M:%S"),
-                },
-                relation_info=rel.relation_info(),
-            )
+            # update metrics with the row
+            for m in metrics:
+                m.add_instance(row)
 
             if create_instance_table:
-                log.debug("Creating instance table")
-                relation_result._instance_table = pd.DataFrame(
-                    evaluated_instances,
-                )
-                relation_result._instance_table.set_index(["instance_index", "template_index"])
+                # add row to resulting
+                evaluated_items.append(row)
 
-            for m in metrics:
-                relation_result.metric_values.update(m.compute())
+        relation_result = RelationResult(
+            relation_code=relation.relation_code,
+            instance_table=None,
+            answer_space=relation.answer_space.copy(),
+            metadata={
+                "templates": relation.templates,
+                "template_index": template_index,
+                "model_name_or_path": self.model_interface.model_name,
+                "num_original_instances": len(relation),
+                "subsampled": subsample,
+                "time_start": datetime.now(tz=timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M:%S"),
+                "reduction": kw.get("reduction", "default"),
+                **self.model_interface.get_metadata(),
+            },
+            relation_info=relation.relation_info(),
+        )
 
-            relation_result._metadata.update(
-                {
-                    "time_end": datetime.now(tz=timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M:%S"),
-                    **self.get_result_metadata(),
-                }
+        if create_instance_table:
+            log.debug("Creating table with %d items.", len(evaluated_items))
+
+            assert len(evaluated_items) > 0, "No items evaluated."
+
+            relation_result._instance_table = pd.DataFrame(
+                evaluated_items,
             )
+            relation_result._instance_table.set_index(["instance_index", "template_index"])
 
-            yield relation_result
+        for m in metrics:
+            relation_result.metric_values.update(m.compute())
+
+        relation_result._metadata.update(
+            {
+                "time_end": datetime.now(tz=timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M:%S"),
+                **self.get_result_metadata(),
+            }
+        )
+
+        return relation_result
 
     # Single item passed
     @overload
@@ -282,7 +259,7 @@ class Evaluator:
         subject: Optional[str] = None,
         print_ranking: bool = False,
         **kw,
-    ) -> Union[ItemScores, ItemTokenScoresAndRoles, Iterator[ItemScores], Iterator[ItemTokenScoresAndRoles]]:
+    ) -> Union[ItemScores, ItemTokenScoresAndRoles, Iterable[ItemScores], Iterable[ItemTokenScoresAndRoles]]:
         """Return the scores for each of the answer options.
 
 
@@ -314,18 +291,12 @@ class Evaluator:
         else:
             processed_items: Iterable[tuple[list[str], list[TextRoles]]] = map(self.templater.process_item, item)
 
-            statement_iterator, role_iterator = itertools.tee(processed_items, 2)
+            statement_options, text_roles = tee_unzip(processed_items, 2)
 
-            statements, targets = ReversibleChain(
-                {"statements": (s[0] for s in statement_iterator), "targets": (t[1] for t in role_iterator)}
-            )
-
-            return iter(
-                self.model_interface.score_statement_options(
-                    statements=statements,
-                    targets=targets,
-                    **kw,
-                )
+            return self.model_interface.score_statement_options(
+                statement_options,
+                text_roles=text_roles,
+                **kw,
             )
 
     def get_result_metadata(self, **kw) -> dict[str, Any]:

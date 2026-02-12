@@ -229,7 +229,7 @@ class Relation(RelationBase):
     def get_items(
         self,
         *,
-        template_index: Union[int, list[int], None] = None,
+        template_index: Union[int, Sequence[int], None] = None,
         subsample: Optional[int] = None,
         use_tqdm: bool = True,
     ) -> Iterator[Item]:
@@ -242,7 +242,13 @@ class Relation(RelationBase):
 
         instances = (
             Item.from_kw(
-                **row.to_dict(), template=self.templates[t_index], template_index=t_index, instance_index=instance_index
+                subject=(row_dict := row.to_dict()).pop("sub_label"),
+                answers=self.answer_space.tolist(),
+                template=self.templates[t_index],
+                template_index=t_index,
+                instance_index=instance_index,
+                answer_idx=row_dict.pop("answer_idx"),
+                **row_dict,
             )
             for instance_index, row in df.iterrows()
             for t_index in template_index

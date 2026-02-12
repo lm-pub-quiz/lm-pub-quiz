@@ -2,7 +2,7 @@ import itertools
 import logging
 from collections.abc import Iterable, Sequence
 from contextlib import contextmanager
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import torch
 from tqdm.auto import tqdm
@@ -35,6 +35,13 @@ class CLMInterface(PLLModelInterfaceMixin, HFModelInterface):
         self.ensure_bos_token_added: bool = ensure_bos_token_added
         self.conditional_score: bool = conditional_score
         self._bos_token_warning_issued: bool = False
+
+    def get_metadata(self) -> dict[str, Any]:
+        return {
+            "ensure_bos_token_added": self.ensure_bos_token_added,
+            "conditional_score": self.conditional_score,
+            **super().get_metadata(),
+        }
 
     def default_scoring_mask(self, batched_statements: BatchEncoding) -> Sequence[ScoringMask]:
         return [(~mask.bool()).tolist() for mask in batched_statements["special_tokens_mask"]]
@@ -100,7 +107,7 @@ class CLMInterface(PLLModelInterfaceMixin, HFModelInterface):
                 msg = "When using conditional scoring, roles (of the text segments) need to be passed."
                 raise ValueError(msg)
 
-            token_roles = derive_token_roles_internal(batch=batch, text_roles=roles)
+            token_roles = derive_token_roles_internal(batch=list(batch), text_roles=list(roles))
 
             for i, tr in enumerate(token_roles):
                 # In autoregressive models, we can exclude everything leading up to the first part of the answer
@@ -119,9 +126,9 @@ class CLMInterface(PLLModelInterfaceMixin, HFModelInterface):
 
     def score_statements(
         self,
-        *,
         statements: Iterable[str],
-        roles: Optional[Iterable[TextRoles]] = None,
+        *,
+        text_roles: Optional[Iterable[TextRoles]] = None,
         batch_size: Optional[int] = None,
         **kw,
     ) -> Union[Iterable[TokenScoresAndRoles], Iterable[StatementScore]]:
@@ -140,10 +147,12 @@ class CLMInterface(PLLModelInterfaceMixin, HFModelInterface):
         batch: BatchEncoding
         scoring_masks: Sequence[ScoringMask]
 
-        if roles is None:
+        if text_roles is None:
             batches = zip(iter_batches(statements, batch_size=batch_size), itertools.repeat(None))
         else:
-            batches = zip(iter_batches(statements, batch_size=batch_size), iter_batches(roles, batch_size=batch_size))
+            batches = zip(
+                iter_batches(statements, batch_size=batch_size), iter_batches(text_roles, batch_size=batch_size)
+            )
 
         for statement_batch, role_batch in batches:
             if role_batch is not None:
@@ -157,7 +166,7 @@ class CLMInterface(PLLModelInterfaceMixin, HFModelInterface):
             )
 
             if role_batch_list is not None:
-                token_roles_internal = derive_token_roles_internal(batch=batch, text_roles=role_batch_list)
+                token_roles_internal = derive_token_roles_internal(batch=batch, text_roles=list(role_batch_list))
 
             scoring_masks = self.default_scoring_mask(batch)
 
@@ -197,13 +206,16 @@ class CLMInterface(PLLModelInterfaceMixin, HFModelInterface):
                     list(zip(tokens, token_scores)) for tokens, token_scores in zip(decoded_tokens, batch_token_scores)
                 ]
 
-                token_roles_output = [
-                    remap_token_roles(
-                        token_roles_internal=roles,
-                        scoring_mask=mask,
-                    )
-                    for mask, roles in zip(scoring_masks, token_roles_internal)
-                ]
+                if role_batch is not None:
+                    token_roles_output = [
+                        remap_token_roles(
+                            token_roles_internal=roles,
+                            scoring_mask=mask,
+                        )
+                        for mask, roles in zip(scoring_masks, token_roles_internal)
+                    ]
+                else:
+                    token_roles_output = [{} for _ in scoring_masks]
 
                 yield from zip(scored_tokens, token_roles_output)
 
