@@ -327,7 +327,7 @@ def test_dataset_conditional_evaluation(distilbert, request, tmp_path):
             [-8.7051823139, -10.3667740822, -8.5194358295],
             [-11.9875342846, -13.645191431, -7.3466205974],
             [-11.2440989017, -13.2864718437, -8.2137057148],
-        ]
+        ],
     }
 
     r: RelationResult
