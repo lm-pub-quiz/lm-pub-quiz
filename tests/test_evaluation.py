@@ -274,7 +274,7 @@ def test_dataset_conditional_evaluation(distilbert, request, tmp_path):
     dataset = Dataset.from_path(request.path.parent / "test_data" / "dummy_dataset")
 
     model, tokenizer = distilbert
-    evaluator = Evaluator.from_model(model, tokenizer=tokenizer, conditional=True)
+    evaluator = Evaluator.from_model(model, tokenizer=tokenizer, conditional_score=True)
 
     results = evaluator.evaluate_dataset(dataset, batch_size=16, reduction="sum")
     assert isinstance(results, DatasetResults)
