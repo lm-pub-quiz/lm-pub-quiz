@@ -335,7 +335,7 @@ class RelationResult(RelationBase):
             if "results" in instance_table:
                 # Non-reduced format
                 answer_space = cls.answer_space_from_instance_table(instance_table)
-                instance_table["answer_idx"] = instance_table["obj_id"].apply(lambda x: answer_space.index.get_loc(x))
+                instance_table["answer_idx"] = instance_table["obj_id"].apply(answer_space.index.get_loc)
 
                 duplicated = answer_space.duplicated()
                 if duplicated.any():
@@ -363,7 +363,7 @@ class RelationResult(RelationBase):
                     else:
                         warnings.warn("Inconsistent number of predictions", stacklevel=1)
 
-                new_representation = instance_table["results"].apply(lambda x: parse_dumped_raw_results(x))
+                new_representation = instance_table["results"].apply(parse_dumped_raw_results)
                 new_columns = ["tokens", "pll_scores", "sub_indices", "obj_indices", "template_indices"]
                 instance_table[new_columns] = pd.DataFrame(new_representation.tolist(), index=instance_table.index)
 
