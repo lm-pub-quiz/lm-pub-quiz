@@ -29,7 +29,7 @@ def test_tyq_evaluator(distilbert, request, tmp_path):
 
     results = DatasetResults.from_path(tmp_path)
 
-    expected_scors = [
+    expected_scores = [
         [
             [-10.273433685302734, -10.768592834472656, -10.525314331054688],
             [-10.644917488098145, -9.782225608825684, -10.903377532958984],
@@ -46,9 +46,13 @@ def test_tyq_evaluator(distilbert, request, tmp_path):
     ]
 
     r: RelationResult
-    for r, exp_scores in zip(results, expected_scors):
+    for r, exp_scores in zip(results, expected_scores):
+        instance_table = r.instance_table
+
+        for i, row in instance_table.iterrows():
+            assert all(a == pytest.approx(b) for a, b in zip(row["pll_scores"], exp_scores[i]))
+
         if r.relation_code in ("example_1"):
-            instance_table = r.instance_table
 
             log.debug("Result for relation %s:\n%s", r.relation_code, str(instance_table))
 
@@ -62,8 +66,7 @@ def test_tyq_evaluator(distilbert, request, tmp_path):
             assert r.get_metadata("dataset_name") == "dummy_dataset"
             assert "distilbert" in r.get_metadata("model_name_or_path")
 
-        for i, row in instance_table.iterrows():
-            assert (a == pytest.approx(b) for a, b in zip(row["pll_scores"], exp_scores[i]))
+
 
 
 def test_reduction_functionality(distilbert):
