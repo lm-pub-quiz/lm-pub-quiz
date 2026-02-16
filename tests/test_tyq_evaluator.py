@@ -58,6 +58,7 @@ def test_tyq_evaluator(distilbert, request, tmp_path):
                 f"Expected {row['pll_scores']!s} vs found: {exp_scores[i]!s}"
             )
 
+
         if r.relation_code in ("example_1"):
             log.debug("Result for relation %s:\n%s", r.relation_code, str(instance_table))
 
