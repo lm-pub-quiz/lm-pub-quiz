@@ -155,7 +155,6 @@ class Evaluator:
         for item, result in zip(item_iterators[1], item_results):
             formatted_result = parse_dumped_raw_results(result)
 
-
             log.debug("Evaluated %s\n%s", str(item), "\n".join(f"- {k}: {v}" for k, v in formatted_result.items()))
 
             row = {**formatted_result, **item.to_dict()}
