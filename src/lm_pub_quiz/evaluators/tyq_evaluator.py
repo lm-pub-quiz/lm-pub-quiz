@@ -88,7 +88,10 @@ class TyQEvaluator(BaseEvaluator):
         for length, token_ids in zip(encoded_answers.length, encoded_answers.input_ids):
             sentence_id: int = required_lens.index(length)
 
-            answer_score = all_log_probs[sentence_id][:, token_ids].mean().item()
+            assert len(token_ids) == length
+            assert all_log_probs[sentence_id].size(0) == length
+
+            answer_score = all_log_probs[sentence_id][torch.arange(length), token_ids].mean().item()
             scores.append(answer_score)
 
         # return the resulting scores
