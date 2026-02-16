@@ -83,7 +83,7 @@ class TyQModelInterface(HFModelInterface):
                     reduced_batch_index = num_tokens_map[num]
 
                     assert (reduced_batch[reduced_batch_index]["input_ids"] == input_ids).all()
-                    assert (reduced_batch[reduced_batch_index]["masked_tokens"] == roles["answer"])
+                    assert reduced_batch[reduced_batch_index]["masked_tokens"] == roles["answer"]
 
                 all_labels.append(labels)
                 reduced_batch_indeces.append(reduced_batch_index)
@@ -108,6 +108,10 @@ class TyQModelInterface(HFModelInterface):
                     reduced_batch_index, reduced_batch[reduced_batch_index]["masked_tokens"], all_labels[batch_index]
                 ]
 
+                log.debug("Option %d: %s", batch_index, str(scores))
+
                 option_scores.append(scores.mean().item())
+
+            log.debug(str(option_scores))
 
             yield option_scores
