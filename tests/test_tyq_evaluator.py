@@ -55,11 +55,8 @@ def test_tyq_evaluator(distilbert, request, tmp_path):
         assert instance_table is not None
 
         for i, row in instance_table.iterrows():
-            assert all(a == pytest.approx(b) for a, b in zip(row["pll_scores"], exp_scores[i])), (
-                f"Actual {row['pll_scores']!s} vs expected: {exp_scores[i]!s}"
-            )
             for a, b in zip(row["pll_scores"], exp_scores[i]):
-                assert a == pytest.approx(b)
+                assert a == pytest.approx(b), f"Actual {row['pll_scores']!s} vs expected: {exp_scores[i]!s}"
 
         if r.relation_code in ("example_1"):
             log.debug("Result for relation %s:\n%s", r.relation_code, str(instance_table))
