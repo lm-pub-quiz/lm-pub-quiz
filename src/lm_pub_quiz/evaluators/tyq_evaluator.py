@@ -48,6 +48,9 @@ class TyQEvaluator(BaseEvaluator):
         self, *, template: str, answers: Iterable[str], subject: Optional[str], batch_size: int = 1
     ) -> ReducedReturnFormat:
         # tokenize the answers
+        if self.capitalize and template.startswith(self._answer_placeholder):
+            answers = (self.capitalize_text(a) for a in answers)
+
         encoded_answers = self.tokenizer(list(answers), return_length=True, padding=False, add_special_tokens=False)
 
         required_lens = list(set(encoded_answers.length))

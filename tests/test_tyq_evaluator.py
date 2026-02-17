@@ -36,12 +36,12 @@ def test_tyq_evaluator(distilbert, request, tmp_path):
             [-9.397379, -7.905240, -7.342500],
         ],
         [
-            [-5.229086, -6.906293, -6.963057],
-            [-4.858855, -5.520167, -6.597703],
-            [-5.946332, -5.149725, -7.443352],
-            [-5.943000, -5.991855, -7.075008],
-            [-5.580876, -6.254202, -6.162636],
-            [-5.657991, -6.391297, -6.579411],
+            [-5.399512, -7.076719, -7.062878],
+            [-5.234767, -5.896080, -6.817871],
+            [-6.116759, -5.320151, -7.580444],
+            [-6.166567, -6.215422, -7.152047],
+            [-6.133464, -6.806790, -6.393774],
+            [-6.159425, -6.892731, -6.757021],
         ],
     ]
 
@@ -52,7 +52,8 @@ def test_tyq_evaluator(distilbert, request, tmp_path):
         assert instance_table is not None
 
         for i, row in instance_table.iterrows():
-            assert all(a == pytest.approx(b) for a, b in zip(row["pll_scores"], exp_scores[i]))
+            for a, b in zip(row["pll_scores"], exp_scores[i]):
+                assert a == pytest.approx(b)
 
         if r.relation_code in ("example_1"):
             log.debug("Result for relation %s:\n%s", r.relation_code, str(instance_table))
