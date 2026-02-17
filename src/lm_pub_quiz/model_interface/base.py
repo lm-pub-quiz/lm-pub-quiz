@@ -20,6 +20,9 @@ class ModelInterface(ABC):
     @classmethod
     @abstractmethod
     def from_model(cls, model: Any, **kw) -> "ModelInterface":
+        """Create a `ModelInterface` from the given parameters.
+
+        Load the model, tokenizer, etc. and instantiate a `ModelInterface`."""
         pass
 
     @abstractmethod
@@ -30,6 +33,10 @@ class ModelInterface(ABC):
         text_roles: Optional[Iterable[Sequence[TextRoles]]] = None,
         **kw,
     ) -> Union[Iterable[ItemTokenScoresAndRoles], Iterable[ItemScores]]:
+        """Score sets of text options.
+
+        The `ModelInterface` itself is resonsible for batching the requests.
+        """
         pass
 
     def get_metadata(self) -> dict[str, Any]:
@@ -51,6 +58,7 @@ class PLLModelInterfaceMixin:
         text_roles: Optional[Iterable[TextRoles]] = None,
         **kw,
     ) -> Union[Iterable[StatementScore], Iterable[TokenScoresAndRoles]]:
+        """Score individual texts (independent of the other options)."""
         pass
 
     def score_statement_options(
