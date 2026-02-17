@@ -267,8 +267,10 @@ class Dataset(DatasetBase[Relation]):
     Usage:
         The prefferred way to load the BEAR knowledge probe is to load it by name:
 
-        >>> from lm_pub_quiz import Dataset
-        >>> dataset = Dataset.from_name("BEAR")
+        ```python
+        from lm_pub_quiz import Dataset
+        dataset = Dataset.from_name("BEAR")
+        ```
     """
 
     def __init__(self, relations: list[Relation], path: PathLike, name: Optional[str] = None):
