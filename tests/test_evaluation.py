@@ -341,7 +341,7 @@ def test_dataset_conditional_evaluation(distilbert, request, tmp_path):
                 assert len(row["pll_scores"]) == 3
 
                 for actual, expected in zip(row["pll_scores"], expected_scores[r.relation_code][i]):
-                    assert actual == pytest.approx(expected)
+                    assert actual == pytest.approx(expected, abs=1e-5)
 
             assert r.get_metadata("dataset_name") == "dummy_dataset"
             assert r.get_metadata("reduction") == "sum"

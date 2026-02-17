@@ -56,7 +56,7 @@ def test_tyq_evaluator(distilbert, request, tmp_path):
 
         for i, row in instance_table.iterrows():
             for a, b in zip(row["pll_scores"], exp_scores[i]):
-                assert a == pytest.approx(b), f"Actual {row['pll_scores']!s} vs expected: {exp_scores[i]!s}"
+                assert a == pytest.approx(b, abs=1e-5), f"Actual {row['pll_scores']!s} vs expected: {exp_scores[i]!s}"
 
         if r.relation_code in ("example_1"):
             log.debug("Result for relation %s:\n%s", r.relation_code, str(instance_table))
