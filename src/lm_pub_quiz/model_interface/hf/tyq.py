@@ -55,7 +55,7 @@ class TyQModelInterface(HFModelInterface):
             reduced_batch: list[dict[str, Any]] = []
             num_tokens_map: dict[int, int] = {}
 
-            reduced_batch_indeces: list[int] = []
+            reduced_batch_indices: list[int] = []
 
             all_labels: list[torch.Tensor] = []
 
@@ -86,7 +86,7 @@ class TyQModelInterface(HFModelInterface):
                     assert reduced_batch[reduced_batch_index]["masked_tokens"] == roles["answer"]
 
                 all_labels.append(labels)
-                reduced_batch_indeces.append(reduced_batch_index)
+                reduced_batch_indices.append(reduced_batch_index)
 
             # Process the model input
             representatives = [d["representative"] for d in reduced_batch]
@@ -103,12 +103,15 @@ class TyQModelInterface(HFModelInterface):
 
             option_scores = []
 
-            for batch_index, reduced_batch_index in enumerate(reduced_batch_indeces):
+            for batch_index, reduced_batch_index in enumerate(reduced_batch_indices):
                 scores = batch_preds[
                     reduced_batch_index, reduced_batch[reduced_batch_index]["masked_tokens"], all_labels[batch_index]
                 ]
 
-                log.debug("Option %d: %s", batch_index, str(scores))
+                log.debug("Option %d -> input %d", batch_index, reduced_batch_index)
+                log.debug("Label tokens: %s", str(all_labels[batch_index]))
+                log.debug("Input tokens: %s", str(reduced_batch[reduced_batch_index]["input_ids"]))
+                log.debug("Scores: %s", str(scores))
 
                 option_scores.append(scores.mean().item())
 
