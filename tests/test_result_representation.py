@@ -143,8 +143,8 @@ def test_old_style_results_non_reduced(request):
         assert isinstance(instance_table[f"{role}_indices"].iloc[0][0], list)
         assert isinstance(instance_table[f"{role}_indices"].iloc[0][1], list)
 
-    assert isinstance(instance_table["tokens"].iloc[0][0], list)
-    assert isinstance(instance_table["tokens"].iloc[0][1], list)
+    assert isinstance(instance_table["tokens"].iloc[0][0], (tuple, list))
+    assert isinstance(instance_table["tokens"].iloc[0][1], (tuple, list))
 
     # The indices together should add up to the total length of the predicted statement
     assert sum(len(instance_table[f"{role}_indices"].iloc[0][1]) for role in ("template", "sub", "obj")) == len(

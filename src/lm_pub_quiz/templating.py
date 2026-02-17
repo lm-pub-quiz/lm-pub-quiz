@@ -2,16 +2,14 @@ import logging
 import re
 from typing import Optional
 
-from lm_pub_quiz.evaluators.util import BaseMixin
-from lm_pub_quiz.types import Span, SpanRoles
+from lm_pub_quiz.data.base import Item
+from lm_pub_quiz.types import TextRoles, TextSelection
 
 log = logging.getLogger(__name__)
 
 
-class Templater(BaseMixin):
-    def __init__(self, *, subject_placeholder="[X]", answer_placeholder="[Y]", capitalize: bool = True, **kw):
-        super().__init__(**kw)
-
+class Templater:
+    def __init__(self, *, subject_placeholder="[X]", answer_placeholder="[Y]", capitalize: bool = True):
         self._subject_placeholder = subject_placeholder
         self._answer_placeholder = answer_placeholder
         self.capitalize: bool = capitalize
@@ -34,7 +32,7 @@ class Templater(BaseMixin):
         template: str,
         subject: Optional[str],
         answer: Optional[str],
-    ) -> tuple[str, SpanRoles]:
+    ) -> tuple[str, TextRoles]:
         """Replace all placeholders in the template with the respective values.
 
         Parameters:
@@ -49,7 +47,7 @@ class Templater(BaseMixin):
         text: str = ""
 
         # initialize dictionary with final spans
-        spans: SpanRoles = {
+        roles: TextRoles = {
             "subject": [],
             "answer": [],
         }
@@ -63,15 +61,15 @@ class Templater(BaseMixin):
             key = match.group()
 
             value: Optional[str]
-            span_list: list[Span]
+            span_list: TextSelection
 
             if key == self._subject_placeholder:
                 value = subject
-                span_list = spans["subject"]
+                span_list = roles["subject"]
 
             elif key == self._answer_placeholder:
                 value = answer
-                span_list = spans["answer"]
+                span_list = roles["answer"]
 
             else:
                 msg = f"Unkown placeholder found: {key}"
@@ -96,7 +94,25 @@ class Templater(BaseMixin):
         # append the remainder of the template.
         text += template[last_match_end:]
 
+        if len(roles["answer"]) == 0:
+            msg = f"Template contains not slot for an answer: '{template}'"
+            raise ValueError(msg)
+
         if self.capitalize:
             text = self.capitalize_text(text)
 
-        return text, spans
+        return text, roles
+
+    def process_item(self, item: Item) -> tuple[list[str], list[TextRoles]]:
+        texts, targets = [], []
+
+        for answer in item.answers:
+            text, roles = self.replace_placeholders(
+                template=item.template,
+                answer=answer,
+                subject=item.subject,
+            )
+            texts.append(text)
+            targets.append(roles)
+
+        return texts, targets

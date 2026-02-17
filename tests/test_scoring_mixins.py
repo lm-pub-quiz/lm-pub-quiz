@@ -1,7 +1,11 @@
+import logging
+
 import pytest
 
-from lm_pub_quiz import Evaluator, MaskedLMEvaluator
-from lm_pub_quiz.evaluators.scoring_mixins import MaskedLMScoringMixin
+from lm_pub_quiz import Evaluator
+from lm_pub_quiz.model_interface.hf import MLMInterface
+
+log = logging.getLogger(__name__)
 
 
 def test_answer_l2r_word_l2r(distilbert):
@@ -10,14 +14,14 @@ def test_answer_l2r_word_l2r(distilbert):
     model, tokenizer = distilbert
     evaluator = Evaluator.from_model(model, tokenizer=tokenizer, pll_metric="answer_l2r+word_l2r")
 
-    assert isinstance(evaluator, MaskedLMEvaluator)
+    assert isinstance(evaluator.model_interface, MLMInterface)
 
     subject = "traveler"
     template = "The [X] lost the [Y]."
     answers = ["bet", "souvenir", "Hitchhiker's Guide to the Galaxy"]
 
     result, indices = zip(
-        *evaluator.score_answers(
+        *evaluator.evaluate_item(
             template=template,
             answers=answers,
             subject=subject,
@@ -41,9 +45,9 @@ def test_answer_l2r_word_l2r(distilbert):
         result[2][i][1] for i in range(5, 15)
     )  # bet > so (pll instead of surprisal)
 
-    statements, span_roles = zip(
+    statements, text_roles = zip(
         *(
-            evaluator.replace_placeholders(
+            evaluator.templater.replace_placeholders(
                 template=template,
                 subject=subject,
                 answer=a,
@@ -52,32 +56,28 @@ def test_answer_l2r_word_l2r(distilbert):
         )
     )
 
-    batch, scoring_masks = evaluator.encode(
+    batch = evaluator.model_interface.preprocess_statements(
         statements=statements,
-        span_roles=span_roles,
+        text_roles=text_roles,
     )
 
-    token_roles_internal = evaluator._derive_token_roles_internal(batch=batch, span_roles=span_roles)
-
-    extended_batch = evaluator.create_masked_batch(
+    extended_batch = evaluator.model_interface.create_masked_requests(
         batch,
-        scoring_masks=scoring_masks,
-        token_roles_internal=token_roles_internal,
     )
 
-    assert extended_batch["input_ids"].size(0) == 7 + 9 + 16
-    assert extended_batch["input_ids"].size(1) == 16 + 2
+    assert len(extended_batch["input_ids"]) == 7 + 9 + 16
+    assert len(extended_batch["input_ids"][-1]) == 16 + 2
 
     i = 7 + 9 + 6  # Third answer, second token of the answer
 
     # First token (5 + offset of one due to the [CLS]-token) was already queried: Not masked
-    assert extended_batch["input_ids"][i][5 + 1] != evaluator.mask_token
+    assert extended_batch["input_ids"][i][5 + 1] != evaluator.model_interface.mask_token
 
     # The token itself as well as the following tokens (within the answer) are masked
-    assert (extended_batch["input_ids"][i][6 + 1 : 15 + 1] == evaluator.mask_token).all()
+    assert all(t == evaluator.model_interface.mask_token for t in extended_batch["input_ids"][i][6 + 1 : 15 + 1])
 
     # The remaining tokens should not be masked
-    assert (extended_batch["input_ids"][i][15 + 1 :] != evaluator.mask_token).all()
+    assert all(t != evaluator.model_interface.mask_token for t in extended_batch["input_ids"][i][15 + 1 :])
 
 
 def test_sentence_l2r(distilbert):
@@ -85,34 +85,37 @@ def test_sentence_l2r(distilbert):
 
     evaluator = Evaluator.from_model(model, tokenizer=tokenizer, pll_metric="sentence_l2r")
 
-    assert isinstance(evaluator, MaskedLMEvaluator)
+    assert isinstance(evaluator.model_interface, MLMInterface)
 
     statements = ["The traveler lost the souvenir."]
 
-    batch, scoring_masks = evaluator.encode(
+    batch = evaluator.model_interface.preprocess_statements(
         statements=statements,
-        span_roles=None,  # type: ignore[arg-type]
     )
 
-    extended_batch = evaluator.create_masked_batch(
+    extended_batch = evaluator.model_interface.create_masked_requests(
         batch,
-        scoring_masks=scoring_masks,
-        token_roles_internal=None,
     )
 
-    assert extended_batch["input_ids"].size(0) == 9
+    assert len(extended_batch["input_ids"]) == 9
 
     j = 0
-    for i, m in enumerate(scoring_masks[0]):
+    for i, m in enumerate(extended_batch["scoring_masks"][0]):
         if not m:
             continue
 
-        assert (extended_batch["input_ids"][j][i:] == evaluator.mask_token).all()
-        assert (extended_batch["input_ids"][j][:i] != evaluator.mask_token).all()
+        log.debug("i=%d, j=%d: %s", i, j, extended_batch["input_ids"][j])
+
+        assert all(t == evaluator.model_interface.mask_token for t in extended_batch["input_ids"][j][i:]), str(
+            extended_batch["input_ids"][j][i:]
+        )
+        assert all(t != evaluator.model_interface.mask_token for t in extended_batch["input_ids"][j][:i]), str(
+            extended_batch["input_ids"][j][:i]
+        )
 
         j += 1
 
-    scores = evaluator.score_statements(batch, scoring_masks=None)[0]
+    scores, _ = next(iter(evaluator.model_interface.score_statements(statements=statements, reduction=None)))
 
     reference_scores = [
         -7.308189868927002,
@@ -126,24 +129,18 @@ def test_sentence_l2r(distilbert):
         -4.003668785095215,
     ]
 
-    for a, b in zip(scores, reference_scores):
+    for (_, a), b in zip(scores, reference_scores):
         assert a == pytest.approx(b, abs=1e-5)
 
 
 def test_within_word_l2r(distilbert):
     model, tokenizer = distilbert
 
-    scorer = MaskedLMScoringMixin.from_model(model, tokenizer=tokenizer)
+    model_interface = MLMInterface.from_model(model, tokenizer=tokenizer)
 
-    batch = scorer.tokenizer(
-        ["The traveler lost the souvenir."],
-        return_tensors="pt",
-        padding=True,
-        return_special_tokens_mask=True,
-        return_length=True,
-    )
+    statements = ["The traveler lost the souvenir."]
 
-    scores = scorer.score_statements(batch, scoring_masks=None)[0]
+    scores, _ = next(iter(model_interface.score_statements(statements=statements, reduction=None)))
 
     reference_scores = [
         -3.260617733001709,
@@ -157,24 +154,18 @@ def test_within_word_l2r(distilbert):
         -1.5065603256225586,
     ]
 
-    for a, b in zip(scores, reference_scores):
+    for (_, a), b in zip(scores, reference_scores):
         assert a == pytest.approx(b, abs=1e-5)
 
 
 def test_original(distilbert):
     model, tokenizer = distilbert
 
-    scorer = Evaluator.from_model(model, tokenizer=tokenizer, pll_metric="original")
+    model_interface = MLMInterface.from_model(model, tokenizer=tokenizer, pll_metric="original")
 
-    batch = scorer.tokenizer(
-        ["The traveler lost the souvenir."],
-        return_tensors="pt",
-        padding=True,
-        return_special_tokens_mask=True,
-        return_length=True,
-    )
+    statements = ["The traveler lost the souvenir."]
 
-    scores = scorer.score_statements(batch, scoring_masks=None)[0]
+    scores, _ = next(iter(model_interface.score_statements(statements=statements, reduction=None)))
 
     reference_scores = [
         -3.260617733001709,
@@ -188,5 +179,5 @@ def test_original(distilbert):
         -1.5065603256225586,
     ]
 
-    for a, b in zip(scores, reference_scores):
+    for (_, a), b in zip(scores, reference_scores):
         assert a == pytest.approx(b, abs=1e-5)

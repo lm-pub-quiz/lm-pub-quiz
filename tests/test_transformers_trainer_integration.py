@@ -1,7 +1,6 @@
 import logging
 
 import pytest
-from datasets import Dataset as HFDataset
 from transformers import (
     AutoModelForMaskedLM,
     AutoTokenizer,
@@ -11,6 +10,7 @@ from transformers import (
     TrainingArguments,
 )
 
+from datasets import Dataset as HFDataset
 from lm_pub_quiz import Dataset, Evaluator
 from lm_pub_quiz.integrations import PubQuizCallback
 
@@ -88,8 +88,6 @@ def test_callback(request, tmp_path):
         tokenizer=tokenizer,
         model_type="MLM",
         batch_size=1,
-        dataset=probing_dataset,
-        template_index=0,
     )
 
     assert evaluator.evaluate_dataset(probing_dataset).get_metrics(["accuracy"], accumulate=True)["accuracy"] == 1.0
@@ -104,7 +102,9 @@ def test_callback(request, tmp_path):
             trainer=trainer, evaluator=evaluator, dataset=probing_dataset, accumulate="non_existing"
         )
 
-    callback = PubQuizCallback(trainer=trainer, evaluator=evaluator, dataset=probing_dataset, accumulate="domains")
+    callback = PubQuizCallback(
+        trainer=trainer, evaluator=evaluator, dataset=probing_dataset, accumulate="domains", template_index=0
+    )
 
     trainer.add_callback(callback)
 

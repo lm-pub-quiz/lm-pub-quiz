@@ -3,9 +3,11 @@ import logging
 import numpy as np
 import pytest
 
-from lm_pub_quiz import CausalLMEvaluator, Dataset, DatasetResults, Evaluator, MaskedLMEvaluator, RelationResult
+from lm_pub_quiz import Dataset, DatasetResults, Evaluator, RelationResult
 from lm_pub_quiz.__about__ import __version__
 from lm_pub_quiz.data import NoInstanceTableError
+from lm_pub_quiz.model_interface.hf import CLMInterface, MLMInterface
+from lm_pub_quiz.model_interface.hf.base import HFModelInterface
 
 log = logging.getLogger(__name__)
 
@@ -17,12 +19,12 @@ def test_evaluator_instantiations(model_key, model_cache):
     # Instantiate using model name
     Evaluator.from_model(model.name_or_path, model_type=model.model_type)
 
-    evaluator = Evaluator.from_model(model.name_or_path)
+    evaluator: Evaluator = Evaluator.from_model(model.name_or_path)
 
     if model.model_type == "MLM":
-        assert isinstance(evaluator, MaskedLMEvaluator)
+        assert isinstance(evaluator.model_interface, MLMInterface)
     else:
-        assert isinstance(evaluator, CausalLMEvaluator)
+        assert isinstance(evaluator.model_interface, CLMInterface)
 
     # Instantiate from existing model
     Evaluator.from_model(model.model, tokenizer=model.tokenizer, model_type=model.model_type)
@@ -30,9 +32,9 @@ def test_evaluator_instantiations(model_key, model_cache):
     evaluator = Evaluator.from_model(model.model, tokenizer=model.tokenizer)
 
     if model.model_type == "MLM":
-        assert isinstance(evaluator, MaskedLMEvaluator)
+        assert isinstance(evaluator.model_interface, MLMInterface)
     else:
-        assert isinstance(evaluator, CausalLMEvaluator)
+        assert isinstance(evaluator.model_interface, CLMInterface)
 
 
 @pytest.mark.parametrize("model_key", ("distilbert", "distilgpt"))
@@ -43,13 +45,8 @@ def test_reduction_functionality(model_key, model_cache):
     evaluator = Evaluator.from_model(model.model, tokenizer=model.tokenizer)
 
     with pytest.raises(ValueError):
-        evaluator.score_answers(
+        evaluator.evaluate_item(
             template="The traveler lost the [Y].", answers=["souvenir", "bet"], reduction="non-existant"
-        )
-
-    with pytest.raises(ValueError):
-        evaluator.evaluate_instance(
-            template="The traveler lost the [Y]", answers=["souvenir", "bet"], reduction=None, print_ranking=True
         )
 
 
@@ -90,7 +87,7 @@ def test_posthoc_reduction(request, model_key, model_cache):
     ],
 )
 def test_model_type_inference(model_name, model_type):
-    assert Evaluator._infer_type_from_name(model_name) == model_type
+    assert HFModelInterface._infer_model_type(model_name) == model_type
 
 
 def test_incorrect_template(distilbert):
@@ -98,7 +95,7 @@ def test_incorrect_template(distilbert):
     evaluator = Evaluator.from_model(model, tokenizer=tokenizer)
 
     with pytest.raises(ValueError):
-        evaluator.evaluate_instance(template="No object slot available", answers=["a", "b"], reduction="sum")
+        evaluator.evaluate_item(template="No object slot available", answers=["a", "b"], reduction="sum")
 
 
 @pytest.mark.parametrize("lazy", [False, True])
@@ -139,10 +136,11 @@ def test_dataset_evaluation(distilbert, request, tmp_path, lazy):
                 assert a is b, f"Identity check failed {id(a)} - {id(b)}"
 
             # all examples should be predicted correctly
-            for _, row in r.instance_table.iterrows():
-                log.info(row)
-
+            for i, row in r.instance_table.iterrows():
                 assert len(row["pll_scores"]) == 3
+
+                assert row["answer_idx"] == (i if r.relation_code == "example_1" else i // 2)
+
                 assert row["answer_idx"] == np.argmax(row["pll_scores"])
 
             assert r.get_metric("accuracy") == 1.0
@@ -297,8 +295,7 @@ def test_dataset_conditional_evaluation(distilbert, request, tmp_path):
     dataset = Dataset.from_path(request.path.parent / "test_data" / "dummy_dataset")
 
     model, tokenizer = distilbert
-    evaluator = Evaluator.from_model(model, tokenizer=tokenizer, conditional_score=True)
-
+    evaluator = Evaluator.from_model(model, tokenizer=tokenizer, conditional_score=True, pll_metric="within_word_l2r")
     results = evaluator.evaluate_dataset(dataset, batch_size=16, reduction="sum")
     assert isinstance(results, DatasetResults)
     assert all(isinstance(r, RelationResult) for r in results)
@@ -356,7 +353,7 @@ def test_token_scores_within_word_l2r(distilbert):
     evaluator = Evaluator.from_model(model, tokenizer=tokenizer, pll_metric="within_word_l2r")
 
     result, indices = zip(
-        *evaluator.score_answers(template="The traveler lost the [Y].", answers=["bet", "souvenir"], reduction=None)
+        *evaluator.evaluate_item(template="The traveler lost the [Y].", answers=["bet", "souvenir"], reduction=None)
     )
 
     assert len(result) == 2
@@ -383,7 +380,7 @@ def test_token_scores_original(distilbert):
     evaluator = Evaluator.from_model(model, tokenizer=tokenizer, pll_metric="original")
 
     result, _ = zip(
-        *evaluator.score_answers(template="The traveler lost the [Y].", answers=["bet", "souvenir"], reduction=None)
+        *evaluator.evaluate_item(template="The traveler lost the [Y].", answers=["bet", "souvenir"], reduction=None)
     )
 
     assert len(result) == 2
@@ -398,7 +395,7 @@ def test_conditional_score(distilbert):
     model, tokenizer = distilbert
     evaluator = Evaluator.from_model(model, tokenizer=tokenizer, conditional_score=True)
 
-    result = evaluator.score_answers(
+    result = evaluator.evaluate_item(
         template="The traveler lost the [Y].", answers=["bet", "souvenir"], reduction="sum"
     )
 

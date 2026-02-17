@@ -17,7 +17,7 @@ class SoftmaxBase(BasicMetric):
     def reset(self):
         super().reset()
         self.softmax: Optional[pd.Series] = None
-        self.correct_mask: list = []
+        self.correct_mask_list: list[bool] = []
 
     @staticmethod
     def _get_softmax_probability(pll_scores: list[float]) -> np.array:
@@ -52,13 +52,13 @@ class SoftmaxBase(BasicMetric):
             msg = "Unable to compute probability distributions."
             raise ValueError(msg)
 
-        self.correct_mask = np.array(self.correct_mask)
-        self.softmax_sorted = np.sort(self.softmax, axis=1)[:, ::-1]  # get ranks in desceding order
+        self.correct_mask: np.array = np.array(self.correct_mask_list)
+        self.softmax_sorted: np.array = np.sort(self.softmax, axis=1)[:, ::-1]  # get ranks in desceding order
         return {
             "avg_softmax": {
                 "all": self.softmax.mean(axis=0),
-                "correct": self.softmax[self.correct_mask].mean(axis=0) if sum(self.correct_mask) else None,  # type: ignore
-                "incorrect": self.softmax[~self.correct_mask].mean(axis=0) if sum(~self.correct_mask) else None,  # type: ignore
+                "correct": self.softmax[self.correct_mask].mean(axis=0) if sum(self.correct_mask) else None,
+                "incorrect": self.softmax[~self.correct_mask].mean(axis=0) if sum(~self.correct_mask) else None,
             },
         }
 
@@ -79,8 +79,8 @@ class ConfidenceMargin(SoftmaxBase):
         return {
             "margin_of_confidence": {
                 "all": confidence_margin.mean(axis=0),
-                "correct": confidence_margin[self.correct_mask].mean(axis=0) if sum(self.correct_mask) else None,  # type: ignore
-                "incorrect": confidence_margin[~self.correct_mask].mean(axis=0) if sum(~self.correct_mask) else None,  # type: ignore
+                "correct": confidence_margin[self.correct_mask].mean(axis=0) if sum(self.correct_mask) else None,
+                "incorrect": confidence_margin[~self.correct_mask].mean(axis=0) if sum(~self.correct_mask) else None,
             },
         }
 
@@ -99,8 +99,8 @@ class ConfidenceScore(SoftmaxBase):
 
     def compute(self) -> dict[str, Any]:
         super().compute()
-        correct = self.softmax_sorted[:, 0][self.correct_mask].mean(axis=0) if sum(self.correct_mask) else None  # type: ignore
-        incorrect = self.softmax_sorted[:, 0][~self.correct_mask].mean(axis=0) if sum(~self.correct_mask) else None  # type: ignore
+        correct = self.softmax_sorted[:, 0][self.correct_mask].mean(axis=0) if sum(self.correct_mask) else None
+        incorrect = self.softmax_sorted[:, 0][~self.correct_mask].mean(axis=0) if sum(~self.correct_mask) else None
         return {
             "confidence_score": {
                 "all": self.softmax_sorted[:, 0].mean(axis=0),
@@ -139,8 +139,8 @@ class UncertaintyScore(SoftmaxBase):
         return {
             "uncertainty_score": {
                 "all": uncertainty.mean(axis=0),
-                "correct": uncertainty[self.correct_mask].mean(axis=0) if sum(self.correct_mask) else None,  # type: ignore
-                "incorrect": uncertainty[~self.correct_mask].mean(axis=0) if sum(~self.correct_mask) else None,  # type: ignore
+                "correct": uncertainty[self.correct_mask].mean(axis=0) if sum(self.correct_mask) else None,
+                "incorrect": uncertainty[~self.correct_mask].mean(axis=0) if sum(~self.correct_mask) else None,
             },
         }
 
@@ -157,14 +157,15 @@ class BrierScore(UncertaintyScore):
 
     def compute(self) -> dict[str, Any]:
         super().compute()
+        assert self.softmax is not None
+
         y_true, y_pred_probs = self.correct_answer, self.softmax
 
         y_true_one_hot = np.zeros_like(y_pred_probs)
         y_true_one_hot[np.arange(len(y_true)), y_true] = 1
 
         brier_scores = [
-            brier_score_loss(y_true_one_hot[:, i], y_pred_probs[:, i])  # type: ignore
-            for i in range(y_pred_probs.shape[1])  # type: ignore
+            brier_score_loss(y_true_one_hot[:, i], y_pred_probs[:, i]) for i in range(y_pred_probs.shape[1])
         ]
 
         return {"brier_score": np.mean(brier_scores)}

@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import (
     Any,
     Generic,
+    NamedTuple,
     Optional,
     TypeVar,
     Union,
@@ -30,6 +31,32 @@ class NoInstanceTableError(Exception):
 
 
 InstanceTableFileFormat = Optional[Union[str, tuple[str, ...]]]
+
+
+class Item(NamedTuple):
+    template: str
+    answers: Sequence[str]
+    subject: Optional[str] = None
+
+    metadata: Optional[dict[str, Any]] = None
+
+    def to_dict(self):
+        if self.metadata is not None:
+            d = {**self.metadata}
+        else:
+            d = {}
+
+        d["template"] = self.template
+        d["answers"] = self.answers
+
+        if self.subject is not None:
+            d["subject"] = self.subject
+
+        return d
+
+    @classmethod
+    def from_kw(cls, *, template: str, answers: Sequence[str], subject: Optional[str] = None, **metadata):
+        return cls(template=template, answers=answers, subject=subject, metadata=metadata)
 
 
 class DataBase(ABC):
@@ -92,18 +119,20 @@ class RelationBase(DataBase):
         """The identifier of the relation."""
         return self._relation_code
 
-    def copy(self, **kw):
+    def copy(self, *, relation_code: Optional[str] = None, **kw):
         """Create a copy of the isntance with specified fields replaced by new values."""
 
+        if relation_code is None:
+            relation_code = self.relation_code
+
         kw = {
-            "relation_code": self.relation_code,
             "lazy_options": self._lazy_options.copy() if self._lazy_options is not None else None,
             "instance_table": self._instance_table.copy() if self._instance_table is not None else None,
             "answer_space": self._answer_space.copy() if self._answer_space is not None else None,
             "relation_info": self._relation_info.copy(),
             **kw,
         }
-        return self.__class__(kw.pop("relation_code"), **kw)
+        return self.__class__(relation_code=relation_code, **kw)
 
     def saved(self, path: PathLike, *, fmt: InstanceTableFileFormat = None) -> Self:
         # Save relation and return the lazy-loading relation

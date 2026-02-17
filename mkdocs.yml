@@ -7,7 +7,6 @@ extra:
 theme:
   name: material
   language: en
-  custom_dir: docs/overrides
   logo: imgs/logo_transparent_white.svg
   palette:
     primary: custom
@@ -17,11 +16,12 @@ theme:
     - search.highlight
     - content.code.copy
     - content.action.edit
-    - header.autohide
     - navigation.footer
     - navigation.instant
     - navigation.expand
     - navigation.top
+    - navigation.tracking
+    - navigation.path
   user_color_mode_toggle: True
   icon:
     repo: fontawesome/brands/git-alt
@@ -34,6 +34,7 @@ nav:
   - API Reference:
     - api.md
     - api/evaluator.md
+    - api/model_interfaces.md
     - api/dataset.md
     - api/result.md
     - api/base_classes.md

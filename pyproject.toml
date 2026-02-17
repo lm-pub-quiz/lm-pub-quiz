@@ -42,11 +42,14 @@ dependencies = [
   "coverage[toml]>=6.5",
   "pytest",
   "mkdocs",
-  "mkdocs-material",
+  "mkdocs-material>=9.7.1",
   "mkdocstrings[python]>=0.18",
   "mkdocs-section-index>=0.3",
   "black",
 ]
+installer = "uv"
+
+
 [tool.hatch.envs.default.scripts]
 test = "pytest {args:tests}"
 test-cov = "coverage run -m pytest {args:tests}"
@@ -68,11 +71,12 @@ python = ["3.9", "3.10", "3.11", "3.12", "3.13"]
 [tool.hatch.envs.lint]
 detached = true
 dependencies = [
-  "mypy>=1.8.0",
+  "ty>=0.0.17",
   "ruff>=0.13.2",
 ]
 [tool.hatch.envs.lint.scripts]
-typing = "mypy --install-types --non-interactive {args:src/lm_pub_quiz tests}"
+typing = "ty check {args:src/lm_pub_quiz tests}"
+typing-github = "ty check {args:src/lm_pub_quiz tests} --output-format github"
 style = [
   "ruff format --check {args:.}",
   "ruff check {args:.}",
@@ -151,6 +155,9 @@ ban-relative-imports = "all"
 # Tests can use magic values, assertions, and relative imports
 "tests/**/*" = ["PLR2004", "S101", "TID252"]
 
+[tool.ty]
+rules.unresolved-import = "ignore"
+
 [tool.coverage.run]
 source_pkgs = ["lm_pub_quiz"]
 branch = true
@@ -169,10 +176,6 @@ exclude_lines = [
   "if __name__ == .__main__.:",
   "if TYPE_CHECKING:",
 ]
-
-[tool.mypy]
-ignore_missing_imports = true
-check_untyped_defs = true
 
 [tool.pytest.ini_options]
 addopts = "--doctest-modules"
