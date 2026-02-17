@@ -659,7 +659,7 @@ class DatasetResults(DatasetBase[RelationResult]):
         _is_first: bool = True
 
         for rel in self:
-            m = rel.get_metadata()
+            m: dict[str, Any] = rel.get_metadata()
 
             if _is_first:
                 if key is None:
@@ -675,6 +675,8 @@ class DatasetResults(DatasetBase[RelationResult]):
                 if key not in m or m[key] != intersection:
                     intersection = None
             else:
+                assert isinstance(intersection, dict)
+
                 for k, v in m.items():
                     if k in intersection and v != intersection[k]:
                         del intersection[k]
