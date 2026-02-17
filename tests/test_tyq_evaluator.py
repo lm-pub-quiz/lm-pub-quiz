@@ -56,7 +56,7 @@ def test_tyq_evaluator(distilbert, request, tmp_path):
 
         for i, row in instance_table.iterrows():
             assert all(a == pytest.approx(b) for a, b in zip(row["pll_scores"], exp_scores[i])), (
-                f"Expected {row['pll_scores']!s} vs found: {exp_scores[i]!s}"
+                f"Actual {row['pll_scores']!s} vs expected: {exp_scores[i]!s}"
             )
 
         if r.relation_code in ("example_1"):
