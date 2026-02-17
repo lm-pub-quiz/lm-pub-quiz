@@ -46,7 +46,7 @@ plugins:
       handlers:
         python:
           paths: [src]
-          import:
+          inventories:
             - https://huggingface.co/docs/transformers/main/en/objects.inv
             - https://pandas.pydata.org/docs/objects.inv
           options:
