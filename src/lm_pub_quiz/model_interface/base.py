@@ -58,7 +58,15 @@ class PLLModelInterfaceMixin:
         text_roles: Optional[Iterable[TextRoles]] = None,
         **kw,
     ) -> Union[Iterable[StatementScore], Iterable[TokenScoresAndRoles]]:
-        """Score individual texts (independent of the other options)."""
+        """Score individual texts (independent of the other options) using the Casual/Masked Language Model.
+
+        Parameters:
+            statements: The statements to score.
+            text_roles: Which parts of the statement are the answer, template, and subject.
+
+        Returns:
+            Scores (or scores and roles) per statement
+        """
         pass
 
     def score_statement_options(

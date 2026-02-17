@@ -69,14 +69,14 @@ class MLMInterface(PLLModelInterfaceMixin, HFModelInterface):
         batch_size: Optional[int] = None,
         **kw,
     ) -> Union[Iterable[TokenScoresAndRoles], Iterable[StatementScore]]:
-        """Calculate sequence scores using the Casual/Masked Language Model.
+        """Score individual texts (independent of the other options) using the Masked Language Model.
 
         Parameters:
-            template str: The template to use (should contain a `[Y]` marker).
-            answers list[str]: List of answers to calculate score for.
+            statements: The statements to score.
+            text_roles: Which parts of the statement are the answer, template, and subject.
 
         Returns:
-            list[float]: List of suprisals scores per sequence
+            Scores (or scores and roles) per statement
         """
         if text_roles is None and self.conditional_score:
             msg = "`roles` need to be set to use `conditional_score`."

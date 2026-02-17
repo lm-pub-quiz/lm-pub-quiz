@@ -174,7 +174,7 @@ class RelationBase(DataBase):
     @overload
     def relation_info(self, key: str, /) -> Any: ...
 
-    def relation_info(self, key: Optional[str] = None, /, **kw) -> Union[None, Any, dict[str, Any]]:
+    def relation_info(self, key: Optional[str] = None, /, **kw: Any) -> Union[None, Any, dict[str, Any]]:
         """Get or set additional relation information.
 
         Use `relation.relation_info(<field name>=<new value>)` to set fields in the relation info dictionary.
@@ -183,7 +183,7 @@ class RelationBase(DataBase):
 
         Parameters:
             key: The field to retrieve.
-            **kw: The fields not modify.
+            **kw: The fields to modify.
 
         Returns:
             If a field is selected, the respective value is returned, otherwise, the complete info dictionary is

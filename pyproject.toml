@@ -41,7 +41,7 @@ path = "src/lm_pub_quiz/__about__.py"
 dependencies = [
   "coverage[toml]>=6.5",
   "pytest",
-  "mkdocs",
+  "mkdocs==1.5.3",
   "mkdocs-material>=9.7.1",
   "mkdocstrings[python]>=0.18",
   "mkdocs-section-index>=0.3",
