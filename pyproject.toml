@@ -11,6 +11,7 @@ dependencies = [
   "pandas",
   "numpy",
   "scikit-learn",
+  "vllm",
 ]
 dynamic = ["version"]
 authors = [
