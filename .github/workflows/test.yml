@@ -27,10 +27,10 @@ jobs:
         python-version: ["3.10", "3.11", "3.13", "3.15"]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Set up Python ${{ matrix.python-version }}
       id: setup-python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         # No cache needed, since packages are managed in the hatch virtual environment
         python-version: ${{ matrix.python-version }}
@@ -38,7 +38,7 @@ jobs:
     # Set up caching of hatch's virtual environment
     - name: Set up hatch environment cache
       if: runner.os == 'Linux'
-      uses: "actions/cache@v4"
+      uses: "actions/cache@v5"
       with:
         path: .venv/
         key: "hatch-env-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('pyproject.toml') }}"
