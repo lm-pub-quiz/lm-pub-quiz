@@ -28,12 +28,18 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
+
     - name: Set up Python ${{ matrix.python-version }}
       id: setup-python
       uses: actions/setup-python@v6
       with:
         # No cache needed, since packages are managed in the hatch virtual environment
         python-version: ${{ matrix.python-version }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
 
     # Set up caching of hatch's virtual environment
     - name: Set up hatch environment cache
