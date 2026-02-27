@@ -40,6 +40,7 @@ jobs:
       uses: astral-sh/setup-uv@v7
       with:
         enable-cache: true
+        python-version: ${{ matrix.python-version }}
 
     # Set up caching of hatch's virtual environment
     - name: Set up hatch environment cache
@@ -57,4 +58,4 @@ jobs:
     - name: Type Checking
       run: hatch run lint:typing-github
     - name: Tests
-      run: hatch run +py=${{ matrix.python-version }} all:test
+      run: hatch run +py=${{ matrix.python-version }} test
