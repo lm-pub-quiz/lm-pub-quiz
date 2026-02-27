@@ -2,7 +2,7 @@
 name = "lm-pub-quiz"
 description = "Evaluate language models using multiple choice items"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
   "torch",
   "datasets",
@@ -91,7 +91,7 @@ all = [
 ]
 
 [tool.ruff]
-target-version = "py39"
+target-version = "py310"
 line-length = 120
 
 [tool.ruff.lint]
