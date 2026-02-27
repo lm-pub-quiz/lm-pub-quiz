@@ -33,7 +33,7 @@ tqdm.pandas()
 log = logging.getLogger(__name__)
 
 
-MultiMetricSpecification = Union[MetricSpecification, Sequence[MetricSpecification]]
+MultiMetricSpecification = MetricSpecification | Sequence[MetricSpecification]
 
 
 class Evaluator:
