@@ -1,5 +1,5 @@
 from collections.abc import Mapping
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -16,7 +16,7 @@ class SoftmaxBase(BasicMetric):
 
     def reset(self):
         super().reset()
-        self.softmax: Optional[pd.Series] = None
+        self.softmax: pd.Series | None = None
         self.correct_mask_list: list[bool] = []
 
     @staticmethod

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Sequence
-from typing import Any, Optional, Union
+from typing import Any
 
 from lm_pub_quiz.types import (
     ItemScores,
@@ -30,9 +30,9 @@ class ModelInterface(ABC):
         self,
         statement_options: Iterable[Sequence[str]],
         *,
-        text_roles: Optional[Iterable[Sequence[TextRoles]]] = None,
+        text_roles: Iterable[Sequence[TextRoles]] | None = None,
         **kw,
-    ) -> Union[Iterable[ItemTokenScoresAndRoles], Iterable[ItemScores]]:
+    ) -> Iterable[ItemTokenScoresAndRoles] | Iterable[ItemScores]:
         """Score sets of text options.
 
         The `ModelInterface` itself is resonsible for batching the requests.
@@ -55,9 +55,9 @@ class PLLModelInterfaceMixin:
         self,
         statements: Iterable[str],
         *,
-        text_roles: Optional[Iterable[TextRoles]] = None,
+        text_roles: Iterable[TextRoles] | None = None,
         **kw,
-    ) -> Union[Iterable[StatementScore], Iterable[TokenScoresAndRoles]]:
+    ) -> Iterable[StatementScore] | Iterable[TokenScoresAndRoles]:
         """Score individual texts (independent of the other options) using the Casual/Masked Language Model.
 
         Parameters:
@@ -73,9 +73,9 @@ class PLLModelInterfaceMixin:
         self,
         statement_options: Iterable[Sequence[str]],
         *,
-        text_roles: Optional[Iterable[Sequence[TextRoles]]] = None,
+        text_roles: Iterable[Sequence[TextRoles]] | None = None,
         **kw,
-    ) -> Union[Iterable[ItemScores], Iterable[ItemTokenScoresAndRoles]]:
+    ) -> Iterable[ItemScores] | Iterable[ItemTokenScoresAndRoles]:
         """Join the sets of statements, process each statement, and order the scores according to the inputs."""
 
         if text_roles is None:

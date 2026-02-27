@@ -2,7 +2,7 @@ import itertools
 import logging
 from collections.abc import Iterable, Sequence
 from contextlib import contextmanager
-from typing import Any, Optional, Union
+from typing import Any
 
 import torch
 from tqdm.auto import tqdm
@@ -54,7 +54,7 @@ class CLMInterface(PLLModelInterfaceMixin, HFModelInterface):
         self.tokenizer.add_bos_token = _add_bos_token
 
     def encode(
-        self, statements: Sequence[str], roles: Optional[Sequence[TextRoles]]
+        self, statements: Sequence[str], roles: Sequence[TextRoles] | None
     ) -> tuple[BatchEncoding, Sequence[ScoringMask]]:
         """Encode the statements using the tokenizer and create an appropriate scoring mask.
 
@@ -117,7 +117,7 @@ class CLMInterface(PLLModelInterfaceMixin, HFModelInterface):
         return batch, scoring_masks
 
     def decode_tokens(
-        self, batch: BatchEncoding, scoring_masks: Optional[Sequence[ScoringMask]] = None
+        self, batch: BatchEncoding, scoring_masks: Sequence[ScoringMask] | None = None
     ) -> list[list[str]]:
         if scoring_masks is None:
             return [self.tokenizer.convert_ids_to_tokens(input_ids) for input_ids in batch["input_ids"]]
@@ -128,10 +128,10 @@ class CLMInterface(PLLModelInterfaceMixin, HFModelInterface):
         self,
         statements: Iterable[str],
         *,
-        text_roles: Optional[Iterable[TextRoles]] = None,
-        batch_size: Optional[int] = None,
+        text_roles: Iterable[TextRoles] | None = None,
+        batch_size: int | None = None,
         **kw,
-    ) -> Union[Iterable[TokenScoresAndRoles], Iterable[StatementScore]]:
+    ) -> Iterable[TokenScoresAndRoles] | Iterable[StatementScore]:
         """Score individual texts (independent of the other options) using the Casual Language Model.
 
         Parameters:
@@ -152,7 +152,9 @@ class CLMInterface(PLLModelInterfaceMixin, HFModelInterface):
             batches = zip(iter_batches(statements, batch_size=batch_size), itertools.repeat(None))
         else:
             batches = zip(
-                iter_batches(statements, batch_size=batch_size), iter_batches(text_roles, batch_size=batch_size)
+                iter_batches(statements, batch_size=batch_size),
+                iter_batches(text_roles, batch_size=batch_size),
+                strict=True,
             )
 
         for statement_batch, role_batch in batches:
@@ -199,12 +201,13 @@ class CLMInterface(PLLModelInterfaceMixin, HFModelInterface):
                 scored_tokens: list[list[ScoredToken]]
 
                 decoded_tokens = [
-                    [token for token, m in zip(tokens, mask) if m]
-                    for tokens, mask in zip(self.decode_tokens(batch), scoring_masks)
+                    [token for token, m in zip(tokens, mask, strict=True) if m]
+                    for tokens, mask in zip(self.decode_tokens(batch), scoring_masks, strict=True)
                 ]
 
                 scored_tokens = [
-                    list(zip(tokens, token_scores)) for tokens, token_scores in zip(decoded_tokens, batch_token_scores)
+                    list(zip(tokens, token_scores, strict=True))
+                    for tokens, token_scores in zip(decoded_tokens, batch_token_scores, strict=True)
                 ]
 
                 if role_batch is not None:
@@ -213,12 +216,12 @@ class CLMInterface(PLLModelInterfaceMixin, HFModelInterface):
                             token_roles_internal=roles,
                             scoring_mask=mask,
                         )
-                        for mask, roles in zip(scoring_masks, token_roles_internal)
+                        for mask, roles in zip(scoring_masks, token_roles_internal, strict=True)
                     ]
                 else:
                     token_roles_output = [{} for _ in scoring_masks]
 
-                yield from zip(scored_tokens, token_roles_output)
+                yield from zip(scored_tokens, token_roles_output, strict=True)
 
             else:
                 reduction_func = get_reduction_function(reduction)

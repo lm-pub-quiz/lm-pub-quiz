@@ -49,13 +49,13 @@ def test_tyq_evaluator(distilbert, request, tmp_path):
     ]
 
     r: RelationResult
-    for r, exp_scores in zip(results, expected_scores):
+    for r, exp_scores in zip(results, expected_scores, strict=True):
         instance_table = r.instance_table
 
         assert instance_table is not None
 
         for i, row in instance_table.iterrows():
-            for a, b in zip(row["pll_scores"], exp_scores[i]):
+            for a, b in zip(row["pll_scores"], exp_scores[i], strict=True):
                 assert a == pytest.approx(b, abs=1e-5), f"Actual {row['pll_scores']!s} vs expected: {exp_scores[i]!s}"
 
         if r.relation_code in ("example_1"):

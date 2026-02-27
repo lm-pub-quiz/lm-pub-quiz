@@ -1,6 +1,6 @@
 import inspect
 import logging
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal
 
 import torch
 from transformers import (
@@ -32,11 +32,11 @@ class HFModelInterface(ModelInterface):
         self,
         *,
         model: PreTrainedModel,
-        model_type: Optional[str] = None,
-        model_name: Optional[str] = None,
-        model_kw: Optional[dict[str, Any]] = None,
-        tokenizer: Optional[PreTrainedTokenizerFast] = None,
-        device: Union[torch.device, int, str, None] = None,
+        model_type: str | None = None,
+        model_name: str | None = None,
+        model_kw: dict[str, Any] | None = None,
+        tokenizer: PreTrainedTokenizerFast | None = None,
+        device: torch.device | int | str | None = None,
         batch_size: int = 1,
     ):
         super().__init__()
@@ -57,8 +57,8 @@ class HFModelInterface(ModelInterface):
     @classmethod
     def from_model(
         cls,
-        model: Union[str, PreTrainedModel],
-        model_type: Optional[str] = None,
+        model: str | PreTrainedModel,
+        model_type: str | None = None,
         **kw,
     ) -> Self:
         """Create an interface for the given model.
@@ -93,7 +93,7 @@ class HFModelInterface(ModelInterface):
         return interface_class.from_model(model=model, model_type=model_type, **kw)  # type: ignore (currently not handled correctly?)
 
     @classmethod
-    def _get_device(cls, device_input: Union[torch.device, int, str, None]) -> torch.device:
+    def _get_device(cls, device_input: torch.device | int | str | None) -> torch.device:
         if device_input is None:
             try:
                 return torch.get_default_device()
@@ -107,7 +107,7 @@ class HFModelInterface(ModelInterface):
             return torch.device(device_input)
 
     @classmethod
-    def _get_model_name(cls, model: Union[str, PreTrainedModel]) -> str:
+    def _get_model_name(cls, model: str | PreTrainedModel) -> str:
         if isinstance(model, str):
             return model
         else:
@@ -116,9 +116,9 @@ class HFModelInterface(ModelInterface):
     @classmethod
     def _get_model(
         cls,
-        model: Union[str, PreTrainedModel],
-        model_type: Optional[str] = None,
-        device: Optional[torch.device] = None,
+        model: str | PreTrainedModel,
+        model_type: str | None = None,
+        device: torch.device | None = None,
         **kw,
     ) -> PreTrainedModel:
         if not isinstance(model, str):
@@ -151,7 +151,7 @@ class HFModelInterface(ModelInterface):
 
     @staticmethod
     def _get_tokenizer(
-        model: Union[str, PreTrainedModel], tokenizer: Union[str, PreTrainedTokenizerFast, None]
+        model: str | PreTrainedModel, tokenizer: str | PreTrainedTokenizerFast | None
     ) -> PreTrainedTokenizerFast:
         """Retrieve a tokenizer that matches the model or tokenizer string."""
         if tokenizer is None:
