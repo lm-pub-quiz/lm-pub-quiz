@@ -45,7 +45,7 @@ jobs:
         restore-keys: "hatch-env-${{ steps.setup-python.outputs.python-version }}-"
     # Install hatch and set the venv-location
     - name: Install hatch
-      run: pipx install hatch; hatch config set dirs.env.virtual ".venv"
+      run: uv tool install hatch; hatch config set dirs.env.virtual ".venv"
     - name: Lint
       run: hatch run lint:fmt
     - name: Type Checking
