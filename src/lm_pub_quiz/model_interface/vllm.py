@@ -9,7 +9,6 @@ from transformers import (
     AutoTokenizer,
     BatchEncoding,
 )
-from vllm import LLM, SamplingParams, TokensPrompt
 
 from lm_pub_quiz.model_interface.base import ModelInterface, PLLModelInterfaceMixin
 from lm_pub_quiz.types import ScoringMask, StatementScore, TextRoles, TokenScoresAndRoles
@@ -30,7 +29,9 @@ class VLLMInterface(PLLModelInterfaceMixin, ModelInterface):
     ):
         self.model_name = model
 
-        logger.debug("Creating vllm LLM")
+        logger.debug("Creating vllm interface")
+
+        from vllm import LLM  # noqa: PLC0415
 
         self.tokenizer = AutoTokenizer.from_pretrained(model, use_fast=True)
         self.llm = LLM(model, **kw)
@@ -119,6 +120,8 @@ class VLLMInterface(PLLModelInterfaceMixin, ModelInterface):
         Returns:
             Scores (or scores and roles) per statement
         """
+
+        from vllm import SamplingParams, TokensPrompt  # noqa: PLC0415
 
         sampling_params = SamplingParams(
             temperature=0,
