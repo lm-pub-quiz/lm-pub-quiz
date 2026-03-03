@@ -1,19 +1,13 @@
-# ruff: noqa
-# type: ignore
-from lm_pub_quiz.model_interface.hf.util import derive_token_roles_internal
-from functools import reduce
-from tkinter import Text
 import logging
-from collections.abc import Iterable, Iterator, Sequence
-from typing import Optional, Union
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 import torch
-import torch.nn.functional as torch_func
 from transformers import BatchEncoding
 
 from lm_pub_quiz.model_interface.hf import HFModelInterface
+from lm_pub_quiz.model_interface.hf.util import derive_token_roles_internal
 from lm_pub_quiz.types import ItemScores, ItemTokenScoresAndRoles, TextRoles
-from lm_pub_quiz.util import iter_batches
 
 log = logging.getLogger(__name__)
 
@@ -34,23 +28,23 @@ class TyQModelInterface(HFModelInterface):
         self,
         statement_options: Iterable[Sequence[str]],
         *,
-        text_roles: Optional[Iterable[Sequence[TextRoles]]] = None,
-        **kw,
-    ) -> Iterator[Union[ItemTokenScoresAndRoles, ItemScores]]:
+        text_roles: Iterable[Sequence[TextRoles]] | None = None,
+        **kw,  # noqa: ARG002
+    ) -> Iterable[ItemTokenScoresAndRoles] | Iterable[ItemScores]:
         if text_roles is None:
             msg = "`text_roles` needs to be set for the tyq model interface."
             raise ValueError(msg)
 
-        for options, roles in zip(statement_options, text_roles):
+        for _options, _text_roles in zip(statement_options, text_roles, strict=True):
             batch = self.tokenizer(
-                list(options),
+                list(_options),
                 padding=True,
                 return_tensors="pt",
                 add_special_tokens=True,
                 return_attention_mask=True,
             )
 
-            token_roles = derive_token_roles_internal(batch=batch, text_roles=roles)
+            token_roles = derive_token_roles_internal(batch=batch, text_roles=_text_roles)
 
             reduced_batch: list[dict[str, Any]] = []
             num_tokens_map: dict[int, int] = {}
