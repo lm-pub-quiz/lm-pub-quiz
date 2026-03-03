@@ -45,7 +45,7 @@ jobs:
     - name: Type Checking
       run: hatch run lint:typing-github
     - name: Tests
-      run: hatch run test
+      run: hatch run test:test
 
     - name: Build package
       run: hatch build

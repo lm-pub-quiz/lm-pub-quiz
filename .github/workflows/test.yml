@@ -55,4 +55,4 @@ jobs:
     - name: Type Checking
       run: hatch run lint:typing-github
     - name: Tests
-      run: hatch run +py=${{ matrix.python-version }} test
+      run: hatch run +py=${{ matrix.python-version }} test:test
