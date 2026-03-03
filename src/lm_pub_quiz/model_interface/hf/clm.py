@@ -177,7 +177,7 @@ class CLMInterface(PLLModelInterfaceMixin, HFModelInterface):
             with torch.no_grad():
                 batch.pop("special_tokens_mask")
                 batch.pop("length")
-                model_output = self.model(**batch)
+                model_output = self.model(**batch.to(self.device))
 
             # Shift so that tokens < n predict n
             batch_logits = model_output.logits[:, :-1]

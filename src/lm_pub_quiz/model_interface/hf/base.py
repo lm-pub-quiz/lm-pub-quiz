@@ -41,12 +41,18 @@ class HFModelInterface(ModelInterface):
     ):
         super().__init__()
 
-        model_kw = model_kw or {}
-        if "device" not in model_kw:
-            model_kw["device"] = device
+        if device is not None:
+            self.device = torch.device(device)
+        elif torch.accelerator.is_available():
+            self.device = torch.accelerator.current_accelerator()
+        else:
+            self.device = torch.device("cpu")
+
+        if model_kw is None:
+            model_kw = {}
 
         self.model_name = model_name or self._get_model_name(model)
-        self.model = self._get_model(model=model, model_type=model_type, **model_kw)
+        self.model = self._get_model(model=model, model_type=model_type, device=self.device, **model_kw)
         self.tokenizer = self._get_tokenizer(model=model, tokenizer=tokenizer)
         self.device = self._get_device(device)
         self.batch_size = batch_size
