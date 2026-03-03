@@ -36,9 +36,9 @@ jobs:
         path: .venv/
         key: "hatch-env-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('pyproject.toml') }}"
         restore-keys: "hatch-env-${{ steps.setup-python.outputs.python-version }}-"
-    # Install hatch and set the venv-location
-    - name: Install hatch
-      run: uv tool install hatch; hatch config set dirs.env.virtual ".venv"
+
+    - name: Configure hatch
+      run: hatch config set dirs.env.virtual ".venv"
 
     - name: Lint
       run: hatch run lint:fmt
