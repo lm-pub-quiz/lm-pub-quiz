@@ -7,8 +7,6 @@ from datetime import datetime, timezone
 from typing import (
     Any,
     Literal,
-    Optional,
-    Union,
     overload,
 )
 
@@ -35,13 +33,13 @@ tqdm.pandas()
 log = logging.getLogger(__name__)
 
 
-MultiMetricSpecification = Union[MetricSpecification, Sequence[MetricSpecification]]
+MultiMetricSpecification = MetricSpecification | Sequence[MetricSpecification]
 
 
 class Evaluator:
     model_interface: ModelInterface
 
-    def __init__(self, *, model_interface: ModelInterface, templater: Optional[Templater] = None):
+    def __init__(self, *, model_interface: ModelInterface, templater: Templater | None = None):
         self.model_interface = model_interface
 
         if templater is not None:
@@ -50,7 +48,7 @@ class Evaluator:
             self.templater = Templater()
 
     @classmethod
-    def from_model(cls, model, *, model_interface: str = "hf", templater: Optional[Templater] = None, **kw):
+    def from_model(cls, model, *, model_interface: str = "hf", templater: Templater | None = None, **kw):
         try:
             interface_cls = MODEL_INTERFACE_CLASSES[model_interface.lower()]
             return cls(
@@ -65,13 +63,13 @@ class Evaluator:
     def evaluate_dataset(
         self,
         dataset: Dataset,
-        template_index: Union[int, Sequence[int], None] = None,
+        template_index: int | Sequence[int] | None = None,
         *,
-        subsample: Optional[int] = None,
-        save_path: Optional[PathLike] = None,
+        subsample: int | None = None,
+        save_path: PathLike | None = None,
         fmt: InstanceTableFileFormat = None,
         create_instance_table: bool = True,
-        metric: Optional[MultiMetricSpecification] = None,
+        metric: MultiMetricSpecification | None = None,
         **kw,
     ) -> DatasetResults:
         """Evaluate the model on all relations in the dataset."""
@@ -120,10 +118,10 @@ class Evaluator:
         self,
         relation: Relation,
         *,
-        template_index: Union[int, Sequence[int], None] = None,
-        subsample: Optional[int] = None,
+        template_index: int | Sequence[int] | None = None,
+        subsample: int | None = None,
         create_instance_table: bool = True,
-        metric: Optional[MultiMetricSpecification] = None,
+        metric: MultiMetricSpecification | None = None,
         **kw,
     ) -> RelationResult:
         items = relation.get_items(subsample=subsample, template_index=template_index)
@@ -142,7 +140,7 @@ class Evaluator:
         # Prepare metrics
         metrics: list[RelationMetric] = []
         if metric is not None:
-            if isinstance(metric, (str, RelationMetric)) or (
+            if isinstance(metric, str | RelationMetric) or (
                 isinstance(metric, type) and issubclass(metric, RelationMetric)
             ):
                 metric = (metric,)
@@ -152,7 +150,7 @@ class Evaluator:
                 m_obj.reset()
                 metrics.append(m_obj)
 
-        for item, result in zip(item_iterators[1], item_results):
+        for item, result in zip(item_iterators[1], item_results, strict=True):
             formatted_result = parse_dumped_raw_results(result)
 
             log.debug("Evaluated %s\n%s", str(item), "\n".join(f"- {k}: {v}" for k, v in formatted_result.items()))
@@ -217,7 +215,7 @@ class Evaluator:
         subject: Literal[None] = None,
         print_ranking: bool = False,
         **kw,
-    ) -> Union[ItemScores, ItemTokenScoresAndRoles]: ...
+    ) -> ItemScores | ItemTokenScoresAndRoles: ...
 
     # Iterable of items passed
     @overload
@@ -230,7 +228,7 @@ class Evaluator:
         subject: Literal[None] = None,
         print_ranking: Literal[False] = False,
         **kw,
-    ) -> Union[Iterator[ItemScores], Iterator[ItemTokenScoresAndRoles]]: ...
+    ) -> Iterator[ItemScores] | Iterator[ItemTokenScoresAndRoles]: ...
 
     # No item, but template and answers passed
     @overload
@@ -240,21 +238,21 @@ class Evaluator:
         *,
         template: str,
         answers: Sequence[str],
-        subject: Optional[str] = None,
+        subject: str | None = None,
         print_ranking: bool = False,
         **kw,
-    ) -> Union[ItemScores, ItemTokenScoresAndRoles]: ...
+    ) -> ItemScores | ItemTokenScoresAndRoles: ...
 
     def evaluate_item(
         self,
-        item: Union[None, Item, Iterator[Item]] = None,
+        item: None | Item | Iterator[Item] = None,
         *,
-        template: Optional[str] = None,
-        answers: Optional[Sequence[str]] = None,
-        subject: Optional[str] = None,
+        template: str | None = None,
+        answers: Sequence[str] | None = None,
+        subject: str | None = None,
         print_ranking: bool = False,
         **kw,
-    ) -> Union[ItemScores, ItemTokenScoresAndRoles, Iterable[ItemScores], Iterable[ItemTokenScoresAndRoles]]:
+    ) -> ItemScores | ItemTokenScoresAndRoles | Iterable[ItemScores] | Iterable[ItemTokenScoresAndRoles]:
         """Return the scores for each of the answer options.
 
 
@@ -310,7 +308,7 @@ class Evaluator:
 
     @staticmethod
     def print_ranking(answers: Iterable[str], scores: list[float]) -> None:
-        data = zip(answers, scores)
+        data = zip(answers, scores, strict=True)
         sorted_data = sorted(data, key=lambda x: x[1], reverse=False)
         max_str_length = max([len(item[0]) for item in sorted_data])
 

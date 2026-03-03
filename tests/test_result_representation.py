@@ -143,8 +143,8 @@ def test_old_style_results_non_reduced(request):
         assert isinstance(instance_table[f"{role}_indices"].iloc[0][0], list)
         assert isinstance(instance_table[f"{role}_indices"].iloc[0][1], list)
 
-    assert isinstance(instance_table["tokens"].iloc[0][0], (tuple, list))
-    assert isinstance(instance_table["tokens"].iloc[0][1], (tuple, list))
+    assert isinstance(instance_table["tokens"].iloc[0][0], tuple | list)
+    assert isinstance(instance_table["tokens"].iloc[0][1], tuple | list)
 
     # The indices together should add up to the total length of the predicted statement
     assert sum(len(instance_table[f"{role}_indices"].iloc[0][1]) for role in ("template", "sub", "obj")) == len(
@@ -309,7 +309,7 @@ def test_result_formats(request, tmp_path):
     # here, the files should be retrieved
     result_copy = DatasetResults.from_path(tmp_path, lazy=True)
 
-    for a, b in zip(original_results, result_copy):
+    for a, b in zip(original_results, result_copy, strict=True):
         assert (a.answer_space == b.answer_space).all(), (a.answer_space, b.answer_space)
 
         assert (
@@ -320,7 +320,7 @@ def test_result_formats(request, tmp_path):
     # here, the files should be retrieved as well
     result_copy = DatasetResults.from_path(tmp_path, lazy=True, fmt="parquet.snappy")
 
-    for a, b in zip(original_results, result_copy):
+    for a, b in zip(original_results, result_copy, strict=True):
         assert (a.answer_space == b.answer_space).all(), (a.answer_space, b.answer_space)
 
         assert (

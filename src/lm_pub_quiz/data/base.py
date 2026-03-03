@@ -11,9 +11,7 @@ from typing import (
     Any,
     Generic,
     NamedTuple,
-    Optional,
     TypeVar,
-    Union,
     cast,
     overload,
 )
@@ -30,15 +28,15 @@ class NoInstanceTableError(Exception):
     pass
 
 
-InstanceTableFileFormat = Optional[Union[str, tuple[str, ...]]]
+InstanceTableFileFormat = str | tuple[str, ...] | None
 
 
 class Item(NamedTuple):
     template: str
     answers: Sequence[str]
-    subject: Optional[str] = None
+    subject: str | None = None
 
-    metadata: Optional[dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
     def to_dict(self):
         if self.metadata is not None:
@@ -55,7 +53,7 @@ class Item(NamedTuple):
         return d
 
     @classmethod
-    def from_kw(cls, *, template: str, answers: Sequence[str], subject: Optional[str] = None, **metadata):
+    def from_kw(cls, *, template: str, answers: Sequence[str], subject: str | None = None, **metadata):
         return cls(template=template, answers=answers, subject=subject, metadata=metadata)
 
 
@@ -72,7 +70,7 @@ class DataBase(ABC):
         pass
 
     @abstractmethod
-    def save(self, path: PathLike, fmt: InstanceTableFileFormat = None) -> Optional[Path]:
+    def save(self, path: PathLike, fmt: InstanceTableFileFormat = None) -> Path | None:
         """Save the data under the given path."""
         pass
 
@@ -97,16 +95,16 @@ class RelationBase(DataBase):
 
     _supported_instance_table_file_formats: tuple[InstanceTableFileFormat, ...] = ("jsonl", ("parquet", "*"))
 
-    _len: Optional[int] = None
+    _len: int | None = None
 
     def __init__(
         self,
         relation_code: str,
         *,
-        lazy_options: Optional[dict[str, Any]] = None,
-        instance_table: Optional[pd.DataFrame] = None,
-        answer_space: Optional[pd.Series] = None,
-        relation_info: Optional[dict[str, Any]] = None,
+        lazy_options: dict[str, Any] | None = None,
+        instance_table: pd.DataFrame | None = None,
+        answer_space: pd.Series | None = None,
+        relation_info: dict[str, Any] | None = None,
     ):
         self._relation_code = relation_code
         self._lazy_options = lazy_options
@@ -119,7 +117,7 @@ class RelationBase(DataBase):
         """The identifier of the relation."""
         return self._relation_code
 
-    def copy(self, *, relation_code: Optional[str] = None, **kw):
+    def copy(self, *, relation_code: str | None = None, **kw):
         """Create a copy of the isntance with specified fields replaced by new values."""
 
         if relation_code is None:
@@ -174,7 +172,7 @@ class RelationBase(DataBase):
     @overload
     def relation_info(self, key: str, /) -> Any: ...
 
-    def relation_info(self, key: Optional[str] = None, /, **kw: Any) -> Union[None, Any, dict[str, Any]]:
+    def relation_info(self, key: str | None = None, /, **kw: Any) -> None | Any | dict[str, Any]:
         """Get or set additional relation information.
 
         Use `relation.relation_info(<field name>=<new value>)` to set fields in the relation info dictionary.
@@ -208,7 +206,7 @@ class RelationBase(DataBase):
     @overload
     def get_metadata(self, key: str, /) -> Any: ...
 
-    def get_metadata(self, key: Optional[str] = None) -> Union[Any, dict[str, Any]]:
+    def get_metadata(self, key: str | None = None) -> Any | dict[str, Any]:
         """Get or set metadata.
 
         Parameters:
@@ -261,7 +259,7 @@ class RelationBase(DataBase):
             return pd.Series(answer_labels, index=cls._generate_obj_ids(len(answer_labels), **kw), name="obj_label")
 
     @classmethod
-    def answer_space_from_metadata(cls, metadata, **kw) -> Optional[pd.Series]:
+    def answer_space_from_metadata(cls, metadata, **kw) -> pd.Series | None:
         if "answer_space_labels" in metadata and "answer_space_ids" in metadata:
             if "answer_space_labels" in metadata:
                 answer_space_labels = metadata.pop("answer_space_labels")
@@ -346,7 +344,7 @@ class RelationBase(DataBase):
         cls,
         path: Path,
         *,
-        answer_space: Optional[pd.Series] = None,  # noqa: ARG003
+        answer_space: pd.Series | None = None,  # noqa: ARG003
         fmt: InstanceTableFileFormat = None,
     ) -> pd.DataFrame:
         if not path.exists():
@@ -397,7 +395,7 @@ class RelationBase(DataBase):
             instance_table.to_json(path, orient="records", lines=True)
 
         elif 0 < len(fmt) <= 2 and fmt[0] == "parquet":  # noqa: PLR2004
-            compression: Optional[str]
+            compression: str | None
 
             if len(fmt) == 1:
                 compression = None
@@ -418,7 +416,7 @@ class RelationBase(DataBase):
     def has_instance_table(self) -> bool:
         pass
 
-    def save(self, path: PathLike, fmt: InstanceTableFileFormat = None) -> Optional[Path]:
+    def save(self, path: PathLike, fmt: InstanceTableFileFormat = None) -> Path | None:
         """Save results to a file and export meta_data"""
         save_path = Path(path)
         save_path.mkdir(parents=True, exist_ok=True)
@@ -501,8 +499,8 @@ class RelationBase(DataBase):
 
     @classmethod
     def search_path(
-        cls, path: Path, relation_code: Optional[str] = None, fmt: InstanceTableFileFormat = None
-    ) -> Union[list[Path], Path, None]:
+        cls, path: Path, relation_code: str | None = None, fmt: InstanceTableFileFormat = None
+    ) -> list[Path] | Path | None:
         """Search path for instance files."""
 
         if relation_code is not None and fmt is not None:
@@ -569,7 +567,7 @@ class DatasetBase(DataBase, Generic[RT]):
     def __repr__(self) -> str:
         return str(self)
 
-    def __getitem__(self, key: Union[int, str]) -> RT:
+    def __getitem__(self, key: int | str) -> RT:
         if isinstance(key, int):
             return self.relation_data[key]
         else:
@@ -595,9 +593,9 @@ class DatasetBase(DataBase, Generic[RT]):
         self,
         indices: Mapping[str, Sequence[int]],
         *,
-        save_path: Optional[PathLike] = None,
+        save_path: PathLike | None = None,
         keep_answer_space: bool = False,
-        dataset_name: Optional[str] = None,
+        dataset_name: str | None = None,
     ) -> Self:
         pass
 

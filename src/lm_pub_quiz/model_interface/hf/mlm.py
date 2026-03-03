@@ -4,8 +4,6 @@ import logging
 from collections.abc import Iterable
 from typing import (
     Any,
-    Optional,
-    Union,
 )
 
 import torch
@@ -65,10 +63,10 @@ class MLMInterface(PLLModelInterfaceMixin, HFModelInterface):
         self,
         statements: Iterable[str],
         *,
-        text_roles: Optional[Iterable[TextRoles]] = None,
-        batch_size: Optional[int] = None,
+        text_roles: Iterable[TextRoles] | None = None,
+        batch_size: int | None = None,
         **kw,
-    ) -> Union[Iterable[TokenScoresAndRoles], Iterable[StatementScore]]:
+    ) -> Iterable[TokenScoresAndRoles] | Iterable[StatementScore]:
         """Score individual texts (independent of the other options) using the Masked Language Model.
 
         Parameters:
@@ -94,6 +92,7 @@ class MLMInterface(PLLModelInterfaceMixin, HFModelInterface):
                 for batch_statements, batch_text_roles in zip(
                     iter_batches(statements, batch_size=self.preprocessing_batch_size),
                     iter_batches(text_roles, batch_size=self.preprocessing_batch_size),
+                    strict=True,
                 )
             )
 
@@ -163,7 +162,7 @@ class MLMInterface(PLLModelInterfaceMixin, HFModelInterface):
                 yield value
 
     def preprocess_statements(
-        self, statements: list[str], *, text_roles: Optional[list[TextRoles]] = None
+        self, statements: list[str], *, text_roles: list[TextRoles] | None = None
     ) -> BatchEncoding:
         """Tokenize statements, translate text roles (char level) to token roles and determine which tokens to score."""
         if text_roles is None and self.conditional_score:
@@ -187,7 +186,7 @@ class MLMInterface(PLLModelInterfaceMixin, HFModelInterface):
                 batch["scoring_masks"].append([not special_token for special_token in special_tokens_mask])
 
         else:
-            for input_ids, token_roles in zip(batch["input_ids"], batch["token_roles_internal"]):
+            for input_ids, token_roles in zip(batch["input_ids"], batch["token_roles_internal"], strict=True):
                 mask = [False] * len(input_ids)
 
                 # Only set the mask to true where a token is part of the answer
@@ -211,7 +210,7 @@ class MLMInterface(PLLModelInterfaceMixin, HFModelInterface):
             return [
                 copy.deepcopy(element)
                 for element in itertools.chain.from_iterable(
-                    itertools.repeat(base_element, n) for base_element, n in zip(data, ns)
+                    itertools.repeat(base_element, n) for base_element, n in zip(data, ns, strict=True)
                 )
             ]
 
@@ -233,7 +232,7 @@ class MLMInterface(PLLModelInterfaceMixin, HFModelInterface):
             token_index: int  # index of the token within the current statement
 
             for scoring_index, (token_index, extended_batch_index) in enumerate(
-                zip(token_indices, extended_batch_index_counter)
+                zip(token_indices, extended_batch_index_counter, strict=False)
             ):
                 # Store the statement index for each token such that it can later be assigned more easily
                 extended_batch["statement_index"].append(statement_index)
@@ -322,7 +321,7 @@ class MLMInterface(PLLModelInterfaceMixin, HFModelInterface):
         return extended_batch
 
     def process_extended_statements(
-        self, large_batch: BatchEncoding, *, batch_size: Optional[int] = None
+        self, large_batch: BatchEncoding, *, batch_size: int | None = None
     ) -> Iterable[tuple[int, ScoredToken]]:
         """Process a stream of inputs in batches.
 
@@ -358,6 +357,6 @@ class MLMInterface(PLLModelInterfaceMixin, HFModelInterface):
 
             # Retrieve the score for each of the tokens
             for statement_index, score, token in zip(
-                statement_indices, batch_scores, self.tokenizer.convert_ids_to_tokens(batch_labels)
+                statement_indices, batch_scores, self.tokenizer.convert_ids_to_tokens(batch_labels), strict=True
             ):
                 yield statement_index, ScoredToken((token, score.item()))

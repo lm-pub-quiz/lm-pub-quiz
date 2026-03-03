@@ -3,9 +3,9 @@
 import json
 import logging
 import os
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from pathlib import Path
-from typing import Any, Callable, Optional, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -23,7 +23,7 @@ tqdm.pandas()
 log = logging.getLogger(__name__)
 
 
-KNOWN_DATASET_URLS: dict[str, tuple[str, Union[str, Callable]]] = {
+KNOWN_DATASET_URLS: dict[str, tuple[str, str | Callable]] = {
     "bear": (
         "https://github.com/lm-pub-quiz/BEAR/archive/725b4e3139d0a5fdf914b0419ba744273dddc689.zip",
         "BEAR-725b4e3139d0a5fdf914b0419ba744273dddc689/BEAR",
@@ -45,10 +45,10 @@ class Relation(RelationBase):
         relation_code: str,
         *,
         templates: list[str],
-        answer_space: Optional[pd.Series],
-        instance_table: Optional[pd.DataFrame],
-        lazy_options: Optional[dict[str, Any]],
-        relation_info: Optional[dict[str, Any]] = None,
+        answer_space: pd.Series | None,
+        instance_table: pd.DataFrame | None,
+        lazy_options: dict[str, Any] | None,
+        relation_info: dict[str, Any] | None = None,
     ):
         if instance_table is None and lazy_options is None:
             msg = "Either instance_table of lazy_options must be specified"
@@ -63,7 +63,7 @@ class Relation(RelationBase):
         )
         self.templates = templates
 
-    def get_metadata(self, key: Optional[str] = None) -> Any:
+    def get_metadata(self, key: str | None = None) -> Any:
         if key == "template":
             return self.templates
         elif key is not None:
@@ -95,7 +95,7 @@ class Relation(RelationBase):
         cls,
         path: PathLike,
         *,
-        relation_code: Optional[str] = None,
+        relation_code: str | None = None,
         lazy: bool = True,
         fmt: InstanceTableFileFormat = None,
     ) -> Self:
@@ -179,7 +179,7 @@ class Relation(RelationBase):
             relation_info=metadata,
         )
 
-    def copy(self, *, relation_code: Optional[str] = None, **kw):
+    def copy(self, *, relation_code: str | None = None, **kw):
         kw = {
             "templates": self.templates.copy(),
             **kw,
@@ -215,7 +215,7 @@ class Relation(RelationBase):
 
     @classmethod
     def load_instance_table(
-        cls, path: Path, *, answer_space: Optional[pd.Series] = None, fmt: InstanceTableFileFormat = None
+        cls, path: Path, *, answer_space: pd.Series | None = None, fmt: InstanceTableFileFormat = None
     ) -> pd.DataFrame:
         instance_table = super().load_instance_table(path, answer_space=answer_space, fmt=fmt)
 
@@ -229,8 +229,8 @@ class Relation(RelationBase):
     def get_items(
         self,
         *,
-        template_index: Union[int, Sequence[int], None] = None,
-        subsample: Optional[int] = None,
+        template_index: int | Sequence[int] | None = None,
+        subsample: int | None = None,
         use_tqdm: bool = True,
     ) -> Iterator[Item]:
         df = self.instance_table if subsample is None else self.subsample(subsample)
@@ -273,7 +273,7 @@ class Dataset(DatasetBase[Relation]):
         ```
     """
 
-    def __init__(self, relations: list[Relation], path: PathLike, name: Optional[str] = None):
+    def __init__(self, relations: list[Relation], path: PathLike, name: str | None = None):
         self.relation_data = relations
         self.path = path
         self.name = name
@@ -292,7 +292,7 @@ class Dataset(DatasetBase[Relation]):
         *,
         lazy: bool = True,
         fmt: InstanceTableFileFormat = None,
-        relation_info: Optional[PathLike] = None,
+        relation_info: PathLike | None = None,
         **kwargs,
     ) -> Self:
         """
@@ -347,9 +347,9 @@ class Dataset(DatasetBase[Relation]):
         name: str,
         *,
         lazy: bool = True,
-        base_path: Optional[Path] = None,
+        base_path: Path | None = None,
         chunk_size: int = 10 * 1024,
-        relation_info: Optional[PathLike] = None,
+        relation_info: PathLike | None = None,
         **kwargs,
     ) -> Self:
         """
@@ -421,9 +421,9 @@ class Dataset(DatasetBase[Relation]):
         self,
         indices: Mapping[str, Sequence[int]],
         *,
-        save_path: Optional[PathLike] = None,
+        save_path: PathLike | None = None,
         fmt: InstanceTableFileFormat = None,
-        dataset_name: Optional[str] = None,
+        dataset_name: str | None = None,
         keep_answer_space: bool = False,
     ) -> Self:
         relations: list[Relation] = []

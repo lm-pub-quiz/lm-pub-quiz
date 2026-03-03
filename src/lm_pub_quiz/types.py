@@ -1,10 +1,10 @@
 import os
-from collections.abc import Sequence
-from typing import Callable, TypeVar, Union
+from collections.abc import Callable, Sequence
+from typing import TypeVar
 
 from transformers import CharSpan
 
-PathLike = Union[str, os.PathLike]
+PathLike = str | os.PathLike
 
 ScoringMask = list[bool]  # Denotes tokens which should be used to score a sequence
 

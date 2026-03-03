@@ -11,7 +11,7 @@ def test_tee_unzip():
     original_a = [1, 2, 3]
     original_b = [4, 5, 6]
 
-    a, b = tee_unzip(iter(zip(original_a, original_b)), 2)
+    a, b = tee_unzip(iter(zip(original_a, original_b, strict=True)), 2)
 
     assert list(a) == original_a
     assert list(b) == original_b
@@ -45,7 +45,7 @@ def test_decomposition_consum_sizes_first(inputs):
 def test_decomposition_chain_content(inputs):
     sizes, joined = chain_with_sizes(iter(inputs))
 
-    for size, item in zip(sizes, inputs):
+    for size, item in zip(sizes, inputs, strict=True):
         assert len(item) == size
 
     assert list(joined) == list(chain(*inputs))
@@ -86,9 +86,9 @@ def test_chain_different_sizes(a, b):
 def test_chain_sum(a, b, expected):
     chained = ReversibleChain({"a": a, "b": b})
 
-    result = (a + b for a, b in zip(chained["a"], chained["b"]))
+    result = (a + b for a, b in zip(chained["a"], chained["b"], strict=True))
 
-    for e, r in zip(expected, chained.reverse(result)):
+    for e, r in zip(expected, chained.reverse(result), strict=True):
         assert e == r
 
 
@@ -107,10 +107,10 @@ def test_chain_iter_zipped_loop(a, b, expected):
     chained = ReversibleChain({"a": a, "b": b})
 
     # Setup the pipeline: Within the loop, all elements are chained
-    result = (a + b for a, b in zip(chained["a"], chained["b"]))
+    result = (a + b for a, b in zip(chained["a"], chained["b"], strict=True))
 
     # Consume the results
-    for e, (inputs, r) in zip(expected, chained.reverse(result, yield_inputs=True)):
-        r_direct = [a_ + b_ for a_, b_ in zip(inputs["a"], inputs["b"])]
+    for e, (inputs, r) in zip(expected, chained.reverse(result, yield_inputs=True), strict=True):
+        r_direct = [a_ + b_ for a_, b_ in zip(inputs["a"], inputs["b"], strict=True)]
         assert e == r_direct
         assert e == r

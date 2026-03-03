@@ -3,22 +3,20 @@
 import json
 import logging
 import warnings
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from copy import deepcopy
 from pathlib import Path
 from typing import (
     Any,
-    Callable,
     ClassVar,
-    Optional,
-    Union,
+    Literal,
     cast,
     overload,
 )
 
 import numpy as np
 import pandas as pd
-from typing_extensions import Literal, Self
+from typing_extensions import Self
 
 from lm_pub_quiz.data.base import DatasetBase, InstanceTableFileFormat, NoInstanceTableError, RelationBase
 from lm_pub_quiz.metrics import RelationMetric, accumulate_metrics
@@ -42,11 +40,11 @@ class RelationResult(RelationBase):
         relation_code: str,
         *,
         metadata: dict[str, Any],
-        metric_values: Optional[dict[str, Any]] = None,
-        instance_table: Optional[pd.DataFrame] = None,
-        answer_space: Optional[pd.Series] = None,
-        lazy_options: Optional[dict[str, Any]] = None,
-        relation_info: Optional[dict[str, Any]] = None,
+        metric_values: dict[str, Any] | None = None,
+        instance_table: pd.DataFrame | None = None,
+        answer_space: pd.Series | None = None,
+        lazy_options: dict[str, Any] | None = None,
+        relation_info: dict[str, Any] | None = None,
     ):
         super().__init__(
             relation_code,
@@ -58,7 +56,7 @@ class RelationResult(RelationBase):
         self._metadata = metadata
         self.metric_values: dict[str, Any] = metric_values or {}
 
-    def get_metadata(self, key: Optional[str] = None) -> Any:
+    def get_metadata(self, key: str | None = None) -> Any:
         if key == "metric_values":
             return self.metric_values
         elif key is not None:
@@ -86,8 +84,8 @@ class RelationResult(RelationBase):
         cls,
         path: PathLike,
         *,
-        relation_code: Optional[str] = None,
-        metadata: Optional[dict[str, Any]] = None,
+        relation_code: str | None = None,
+        metadata: dict[str, Any] | None = None,
         lazy: bool = True,
         fmt: InstanceTableFileFormat = None,
     ) -> "RelationResult":
@@ -181,9 +179,9 @@ class RelationResult(RelationBase):
 
     def reduced(
         self,
-        reduction: Union[str, ReductionFunction] = "sum",
+        reduction: str | ReductionFunction = "sum",
         *,
-        reduction_name: Optional[str] = None,
+        reduction_name: str | None = None,
         pass_indices: bool = False,
     ) -> Self:
         if self.get_metadata("reduction") is not None:
@@ -210,7 +208,11 @@ class RelationResult(RelationBase):
                 lambda row: [
                     reduction_func(scores, sub=sub, obj=obj, template=template)
                     for scores, sub, obj, template in zip(
-                        row["pll_scores"], row["sub_indices"], row["obj_indices"], row["template_indices"]
+                        row["pll_scores"],
+                        row["sub_indices"],
+                        row["obj_indices"],
+                        row["template_indices"],
+                        strict=True,
                     )
                 ],
                 axis=1,
@@ -269,7 +271,7 @@ class RelationResult(RelationBase):
         indices: Sequence[int],
         *,
         keep_answer_space: bool = False,
-        dataset_name: Optional[str] = None,
+        dataset_name: str | None = None,
     ) -> Self:
         original_instance_table = self.instance_table
         original_answer_space = self.answer_space
@@ -315,7 +317,7 @@ class RelationResult(RelationBase):
 
     @classmethod
     def load_instance_table(
-        cls, path: Path, *, answer_space: Optional[pd.Series] = None, fmt: InstanceTableFileFormat = None
+        cls, path: Path, *, answer_space: pd.Series | None = None, fmt: InstanceTableFileFormat = None
     ) -> pd.DataFrame:
         instance_table = super().load_instance_table(path, fmt=fmt)
 
@@ -393,7 +395,7 @@ class RelationResult(RelationBase):
                 new_pll_scores = []
 
                 for _, row in instance_table.iterrows():
-                    answer_scores = dict(zip(row["predicted_tokens"], row["pll_scores"]))
+                    answer_scores = dict(zip(row["predicted_tokens"], row["pll_scores"], strict=True))
 
                     new_pll_scores.append([-answer_scores[label] for label in answer_space])
 
@@ -425,7 +427,7 @@ class RelationResult(RelationBase):
 class DatasetResults(DatasetBase[RelationResult]):
     """Container for relation results."""
 
-    def __init__(self, results: Optional[list[RelationResult]] = None):
+    def __init__(self, results: list[RelationResult] | None = None):
         self.relation_data = results or []
 
     def append(self, result: RelationResult) -> None:
@@ -438,7 +440,7 @@ class DatasetResults(DatasetBase[RelationResult]):
         *,
         lazy: bool = True,
         fmt: InstanceTableFileFormat = None,
-        relation_info: Optional[PathLike] = None,
+        relation_info: PathLike | None = None,
         **kwargs,
     ) -> "DatasetResults":
         """
@@ -533,7 +535,7 @@ class DatasetResults(DatasetBase[RelationResult]):
         self,
         metrics: str,
         *,
-        accumulate: Union[Literal[False], None, str],
+        accumulate: Literal[False] | None | str,
         divide_support: bool = True,
     ) -> pd.Series: ...
 
@@ -551,17 +553,17 @@ class DatasetResults(DatasetBase[RelationResult]):
         self,
         metrics: Sequence[str],
         *,
-        accumulate: Union[Literal[False], None, str],
+        accumulate: Literal[False] | None | str,
         divide_support: bool = True,
     ) -> pd.DataFrame: ...
 
     def get_metrics(
         self,
-        metrics: Union[str, Sequence[str]],
+        metrics: str | Sequence[str],
         *,
-        accumulate: Union[bool, None, str] = True,
+        accumulate: bool | None | str = True,
         divide_support: bool = True,
-    ) -> Union[pd.DataFrame, pd.Series, float]:
+    ) -> pd.DataFrame | pd.Series | float:
         """Return the metrics for the relations in this dataset.
 
         Parameters:
@@ -609,10 +611,10 @@ class DatasetResults(DatasetBase[RelationResult]):
         self,
         indices: Mapping[str, Sequence[int]],
         *,
-        save_path: Optional[PathLike] = None,
-        fmt: Optional[InstanceTableFileFormat] = None,
+        save_path: PathLike | None = None,
+        fmt: InstanceTableFileFormat | None = None,
         keep_answer_space: bool = False,
-        dataset_name: Optional[str] = None,
+        dataset_name: str | None = None,
     ):
         relations: list[RelationResult] = []
         for key, value in indices.items():
@@ -626,11 +628,11 @@ class DatasetResults(DatasetBase[RelationResult]):
 
     def reduced(
         self,
-        reduction: Union[str, Callable],
+        reduction: str | Callable,
         *,
-        save_path: Optional[PathLike] = None,
-        fmt: Optional[InstanceTableFileFormat] = None,
-        reduction_name: Optional[str] = None,
+        save_path: PathLike | None = None,
+        fmt: InstanceTableFileFormat | None = None,
+        reduction_name: str | None = None,
         pass_indices: bool = False,
     ) -> Self:
         relations: list[RelationResult] = []
@@ -652,7 +654,7 @@ class DatasetResults(DatasetBase[RelationResult]):
     @overload
     def get_metadata(self, key: list[str]) -> dict[str, Any]: ...
 
-    def get_metadata(self, key: Optional[Union[str, list[str]]] = None):
+    def get_metadata(self, key: str | list[str] | None = None):
         """Return metadata from the relations. If no keys are passed, all consistent values are returned."""
 
         intersection: Any = None

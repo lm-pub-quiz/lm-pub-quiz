@@ -1,6 +1,6 @@
 import warnings
 from collections.abc import Mapping
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 import numpy as np
 
@@ -26,11 +26,11 @@ class PrecisionAtK(BasicMetric):
 
     def reset(self):
         super().reset()
-        self.num_correct_at_k: Optional[np.ndarray] = None
+        self.num_correct_at_k: np.ndarray | None = None
 
     def add_instance(self, row: Mapping):
         super().add_instance(row)
-        ranked_indices, _ = zip(*sort_scores(cast(list[float], row["pll_scores"])))
+        ranked_indices, _ = zip(*sort_scores(cast(list[float], row["pll_scores"])), strict=True)
 
         if self.num_correct_at_k is None:
             # Initialize the array

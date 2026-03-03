@@ -2,11 +2,7 @@
 
 import logging
 import warnings
-from collections.abc import Sequence
-from typing import (
-    Callable,
-    Optional,
-)
+from collections.abc import Callable, Sequence
 
 from tqdm.auto import tqdm
 from transformers import (
@@ -29,7 +25,7 @@ def derive_token_roles(
     *,
     batch: BatchEncoding,
     text_roles: list[TextRoles],
-    scoring_masks: Optional[list[ScoringMask]],
+    scoring_masks: list[ScoringMask] | None,
     output_indices: bool,
 ) -> Sequence[TokenRoles]:
     warnings.warn(
@@ -50,7 +46,7 @@ def derive_token_roles(
     else:
         return [
             remap_token_roles(token_roles_internal=roles, scoring_mask=mask)
-            for roles, mask in zip(token_roles, scoring_masks)
+            for roles, mask in zip(token_roles, scoring_masks, strict=True)
         ]
 
 
@@ -85,13 +81,13 @@ def derive_token_roles_internal(
         for k, v in spans.items():
             for start, end in v:
                 # go through the span until we find the first token
-                first_affected_token: Optional[int] = next(
+                first_affected_token: int | None = next(
                     (t for i in range(start, end) if (t := batch.char_to_token(statement_index, i)) is not None),
                     None,
                 )
 
                 # do the same, just in reversed order
-                last_affected_token: Optional[int] = next(
+                last_affected_token: int | None = next(
                     (
                         t
                         for i in reversed(range(start, end))

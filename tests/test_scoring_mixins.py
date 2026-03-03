@@ -26,7 +26,8 @@ def test_answer_l2r_word_l2r(distilbert):
             answers=answers,
             subject=subject,
             reduction=None,
-        )
+        ),
+        strict=True,
     )
 
     assert len(result) == 3
@@ -53,7 +54,8 @@ def test_answer_l2r_word_l2r(distilbert):
                 answer=a,
             )
             for a in answers
-        )
+        ),
+        strict=True,
     )
 
     batch = evaluator.model_interface.preprocess_statements(
@@ -129,7 +131,7 @@ def test_sentence_l2r(distilbert):
         -4.003668785095215,
     ]
 
-    for (_, a), b in zip(scores, reference_scores):
+    for (_, a), b in zip(scores, reference_scores, strict=True):
         assert a == pytest.approx(b, abs=1e-5)
 
 
@@ -154,7 +156,7 @@ def test_within_word_l2r(distilbert):
         -1.5065603256225586,
     ]
 
-    for (_, a), b in zip(scores, reference_scores):
+    for (_, a), b in zip(scores, reference_scores, strict=True):
         assert a == pytest.approx(b, abs=1e-5)
 
 
@@ -179,5 +181,5 @@ def test_original(distilbert):
         -1.5065603256225586,
     ]
 
-    for (_, a), b in zip(scores, reference_scores):
+    for (_, a), b in zip(scores, reference_scores, strict=True):
         assert a == pytest.approx(b, abs=1e-5)

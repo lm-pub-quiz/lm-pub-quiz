@@ -17,19 +17,38 @@ jobs:
       id-token: write
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    - uses: actions/checkout@v6
+
+    - name: Set up Python ${{ matrix.python-version }}
+      id: setup-python
+      uses: actions/setup-python@v6
       with:
-        python-version: '3.11'
-        cache: 'pip'
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install hatch
+        python-version: 3.10
+
+    - name: Install Hatch
+      uses: pypa/hatch@install
+
+    # Set up caching of hatch's virtual environment
+    - name: Set up hatch environment cache
+      if: runner.os == 'Linux'
+      uses: "actions/cache@v5"
+      with:
+        path: .venv/
+        key: "hatch-env-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('pyproject.toml') }}"
+        restore-keys: "hatch-env-${{ steps.setup-python.outputs.python-version }}-"
+
+    - name: Configure hatch
+      run: hatch config set dirs.env.virtual ".venv"
+
+    - name: Lint
+      run: hatch run lint:fmt
+    - name: Type Checking
+      run: hatch run lint:typing-github
+    - name: Tests
+      run: hatch run test:test
+
     - name: Build package
       run: hatch build
-    - name: Test package
-      run: hatch run test
+
     - name: Publish package distributions to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1

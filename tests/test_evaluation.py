@@ -340,7 +340,7 @@ def test_dataset_conditional_evaluation(distilbert, request, tmp_path):
                 log.info(row)
                 assert len(row["pll_scores"]) == 3
 
-                for actual, expected in zip(row["pll_scores"], expected_scores[r.relation_code][i]):
+                for actual, expected in zip(row["pll_scores"], expected_scores[r.relation_code][i], strict=True):
                     assert actual == pytest.approx(expected, abs=1e-5)
 
             assert r.get_metadata("dataset_name") == "dummy_dataset"
@@ -353,7 +353,8 @@ def test_token_scores_within_word_l2r(distilbert):
     evaluator = Evaluator.from_model(model, tokenizer=tokenizer, pll_metric="within_word_l2r")
 
     result, indices = zip(
-        *evaluator.evaluate_item(template="The traveler lost the [Y].", answers=["bet", "souvenir"], reduction=None)
+        *evaluator.evaluate_item(template="The traveler lost the [Y].", answers=["bet", "souvenir"], reduction=None),
+        strict=True,
     )
 
     assert len(result) == 2
@@ -380,7 +381,8 @@ def test_token_scores_original(distilbert):
     evaluator = Evaluator.from_model(model, tokenizer=tokenizer, pll_metric="original")
 
     result, _ = zip(
-        *evaluator.evaluate_item(template="The traveler lost the [Y].", answers=["bet", "souvenir"], reduction=None)
+        *evaluator.evaluate_item(template="The traveler lost the [Y].", answers=["bet", "souvenir"], reduction=None),
+        strict=True,
     )
 
     assert len(result) == 2

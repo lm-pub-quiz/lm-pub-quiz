@@ -2,7 +2,7 @@ import itertools
 import os
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
-from typing import Any, Literal, Union, cast, overload
+from typing import Any, Literal, cast, overload
 
 from torch import Tensor
 from transformers import BatchEncoding
@@ -19,7 +19,7 @@ def sort_scores(scores: list[float]) -> list[tuple[int, float]]:
     return indexed_list
 
 
-def parse_dumped_raw_results(result: Union[ItemTokenScoresAndRoles, ItemScores]) -> dict[str, Any]:
+def parse_dumped_raw_results(result: ItemTokenScoresAndRoles | ItemScores) -> dict[str, Any]:
     row = {}
 
     if any(isinstance(r, (int, float)) for r in result):
@@ -34,7 +34,7 @@ def parse_dumped_raw_results(result: Union[ItemTokenScoresAndRoles, ItemScores])
         roles: TokenRoles
 
         for token_scores, roles in result:
-            tokens, scores = zip(*token_scores)
+            tokens, scores = zip(*token_scores, strict=True)
             row["tokens"].append(tokens)
             row["pll_scores"].append(scores)
 
@@ -49,39 +49,40 @@ def parse_dumped_raw_results(result: Union[ItemTokenScoresAndRoles, ItemScores])
     return row
 
 
-def iter_batches(data_collection: T, batch_size: int) -> Iterable[T]:
+def iter_batches(collection: T, batch_size: int) -> Iterable[T]:
     """Yield successive n-sized chunks from tensors in provided dictionary."""
-    assert data_collection is not None
+    assert collection is not None
 
     if batch_size < 1:
         msg = "`batch_size` must be at least 1."
         raise ValueError(msg)
 
-    if isinstance(data_collection, BatchEncoding):
-        for batch, encodings in zip(
-            iter_batches(data_collection.data, batch_size=batch_size),
-            iter_batches(
-                data_collection.encodings,
-                batch_size=batch_size,
-            )
-            if data_collection.encodings is not None
-            else itertools.repeat(None),
-        ):
-            yield BatchEncoding(batch, encoding=encodings)
+    if isinstance(collection, BatchEncoding):
+        if collection.encodings is None:
+            for batch in iter_batches(collection.data, batch_size=batch_size):
+                yield BatchEncoding(batch, encoding=None)
 
-    elif isinstance(data_collection, Mapping):
-        keys, values = data_collection.keys(), data_collection.values()
+        else:
+            for batch, encodings in zip(
+                iter_batches(collection.data, batch_size=batch_size),
+                iter_batches(collection.encodings, batch_size=batch_size),
+                strict=True,
+            ):
+                yield BatchEncoding(batch, encoding=encodings)
+
+    elif isinstance(collection, Mapping):
+        keys, values = collection.keys(), collection.values()
 
         for batch_values in itertools.zip_longest(*(iter_batches(v, batch_size=batch_size) for v in values)):
             assert len(keys) == len(batch_values)
-            yield dict(zip(keys, batch_values))
+            yield dict(zip(keys, batch_values, strict=True))
 
-    elif isinstance(data_collection, Tensor):
-        for i in range(0, data_collection.size(0), batch_size):
-            yield data_collection[i : i + batch_size]
+    elif isinstance(collection, Tensor):
+        for i in range(0, collection.size(0), batch_size):
+            yield collection[i : i + batch_size]
 
     else:
-        it = iter(data_collection)
+        it = iter(collection)
 
         while batch := tuple(itertools.islice(it, batch_size)):
             yield list(batch)
@@ -130,7 +131,8 @@ class ReversibleChain(Mapping[str, Iterator]):
             reverse_iterators[k], forward_iterators[k] = itertools.tee(v, 2)
 
         self._input_iterator = iter(
-            dict(zip(reverse_iterators.keys(), sequences)) for sequences in zip(*reverse_iterators.values())
+            dict(zip(reverse_iterators.keys(), sequences, strict=True))
+            for sequences in zip(*reverse_iterators.values(), strict=True)
         )
 
         for k, v in forward_iterators.items():
@@ -157,8 +159,8 @@ class ReversibleChain(Mapping[str, Iterator]):
 
     def reverse(
         self, iterable: Iterable[T], *, yield_inputs: bool = False
-    ) -> Union[Iterator[Sequence[T]], Iterator[tuple[Sequence[T], dict[str, Sequence]]]]:
-        for inputs, result in zip(self._input_iterator, unchain(iterable, sizes=self.sizes)):
+    ) -> Iterator[Sequence[T]] | Iterator[tuple[Sequence[T], dict[str, Sequence]]]:
+        for inputs, result in zip(self._input_iterator, unchain(iterable, sizes=self.sizes), strict=True):
             if yield_inputs:
                 yield inputs, result
             else:

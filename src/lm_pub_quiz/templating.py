@@ -1,6 +1,5 @@
 import logging
 import re
-from typing import Optional
 
 from lm_pub_quiz.data.base import Item
 from lm_pub_quiz.types import TextRoles, TextSelection
@@ -30,8 +29,8 @@ class Templater:
         self,
         *,
         template: str,
-        subject: Optional[str],
-        answer: Optional[str],
+        subject: str | None,
+        answer: str | None,
     ) -> tuple[str, TextRoles]:
         """Replace all placeholders in the template with the respective values.
 
@@ -52,7 +51,7 @@ class Templater:
             "answer": [],
         }
 
-        last_match_end: Optional[int] = None
+        last_match_end: int | None = None
 
         # count the offset introduced by replacements
         offset = 0
@@ -60,7 +59,7 @@ class Templater:
         for match in self._search_pattern.finditer(template):
             key = match.group()
 
-            value: Optional[str]
+            value: str | None
             span_list: TextSelection
 
             if key == self._subject_placeholder:

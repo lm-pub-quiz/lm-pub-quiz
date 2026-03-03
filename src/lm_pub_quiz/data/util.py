@@ -3,7 +3,6 @@ import re
 import tempfile
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Union
 from zipfile import ZipFile
 
 import requests
@@ -12,18 +11,18 @@ from tqdm import tqdm
 from lm_pub_quiz.types import PathLike
 
 
-def _natural_sort_convert(text: str) -> Union[str, int]:
+def _natural_sort_convert(text: str) -> str | int:
     return int(text) if text.isdigit() else text.lower()
 
 
 _natural_sort_key_pattern = re.compile("([0-9]+)")
 
 
-def _natural_sort_key(key: str) -> tuple[Union[str, int], ...]:
+def _natural_sort_key(key: str) -> tuple[str | int, ...]:
     return tuple(_natural_sort_convert(c) for c in re.split(_natural_sort_key_pattern, key))
 
 
-def natural_sort(iterable: Iterable[Union[str, Path]]) -> list[str]:
+def natural_sort(iterable: Iterable[str | Path]) -> list[str]:
     """Source: https://stackoverflow.com/a/4836734"""
     return sorted(map(str, iterable), key=_natural_sort_key)
 
