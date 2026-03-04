@@ -22,7 +22,7 @@ class VLLMInterface(PLLModelInterfaceMixin, ModelInterface):
         self,
         model: str,
         *,
-        loading_batch_size: int = 1000,
+        loading_batch_size: int = 10000,
         ensure_bos_token_added: bool = True,
         use_tqdm: bool = False,
         **kw,
