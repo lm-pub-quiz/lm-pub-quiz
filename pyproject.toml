@@ -30,6 +30,11 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 
+[project.optional-dependencies]
+vllm = [
+  "vllm",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

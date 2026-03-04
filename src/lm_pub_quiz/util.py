@@ -22,7 +22,7 @@ def sort_scores(scores: list[float]) -> list[tuple[int, float]]:
 def parse_dumped_raw_results(result: ItemTokenScoresAndRoles | ItemScores) -> dict[str, Any]:
     row = {}
 
-    if any(isinstance(r, (int, float)) for r in result):
+    if any(isinstance(r, int | float) for r in result):
         result = cast(ItemScores, result)
         row["pll_scores"] = result
     else:

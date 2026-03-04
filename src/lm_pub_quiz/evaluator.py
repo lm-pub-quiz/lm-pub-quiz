@@ -82,34 +82,37 @@ class Evaluator:
 
         log.debug("Evaluating `%s` on `%s`", self.model_interface.model_name, dataset.name)
 
-        for relation in tqdm(dataset, total=len(dataset), unit="relations", desc=f"Dataset {dataset.name}"):
-            try:
-                log.info("Evaluating `%s` on %s.", self.model_interface.model_name, relation)
-                relation_result = self.evaluate_relation(
-                    relation,
-                    template_index=template_index,
-                    subsample=subsample,
-                    create_instance_table=create_instance_table,
-                    metric=metric,
-                    **kw,
-                )
-                relation_result._metadata.update(self.get_result_metadata(dataset=dataset))
+        with tqdm(
+            dataset, total=len(dataset), unit="relations", desc=f"Dataset {dataset.name}", leave=None
+        ) as relations_bar:
+            for relation in relations_bar:
+                try:
+                    log.debug("Evaluating `%s` on %s.", self.model_interface.model_name, relation)
+                    relation_result = self.evaluate_relation(
+                        relation,
+                        template_index=template_index,
+                        subsample=subsample,
+                        create_instance_table=create_instance_table,
+                        metric=metric,
+                        **kw,
+                    )
+                    relation_result._metadata.update(self.get_result_metadata(dataset=dataset))
 
-                if save_path is not None:
-                    log.debug("Saving")
-                    relation_result = relation_result.saved(save_path, fmt=fmt)
+                    if save_path is not None:
+                        log.debug("Saving")
+                        relation_result = relation_result.saved(save_path, fmt=fmt)
 
-                dataset_results.append(relation_result)
+                    dataset_results.append(relation_result)
 
-            except RuntimeError as e:
-                logging.error(
-                    "Encountered RuntimeException while evaluating `%s` on %s.",
-                    self.model_interface.model_name,
-                    relation,
-                )
-                log.exception(e)
-                log.warning("Continuing execution (you may want to rerun relation %s)...", relation)
-                continue
+                except RuntimeError as e:
+                    logging.error(
+                        "Encountered RuntimeException while evaluating `%s` on %s.",
+                        self.model_interface.model_name,
+                        relation,
+                    )
+                    log.exception(e)
+                    log.warning("Continuing execution (you may want to rerun relation %s)...", relation)
+                    continue
         log.info("Completed the evaluation on dataset `%s`.", dataset.name)
 
         return dataset_results

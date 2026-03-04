@@ -255,7 +255,9 @@ class Relation(RelationBase):
         )
 
         if use_tqdm:
-            return tqdm(instances, total=len(df) * len(template_index), desc=f"Relation {self.relation_code}")
+            return tqdm(
+                instances, total=len(df) * len(template_index), desc=f"Relation {self.relation_code}", leave=None
+            )
         else:
             return instances
 
