@@ -1,0 +1,6 @@
+{
+  "dataset_name": "dummy_dataset",
+  "dataset_version": 1.0,
+  "dataset_path": "tests/test_data/dummy_dataset",
+        "model_name": "distilbert-base-cased"
+}

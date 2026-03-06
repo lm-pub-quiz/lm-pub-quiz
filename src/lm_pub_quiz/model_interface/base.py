@@ -41,7 +41,7 @@ class ModelInterface(ABC):
 
     def get_metadata(self) -> dict[str, Any]:
         return {
-            "model_name": self.model_name,
+            "name": self.model_name,
         }
 
 

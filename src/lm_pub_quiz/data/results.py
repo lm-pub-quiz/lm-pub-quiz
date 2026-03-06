@@ -28,7 +28,6 @@ log = logging.getLogger(__name__)
 
 class RelationResult(RelationBase):
     _instance_table_file_name_suffix = "_results"
-    _metadata_file_name: str = "metadata_results.json"
 
     _default_reductions: ClassVar[dict[str, ReductionFunction]] = {
         "sum": cast(ReductionFunction, np.sum),
@@ -80,6 +79,21 @@ class RelationResult(RelationBase):
         return self.get_metadata("templates")[self.get_metadata("template_index")]
 
     @classmethod
+    def get_relations_metadata_path(cls, dataset_path: PathLike) -> Path:
+        dataset_path = Path(dataset_path)
+
+        if not dataset_path.is_dir():
+            return dataset_path
+
+        elif (
+            not (dataset_path / cls._metadata_file_name).exists() and (dataset_path / "metadata_results.json").exists()
+        ):
+            # legacy fil path
+            return dataset_path / "metadata_results.json"
+        else:
+            return dataset_path / cls._metadata_file_name
+
+    @classmethod
     def from_path(
         cls,
         path: PathLike,
@@ -124,7 +138,8 @@ class RelationResult(RelationBase):
             raise ValueError(msg)
 
         if metadata is None:
-            metadata_path = path_to_load.parent / cls._metadata_file_name
+            metadata_path = cls.get_relations_metadata_path(path_to_load.parent)
+
             if metadata_path.exists():
                 with open(metadata_path) as meta_file:
                     try:
@@ -271,16 +286,11 @@ class RelationResult(RelationBase):
         indices: Sequence[int],
         *,
         keep_answer_space: bool = False,
-        dataset_name: str | None = None,
     ) -> Self:
         original_instance_table = self.instance_table
         original_answer_space = self.answer_space
 
         instance_table = original_instance_table.iloc[indices].copy().reset_index()
-
-        metadata = self._metadata.copy()
-        if dataset_name is not None:
-            metadata["dataset_name"] = dataset_name
 
         if keep_answer_space:
             answer_space = original_answer_space
@@ -311,7 +321,6 @@ class RelationResult(RelationBase):
 
         return self.copy(
             instance_table=instance_table,
-            metadata=metadata,
             answer_space=answer_space,
         )
 
@@ -427,7 +436,9 @@ class RelationResult(RelationBase):
 class DatasetResults(DatasetBase[RelationResult]):
     """Container for relation results."""
 
-    def __init__(self, results: list[RelationResult] | None = None):
+    def __init__(self, results: list[RelationResult] | None = None, *, metadata: dict[str, Any] | None = None):
+        super().__init__(metadata=metadata)
+
         self.relation_data = results or []
 
     def append(self, result: RelationResult) -> None:
@@ -441,6 +452,7 @@ class DatasetResults(DatasetBase[RelationResult]):
         lazy: bool = True,
         fmt: InstanceTableFileFormat = None,
         relation_info: PathLike | None = None,
+        metadata: dict[str, Any] | None = None,
         **kwargs,
     ) -> "DatasetResults":
         """
@@ -464,34 +476,85 @@ class DatasetResults(DatasetBase[RelationResult]):
             results = DatasetResults.load_from_path('/path/to/results/', dataset_name='BEAR')
             ```
         """
-        results_path = Path(path)
+        path = Path(path)
 
-        if not results_path.exists():
-            msg = f"{cls.__name__} at `{results_path}` could not be opened: Path does not exist."
+        if not path.exists():
+            msg = f"{cls.__name__} at `{path}` could not be opened: Path does not exist."
             raise FileNotFoundError(msg)
 
-        if results_path.is_dir():
-            metadata_path = results_path / "metadata_results.json"
+        if path.is_dir():
+            relations_metadata_path = RelationResult.get_relations_metadata_path(path)
 
-            if not results_path.exists():
-                msg = f"Metadata for dataset at `{results_path}` not found (expected at `{metadata_path})."
+            if not relations_metadata_path.exists():
+                msg = f"Metadata for dataset at `{path}` not found (expected at `{relations_metadata_path})."
                 raise FileNotFoundError(msg)
         else:
-            metadata_path = results_path
+            relations_metadata_path = path
+            path = path.parent
 
-        log.info("Loading results from: %s", results_path)
+        log.info("Loading results from: %s", path)
+        _dataset_metadata_loaded: bool = False
 
-        with open(metadata_path) as meta_file:
-            dataset_metadata = json.load(meta_file)
+        if (path / cls._metadata_file_name).exists():
+            # Load the dataset metadata
+            with (path / cls._metadata_file_name).open() as f:
+                loaded_metadata = json.load(f)
 
-        obj = cls([], **kwargs)
+            _dataset_metadata_loaded = True
 
-        for relation_code, relation_metadata in dataset_metadata.items():
+            # if no name was passed, default to using the name of the dataset directory
+            if metadata is not None:
+                loaded_metadata.update_relation_info(metadata)
+
+            dataset_metadata = loaded_metadata
+        else:
+            log.warning("No metadata found at `%s`.", str(path))
+            if metadata is not None:
+                dataset_metadata = {**metadata}
+            else:
+                dataset_metadata = {}
+
+        with open(relations_metadata_path) as f:
+            relations_metadata = json.load(f)
+
+            if not _dataset_metadata_loaded:
+                # Legacy style results: Metadata may be stored in the relation metadata
+                log.debug("No dataset-level metadata found. Deriving it from the relation metadata.")
+
+                _dataset_metadata_intersection: dict[str, Any] | None = None
+
+                for _, rel_data in relations_metadata.items():
+                    if _dataset_metadata_intersection is None:
+                        _dataset_metadata_intersection = {
+                            k: v for k, v in rel_data.items() if k not in dataset_metadata
+                        }
+
+                    else:
+                        for k, v in rel_data.items():
+                            if k in dataset_metadata:
+                                continue
+                            if k in _dataset_metadata_intersection and _dataset_metadata_intersection[k] != v:
+                                del _dataset_metadata_intersection[k]
+
+                if _dataset_metadata_intersection is not None:
+                    logging.debug(
+                        "Adding the following fields to the dataset-level metadata: %s",
+                        ", ".join(_dataset_metadata_intersection.keys()),
+                    )
+                    dataset_metadata.update(_dataset_metadata_intersection)
+                    logging.debug(str(dataset_metadata))
+
+                if "model_name" not in dataset_metadata and "model_name_or_path" in dataset_metadata:
+                    dataset_metadata["model_name"] = dataset_metadata["model_name_or_path"]
+
+        obj = cls([], metadata=dataset_metadata, **kwargs)
+
+        for rel_code, rel_metadata in relations_metadata.items():
             obj.append(
                 RelationResult.from_path(
-                    metadata_path.parent,
-                    metadata=relation_metadata,
-                    relation_code=relation_code,
+                    path,
+                    metadata=rel_metadata,
+                    relation_code=rel_code,
                     fmt=fmt,
                     lazy=lazy,
                 )
@@ -507,7 +570,7 @@ class DatasetResults(DatasetBase[RelationResult]):
         if not self.is_lazy:
             return self
         else:
-            return self.__class__([rel.activated() for rel in self])
+            return self.__class__([rel.activated() for rel in self], metadata={**self.metadata})
 
     @staticmethod
     def _construct_metrics_dict(metrics: Iterable[str], relation: RelationResult) -> dict[str, float]:
@@ -618,13 +681,26 @@ class DatasetResults(DatasetBase[RelationResult]):
     ):
         relations: list[RelationResult] = []
         for key, value in indices.items():
-            rel = self[key].filter_subset(value, keep_answer_space=keep_answer_space, dataset_name=dataset_name)
+            rel = self[key].filter_subset(value, keep_answer_space=keep_answer_space)
             if save_path is not None:
                 rel = rel.saved(path=save_path, fmt=fmt)
 
             relations.append(rel)
 
-        return self.__class__(relations)
+        if dataset_name is None:
+            dataset_name = f"{self.metadata.get('dataset_name', 'unkown dataset')} (subset)"
+
+        metadata = {
+            **self.metadata,
+            "dataset_name": dataset_name,
+        }
+
+        new_result = self.__class__(relations, metadata=metadata)
+
+        if save_path is not None:
+            new_result.save_metadata(save_path)
+
+        return new_result
 
     def reduced(
         self,
@@ -644,43 +720,3 @@ class DatasetResults(DatasetBase[RelationResult]):
             relations.append(new_rel)
 
         return self.__class__(relations)
-
-    @overload
-    def get_metadata(self, key: None = None) -> dict[str, Any]: ...
-
-    @overload
-    def get_metadata(self, key: str) -> Any: ...
-
-    @overload
-    def get_metadata(self, key: list[str]) -> dict[str, Any]: ...
-
-    def get_metadata(self, key: str | list[str] | None = None):
-        """Return metadata from the relations. If no keys are passed, all consistent values are returned."""
-
-        intersection: Any = None
-        _is_first: bool = True
-
-        for rel in self:
-            m: dict[str, Any] = rel.get_metadata()
-
-            if _is_first:
-                if key is None:
-                    intersection = {**m}
-                elif isinstance(key, str):
-                    intersection = m[key]
-                else:
-                    intersection = {k: m[k] for k in key if k in m}
-
-                _is_first = False
-
-            elif isinstance(key, str):
-                if key not in m or m[key] != intersection:
-                    intersection = None
-            else:
-                assert isinstance(intersection, dict)
-
-                for k, v in m.items():
-                    if k in intersection and v != intersection[k]:
-                        del intersection[k]
-
-        return intersection

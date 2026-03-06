@@ -102,6 +102,9 @@ def test_incorrect_template(distilbert):
 def test_dataset_evaluation(distilbert, request, tmp_path, lazy):
     dataset = Dataset.from_path(request.path.parent / "test_data" / "dummy_dataset")
 
+    assert dataset.metadata["name"] == "dummy_dataset"
+    assert dataset.metadata["version"] == "1.0"
+
     model, tokenizer = distilbert
     evaluator = Evaluator.from_model(model, tokenizer=tokenizer)
 
@@ -109,12 +112,20 @@ def test_dataset_evaluation(distilbert, request, tmp_path, lazy):
     assert isinstance(results, DatasetResults)
     assert all(isinstance(r, RelationResult) for r in results)
 
+    assert results.metadata["dataset_name"] == "dummy_dataset"
+    assert results.metadata["dataset_version"] == "1.0"
+    assert results.metadata["lm_pub_quiz_version"] == __version__
+    assert "distilbert" in results.metadata["model_name"]
+
+    assert results.metadata["model_pll_metric"] == "within_word_l2r"
+
     results.save(tmp_path)
     log.debug("Contents of result directory:\n%s", "\n".join(str(p) for p in tmp_path.glob("*")))
 
     del results
 
-    assert (tmp_path / "metadata_results.json").exists(), "Results metadata file expected but not found."
+    assert (tmp_path / "metadata.json").exists(), "Dataset metadata file expected but not found."
+    assert (tmp_path / "metadata_relations.json").exists(), "Results metadata file expected but not found."
     assert (tmp_path / "example_1_results.jsonl").exists(), "Instance-file for example_1 expected but not found."
     assert (tmp_path / "example_2_results.jsonl").exists(), "Instance-file for example_2 expected but not found."
 
@@ -147,13 +158,8 @@ def test_dataset_evaluation(distilbert, request, tmp_path, lazy):
 
             metadata = r.get_metadata()
 
-            assert metadata["dataset_name"] == "dummy_dataset"
             assert metadata["reduction"] == "sum"
 
-            assert metadata["lm_pub_quiz_version"] == __version__
-            assert metadata["pll_metric"] == "within_word_l2r"
-
-            assert "distilbert" in metadata["model_name_or_path"]
             assert all(key in metadata.keys() for key in ["answer_space_ids", "answer_space_labels"])
             assert len(metadata["answer_space_ids"]) == len(metadata["answer_space_labels"])
 
@@ -196,15 +202,18 @@ def test_dataset_evaluation_with_direct_scores(distilbert, request, tmp_path):
 
     del results
 
-    assert (tmp_path / "metadata_results.json").exists(), "Results metadata file expected but not found."
+    assert (tmp_path / "metadata_relations.json").exists(), "Results metadata file expected but not found."
 
-    with open(tmp_path / "metadata_results.json") as f:
+    with open(tmp_path / "metadata_relations.json") as f:
         log.debug(f.read())
 
     assert not (tmp_path / "example_1_results.jsonl").exists(), "Instance-file for example_1 not expected but found."
     assert not (tmp_path / "example_2_results.jsonl").exists(), "Instance-file for example_2 not expected but found."
 
     results = DatasetResults.from_path(tmp_path, lazy=True)
+
+    assert results.metadata["dataset_name"] == "dummy_dataset"
+    assert "distilbert" in results.metadata["model_name"]
 
     r: RelationResult
     for r in results:
@@ -220,9 +229,7 @@ def test_dataset_evaluation_with_direct_scores(distilbert, request, tmp_path):
 
             assert r.get_metric("accuracy") == 1.0
 
-            assert r.get_metadata("dataset_name") == "dummy_dataset"
             assert r.get_metadata("reduction") == "sum"
-            assert "distilbert" in r.get_metadata("model_name_or_path")
 
     assert results.get_metrics(["accuracy"], accumulate=True)["accuracy"] >= 0.5
 
@@ -239,9 +246,14 @@ def test_dataset_evaluation_with_save_path(distilbert, request, tmp_path):
 
     log.debug("Contents of result directory:\n%s", "\n".join(str(p) for p in tmp_path.glob("*")))
 
-    assert (tmp_path / "metadata_results.json").exists(), "Results metadata file expected but not found."
+    assert (tmp_path / "metadata_relations.json").exists(), "Results metadata file expected but not found."
     assert (tmp_path / "example_1_results.jsonl").exists(), "Instance-file for example_1 expected but not found."
     assert (tmp_path / "example_2_results.jsonl").exists(), "Instance-file for example_2 expected but not found."
+
+    assert results.metadata["dataset_name"] == "dummy_dataset"
+    assert "distilbert" in results.metadata["model_name"]
+
+    assert results.metadata["model_pll_metric"] == "within_word_l2r"
 
     r: RelationResult
     for r in results:
@@ -269,10 +281,7 @@ def test_dataset_evaluation_with_save_path(distilbert, request, tmp_path):
 
             assert r.get_metric("accuracy") == 1.0
 
-            assert r.get_metadata("dataset_name") == "dummy_dataset"
             assert r.get_metadata("reduction") == "sum"
-            assert r.get_metadata("pll_metric") == "within_word_l2r"
-            assert "distilbert" in r.get_metadata("model_name_or_path")
 
 
 @pytest.mark.parametrize("pll_metric", ("original", "within_word_l2r"))
@@ -287,8 +296,10 @@ def test_pll_metric_metadata(distilbert, request, pll_metric):
     assert result.relation_code == "example_1"
 
     assert result.get_metadata("reduction") == "sum"
-    assert result.get_metadata("pll_metric") == pll_metric
-    assert "distilbert" in result.get_metadata("model_name_or_path")
+
+    assert result.get_metadata("model_pll_metric") == pll_metric
+
+    assert "distilbert" in result.get_metadata("model_name")
 
 
 def test_dataset_conditional_evaluation(distilbert, request, tmp_path):
@@ -305,7 +316,7 @@ def test_dataset_conditional_evaluation(distilbert, request, tmp_path):
 
     del results
 
-    assert (tmp_path / "metadata_results.json").exists(), "Results metadata file expected but not found."
+    assert (tmp_path / "metadata_relations.json").exists(), "Results metadata file expected but not found."
     assert (tmp_path / "example_1_results.jsonl").exists(), "Instance-file for example_1 expected but not found."
     assert (tmp_path / "example_2_results.jsonl").exists(), "Instance-file for example_2 expected but not found."
 
@@ -327,6 +338,9 @@ def test_dataset_conditional_evaluation(distilbert, request, tmp_path):
         ],
     }
 
+    assert results.metadata["dataset_name"] == "dummy_dataset"
+    assert "distilbert" in results.metadata["model_name"]
+
     r: RelationResult
     for r in results:
         if r.relation_code in ("example_1", "example_2"):
@@ -343,9 +357,7 @@ def test_dataset_conditional_evaluation(distilbert, request, tmp_path):
                 for actual, expected in zip(row["pll_scores"], expected_scores[r.relation_code][i], strict=True):
                     assert actual == pytest.approx(expected, abs=1e-5)
 
-            assert r.get_metadata("dataset_name") == "dummy_dataset"
             assert r.get_metadata("reduction") == "sum"
-            assert "distilbert" in r.get_metadata("model_name_or_path")
 
 
 def test_token_scores_within_word_l2r(distilbert):

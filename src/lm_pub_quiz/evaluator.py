@@ -4,11 +4,7 @@ import itertools
 import logging
 from collections.abc import Iterable, Iterator, Sequence
 from datetime import datetime, timezone
-from typing import (
-    Any,
-    Literal,
-    overload,
-)
+from typing import Literal, overload
 
 import pandas as pd
 from tqdm.auto import tqdm
@@ -78,7 +74,21 @@ class Evaluator:
             msg = "Neither the instance table nor any metrics are computed: Specify the use of at least one."
             raise ValueError(msg)
 
-        dataset_results = DatasetResults()
+        metadata = {
+            "lm_pub_quiz_version": __version__,
+        }
+
+        for k, v in dataset.metadata.items():
+            metadata[f"dataset_{k}"] = v
+
+        for k, v in self.model_interface.get_metadata().items():
+            metadata[f"model_{k}"] = v
+
+        dataset_results = DatasetResults(metadata=metadata)
+
+        if save_path is not None:
+            log.debug("Saving datset metadata")
+            dataset_results.save_metadata(save_path)
 
         log.debug("Evaluating `%s` on `%s`", self.model_interface.model_name, dataset.name)
 
@@ -96,10 +106,9 @@ class Evaluator:
                         metric=metric,
                         **kw,
                     )
-                    relation_result._metadata.update(self.get_result_metadata(dataset=dataset))
 
                     if save_path is not None:
-                        log.debug("Saving")
+                        log.debug("Saving relation results")
                         relation_result = relation_result.saved(save_path, fmt=fmt)
 
                     dataset_results.append(relation_result)
@@ -175,12 +184,11 @@ class Evaluator:
             metadata={
                 "templates": relation.templates,
                 "template_index": template_index,
-                "model_name_or_path": self.model_interface.model_name,
                 "num_original_instances": len(relation),
                 "subsampled": subsample,
-                "time_start": datetime.now(tz=timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M:%S"),
                 "reduction": kw.get("reduction", "default"),
-                **self.model_interface.get_metadata(),
+                "time_start": datetime.now(tz=timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M:%S"),
+                **{f"model_{k}": v for k, v in self.model_interface.get_metadata().items()},
             },
             relation_info=relation.relation_info(),
         )
@@ -198,12 +206,7 @@ class Evaluator:
         for m in metrics:
             relation_result.metric_values.update(m.compute())
 
-        relation_result._metadata.update(
-            {
-                "time_end": datetime.now(tz=timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M:%S"),
-                **self.get_result_metadata(),
-            }
-        )
+        relation_result._metadata["time_end"] = datetime.now(tz=timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M:%S")
 
         return relation_result
 
@@ -294,20 +297,6 @@ class Evaluator:
                 text_roles=text_roles,
                 **kw,
             )
-
-    def get_result_metadata(self, **kw) -> dict[str, Any]:
-        metadata = {
-            "lm_pub_quiz_version": __version__,
-        }
-
-        if "dataset" in kw:
-            dataset = kw["dataset"]
-            metadata["dataset_path"] = dataset.path
-            metadata["dataset_name"] = dataset.name
-
-        if "reduction" in kw:
-            metadata["reduction"] = kw["reduction"]
-        return metadata
 
     @staticmethod
     def print_ranking(answers: Iterable[str], scores: list[float]) -> None:
