@@ -275,10 +275,19 @@ class Dataset(DatasetBase[Relation]):
         ```
     """
 
-    def __init__(self, relations: list[Relation], path: PathLike, name: str | None = None):
+    def __init__(self, relations: list[Relation], *, path: PathLike, metadata: dict[str, Any] | None = None):
+        super().__init__(metadata=metadata)
         self.relation_data = relations
         self.path = path
-        self.name = name
+
+    @property
+    def path(self) -> Path:
+        return self._path
+
+    @path.setter
+    def path(self, path: PathLike):
+        self.metadata["path"] = str(path)
+        self._path = Path(path)
 
     def __str__(self) -> str:
         if self.name is not None:
@@ -286,6 +295,10 @@ class Dataset(DatasetBase[Relation]):
             return f"{self.__class__.__name__}({self.name}: {relations_repr})"
         else:
             return super().__str__()
+
+    @property
+    def name(self) -> str | None:
+        return self.metadata.get("name")
 
     @classmethod
     def from_path(
@@ -295,7 +308,7 @@ class Dataset(DatasetBase[Relation]):
         lazy: bool = True,
         fmt: InstanceTableFileFormat = None,
         relation_info: PathLike | None = None,
-        **kwargs,
+        metadata: dict[str, Any] | None = None,
     ) -> Self:
         """
         Loads a multiple choice dataset from a specified directory path.
@@ -319,8 +332,26 @@ class Dataset(DatasetBase[Relation]):
             >>> dataset = Dataset.from_path("/path/to/dataset/BEAR")
             ```
         """
-        kwargs["path"] = path
         dataset_path = Path(path)
+
+        if (dataset_path / cls._metadata_file_name).exists():
+            with (dataset_path / cls._metadata_file_name).open() as f:
+                loaded_metadata = json.load(f)
+
+            if metadata is not None:
+                loaded_metadata.update(metadata)
+
+            metadata = loaded_metadata
+        else:
+            log.warning("No metadata found at `%s`.", str(dataset_path))
+            if metadata is not None:
+                metadata = {**metadata}
+            else:
+                metadata = {}
+
+        # if no name was passed, default to using the name of the dataset directory
+        if "name" not in metadata:
+            metadata["name"] = dataset_path.stem
 
         if not dataset_path.exists():
             msg = f"Dataset at `{dataset_path}` could not be opened: Path does not exist."
@@ -329,13 +360,9 @@ class Dataset(DatasetBase[Relation]):
         relation_files = natural_sort(Relation.search_path(dataset_path, fmt=fmt))
         relations = [Relation.from_path(p, lazy=lazy) for p in relation_files]
 
-        # if no name was passed, default to using the name of the dataset directory
-        if "name" not in kwargs:
-            kwargs["name"] = dataset_path.stem
+        log.info("Loaded dataset `%s` (%d relations) from `%s`.", metadata["name"], len(relation_files), dataset_path)
 
-        log.info("Loaded dataset `%s` (%d relations) from `%s`.", kwargs["name"], len(relation_files), dataset_path)
-
-        obj = cls(relations, **kwargs)
+        obj = cls(relations, path=path, metadata=metadata)
 
         if relation_info is not None:
             with open(relation_info) as f:
@@ -352,7 +379,7 @@ class Dataset(DatasetBase[Relation]):
         base_path: Path | None = None,
         chunk_size: int = 10 * 1024,
         relation_info: PathLike | None = None,
-        **kwargs,
+        metadata: dict[str, Any] | None = None,
     ) -> Self:
         """
         Loads a dataset from the cache (if available) or the url which is specified in the internal dataset table.
@@ -411,13 +438,18 @@ class Dataset(DatasetBase[Relation]):
         else:
             log.debug("Dataset %s found in cache at %s.", name, dataset_path)
 
-        return cls.from_path(dataset_path, lazy=lazy, name=name, relation_info=relation_info, **kwargs)
+        if metadata is None:
+            metadata = {}
+
+        metadata = {**metadata, "name": name}
+
+        return cls.from_path(dataset_path, lazy=lazy, relation_info=relation_info, metadata=metadata)
 
     def activated(self):
         if not self.is_lazy:
             return self
 
-        return self.__class__(name=self.name, path=self.path, relations=[rel.activated() for rel in self])
+        return self.__class__(metadata={**self.metadata}, path=self.path, relations=[rel.activated() for rel in self])
 
     def filter_subset(
         self,
@@ -440,8 +472,6 @@ class Dataset(DatasetBase[Relation]):
 
             relations.append(rel)
 
-        return self.__class__(
-            relations,
-            name=dataset_name if dataset_name is not None else f"{self.name} (subset)",
-            path=save_path if save_path is not None else Path("."),
-        )
+        metadata = {**self.metadata, "name": dataset_name if dataset_name is not None else f"{self.name} (subset)"}
+
+        return self.__class__(relations, path=save_path if save_path is not None else Path("."), metadata=metadata)

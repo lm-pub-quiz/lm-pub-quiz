@@ -18,6 +18,9 @@ def test_new_style_results_loading(request, lazy):
     assert isinstance(results, DatasetResults)
     assert len(results) == 2
 
+    assert results.metadata["dataset_name"] == "dummy_dataset"
+    assert "distilbert" in results.metadata["model_name"]
+
     r: RelationResult
     for r in results:
         assert isinstance(r, RelationResult)
@@ -43,10 +46,7 @@ def test_new_style_results_loading(request, lazy):
 
             assert r.get_metric("accuracy") == 1.0
 
-            assert r.get_metadata("dataset_name") == "dummy_dataset"
             assert r.get_metadata("reduction") == "sum"
-
-            assert "distilbert" in r.get_metadata("model_name_or_path")
 
     df = results.get_metrics(["accuracy", "precision_at_k"], accumulate=False)
 
@@ -75,6 +75,9 @@ def test_old_style_results_loading(request, lazy):
     assert isinstance(results, DatasetResults)
     assert len(results) == 2
 
+    assert results.metadata["dataset_name"] == "dummy_dataset"
+    assert "distilbert" in results.metadata["model_name"]
+
     r: RelationResult
     for r in results:
         assert isinstance(r, RelationResult)
@@ -100,10 +103,7 @@ def test_old_style_results_loading(request, lazy):
 
             assert r.get_metric("accuracy") == 1.0
 
-            assert r.get_metadata("dataset_name") == "dummy_dataset"
             assert r.get_metadata("reduction") == "sum"
-
-            assert "distilbert" in r.get_metadata("model_name_or_path")
 
     df = results.get_metrics(["accuracy", "precision_at_k"], accumulate=False)
 
@@ -169,12 +169,15 @@ def test_result_subset_same_answer_space(request, tmp_path, lazy_result):
     }
 
     if lazy_result:
-        results.filter_subset(indices, dataset_name="dummy_subset", keep_answer_space=True, save_path=tmp_path)
+        subset = results.filter_subset(indices, dataset_name="dummy_subset", keep_answer_space=True, save_path=tmp_path)
 
         subset = DatasetResults.from_path(tmp_path)
 
     else:
         subset = results.filter_subset(indices, dataset_name="dummy_subset", keep_answer_space=True, save_path=None)
+
+    assert subset.metadata["dataset_name"] == "dummy_subset"
+    assert "distilbert" in results.metadata["model_name"]
 
     r: RelationResult
     for r in subset:
@@ -202,10 +205,7 @@ def test_result_subset_same_answer_space(request, tmp_path, lazy_result):
 
             assert r.get_metric("accuracy") == 1.0
 
-            assert r.get_metadata("dataset_name") == "dummy_subset"
             assert r.get_metadata("reduction") == "sum"
-
-            assert "distilbert" in r.get_metadata("model_name_or_path")
 
     df = results.get_metrics(["accuracy", "precision_at_k"], accumulate=False)
 
@@ -240,6 +240,9 @@ def test_result_subset_smaller_answer_space(request, tmp_path, lazy_result):
 
     assert tuple(subset[0].instance_table.index.values) == tuple(range(2))
     assert tuple(subset[1].instance_table.index.values) == tuple(range(4))
+
+    assert subset.metadata["dataset_name"] == "dummy_dataset (subset)"
+    assert "distilbert" in results.metadata["model_name"]
 
     r: RelationResult
     for r in subset:
@@ -276,10 +279,7 @@ def test_result_subset_smaller_answer_space(request, tmp_path, lazy_result):
             with pytest.warns(UserWarning):
                 assert r.get_metric("accuracy") == 1.0
 
-            assert r.get_metadata("dataset_name") == "dummy_dataset"
             assert r.get_metadata("reduction") is None
-
-            assert "distilbert" in r.get_metadata("model_name_or_path")
 
     with pytest.warns(UserWarning):
         df = subset.get_metrics(["accuracy", "precision_at_k"], accumulate=False)

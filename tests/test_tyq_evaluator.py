@@ -26,7 +26,7 @@ def test_tyq_evaluator(distilbert, request, tmp_path):
 
     del results
 
-    assert (tmp_path / "metadata_results.json").exists(), "Results metadata file expected but not found."
+    assert (tmp_path / "metadata_relations.json").exists(), "Results metadata file expected but not found."
     assert (tmp_path / "example_1_results.jsonl").exists(), "Instance-file for example_1 expected but not found."
     assert (tmp_path / "example_2_results.jsonl").exists(), "Instance-file for example_2 expected but not found."
 
@@ -48,6 +48,9 @@ def test_tyq_evaluator(distilbert, request, tmp_path):
         ],
     ]
 
+    assert results.metadata["dataset_name"] == "dummy_dataset"
+    assert "distilbert" in results.metadata["model_name"]
+
     r: RelationResult
     for r, exp_scores in zip(results, expected_scores, strict=True):
         instance_table = r.instance_table
@@ -60,9 +63,6 @@ def test_tyq_evaluator(distilbert, request, tmp_path):
 
         if r.relation_code in ("example_1"):
             log.debug("Result for relation %s:\n%s", r.relation_code, str(instance_table))
-
-            assert r.get_metadata("dataset_name") == "dummy_dataset"
-            assert "distilbert" in r.get_metadata("model_name_or_path")
 
 
 def test_reduction_functionality(distilbert):

@@ -555,7 +555,15 @@ RT = TypeVar("RT", bound=RelationBase)
 class DatasetBase(DataBase, Generic[RT]):
     """Base class for a collection of relations or relations results."""
 
+    _metadata_file_name: str = "metadata.json"
     relation_data: list[RT]
+
+    def __init__(
+        self,
+        *,
+        metadata: dict[str, Any] | None = None,
+    ):
+        self.metadata = metadata or {}
 
     def __len__(self) -> int:
         return len(self.relation_data)
@@ -607,7 +615,18 @@ class DatasetBase(DataBase, Generic[RT]):
     def is_lazy(self) -> bool:
         return any(rel.is_lazy for rel in self)
 
+    def save_metadata(self, path: PathLike):
+        path = Path(path)
+
+        if path.is_dir():
+            path = path / self._metadata_file_name
+
+        with path.open("w") as f:
+            json.dump(self.metadata, f)
+
     def save(self, path: PathLike, fmt: InstanceTableFileFormat = None) -> None:
+        self.save_metadata(path)
+
         for result in self:
             result.save(path, fmt=fmt)
 
